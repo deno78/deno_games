@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>三目並べ</title>
+    <title>三目並べ vs CPU</title>
     <style>
         body {
             background-color: #1a1a1a;
@@ -82,17 +82,17 @@
     </style>
 </head>
 <body>
-    <h1>三目並べ</h1>
+    <h1>三目並べ vs CPU</h1>
     <div class="game-container">
-        <div class="status" id="status">● の番です</div>
+        <div class="status" id="status">ゲーム開始</div>
         <canvas id="board" width="300" height="300"></canvas>
         <div class="info-row">
             <div class="info-box">
-                <h2>● (PLAYER 1)</h2>
+                <h2>● (CPU)</h2>
                 <p id="scoreX">0</p>
             </div>
             <div class="info-box">
-                <h2>○ (PLAYER 2)</h2>
+                <h2>○ (あなた)</h2>
                 <p id="scoreO">0</p>
             </div>
             <div class="info-box">
@@ -116,8 +116,9 @@
         const PADDING = CELL * 0.2;
 
         let board = [];
-        let currentPlayer = 1; // 1 = X (black), 2 = O (white)
+        let currentPlayer = 1; // 1 = X (CPU, 先手), 2 = O (Human, 後手)
         let gameOver = false;
+        let isCpuTurn = false;
         let scores = { X: 0, O: 0, draw: 0 };
 
         function initBoard() {
@@ -126,11 +127,18 @@
             gameOver = false;
             updateStatus();
             draw();
+            // CPU (1) starts first
+            isCpuTurn = true;
+            setTimeout(cpuMove, 500);
         }
 
         function updateStatus() {
             if (gameOver) return;
-            statusEl.textContent = (currentPlayer === 1 ? '●' : '○') + ' の番です';
+            if (currentPlayer === 1) {
+                statusEl.textContent = '● (CPU) 考え中...';
+            } else {
+                statusEl.textContent = '○ (あなた) の番です';
+            }
         }
 
         function draw() {
@@ -159,13 +167,13 @@
                     const cx = c * CELL + CELL / 2;
                     const cy = r * CELL + CELL / 2;
                     if (board[r][c] === 1) {
-                        // X (black) - filled circle
+                        // X (CPU) - filled circle
                         ctx.beginPath();
                         ctx.arc(cx, cy, CELL / 2 - PADDING, 0, Math.PI * 2);
                         ctx.fillStyle = '#fff';
                         ctx.fill();
                     } else {
-                        // O (white) - hollow circle
+                        // O (Human) - hollow circle
                         ctx.beginPath();
                         ctx.arc(cx, cy, CELL / 2 - PADDING, 0, Math.PI * 2);
                         ctx.strokeStyle = '#fff';
@@ -176,35 +184,113 @@
             }
         }
 
-        function checkWin() {
+        function checkWin(b) {
             // Rows
             for (let r = 0; r < SIZE; r++) {
-                if (board[r][0] !== 0 && board[r][0] === board[r][1] && board[r][1] === board[r][2]) {
-                    return board[r][0];
+                if (b[r][0] !== 0 && b[r][0] === b[r][1] && b[r][1] === b[r][2]) {
+                    return b[r][0];
                 }
             }
             // Columns
             for (let c = 0; c < SIZE; c++) {
-                if (board[0][c] !== 0 && board[0][c] === board[1][c] && board[1][c] === board[2][c]) {
-                    return board[0][c];
+                if (b[0][c] !== 0 && b[0][c] === b[1][c] && b[1][c] === b[2][c]) {
+                    return b[0][c];
                 }
             }
             // Diagonals
-            if (board[0][0] !== 0 && board[0][0] === board[1][1] && board[1][1] === board[2][2]) {
-                return board[0][0];
+            if (b[0][0] !== 0 && b[0][0] === b[1][1] && b[1][1] === b[2][2]) {
+                return b[0][0];
             }
-            if (board[0][2] !== 0 && board[0][2] === board[1][1] && board[1][1] === board[2][0]) {
-                return board[0][2];
+            if (b[0][2] !== 0 && b[0][2] === b[1][1] && b[1][1] === b[2][0]) {
+                return b[0][2];
             }
             return 0;
         }
 
-        function isFull() {
-            return board.every(row => row.every(cell => cell !== 0));
+        function isFull(b) {
+            return b.every(row => row.every(cell => cell !== 0));
+        }
+
+        // Minimax AI for unbeatable CPU (1)
+        function minimax(b, depth, isMaximizing) {
+            const winner = checkWin(b);
+            if (winner === 1) return { score: 10 - depth };
+            if (winner === 2) return { score: depth - 10 };
+            if (isFull(b)) return { score: 0 };
+
+            if (isMaximizing) {
+                let maxEval = -Infinity;
+                let bestMove = null;
+                for (let r = 0; r < SIZE; r++) {
+                    for (let c = 0; c < SIZE; c++) {
+                        if (b[r][c] === 0) {
+                            b[r][c] = 1;
+                            const eval = minimax(b, depth + 1, false).score;
+                            b[r][c] = 0;
+                            if (eval > maxEval) {
+                                maxEval = eval;
+                                bestMove = { r, c };
+                            }
+                        }
+                    }
+                }
+                return { score: maxEval, move: bestMove };
+            } else {
+                let minEval = Infinity;
+                let bestMove = null;
+                for (let r = 0; r < SIZE; r++) {
+                    for (let c = 0; c < SIZE; c++) {
+                        if (b[r][c] === 0) {
+                            b[r][c] = 2;
+                            const eval = minimax(b, depth + 1, true).score;
+                            b[r][c] = 0;
+                            if (eval < minEval) {
+                                minEval = eval;
+                                bestMove = { r, c };
+                            }
+                        }
+                    }
+                }
+                return { score: minEval, move: bestMove };
+            }
+        }
+
+        function cpuMove() {
+            if (gameOver) return;
+
+            const best = minimax(board, 0, true);
+            if (best.move) {
+                board[best.move.r][best.move.c] = 1;
+            }
+
+            draw();
+
+            const winner = checkWin(board);
+            if (winner !== 0) {
+                gameOver = true;
+                statusEl.textContent = '● (CPU) の勝ち！';
+                scores.X++;
+                updateScoreDisplay();
+                isCpuTurn = false;
+                return;
+            }
+
+            if (isFull(board)) {
+                gameOver = true;
+                statusEl.textContent = '引き分け！';
+                scores.draw++;
+                updateScoreDisplay();
+                isCpuTurn = false;
+                return;
+            }
+
+            currentPlayer = 2;
+            isCpuTurn = false;
+            updateStatus();
         }
 
         function handleClick(e) {
-            if (gameOver) return;
+            if (gameOver || isCpuTurn || currentPlayer !== 2) return;
 
             const rect = canvas.getBoundingClientRect();
             const scaleX = canvas.width / rect.width;
@@ -217,21 +303,19 @@
             if (row < 0 || row >= SIZE || col < 0 || col >= SIZE) return;
             if (board[row][col] !== 0) return;
 
-            board[row][col] = currentPlayer;
+            board[row][col] = 2;
             draw();
 
-            const winner = checkWin();
+            const winner = checkWin(board);
             if (winner !== 0) {
                 gameOver = true;
-                const mark = winner === 1 ? '●' : '○';
-                statusEl.textContent = mark + ' の勝ち！';
-                if (winner === 1) scores.X++;
-                else scores.O++;
+                statusEl.textContent = '○ (あなた) の勝ち！';
+                scores.O++;
                 updateScoreDisplay();
                 return;
             }
 
-            if (isFull()) {
+            if (isFull(board)) {
                 gameOver = true;
                 statusEl.textContent = '引き分け！';
                 scores.draw++;
@@ -239,8 +323,10 @@
                 return;
             }
 
-            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            currentPlayer = 1;
+            isCpuTurn = true;
             updateStatus();
+            setTimeout(cpuMove, 400);
         }
 
         function updateScoreDisplay() {
