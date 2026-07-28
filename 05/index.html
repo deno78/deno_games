@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>どうぶつ将棋 - Animal Shogi</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    background: #1a1a2e;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    font-family: 'Press Start 2P', monospace;
+    color: #f0f0f0;
+    overflow: hidden;
+  }
+
+  #game-container {
+    background: #2a1a0a;
+    padding: 20px 30px;
+    border-radius: 12px;
+    border: 6px solid #8b6b3a;
+    box-shadow:
+      0 0 0 4px #4a3010,
+      0 0 0 8px #1a0e04,
+      0 8px 32px rgba(0,0,0,0.8),
+      inset 0 0 60px rgba(0,0,0,0.3);
+    position: relative;
+  }
+
+  #game-container::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 8px;
+    background: repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgba(0,0,0,0.08) 2px,
+      rgba(0,0,0,0.08) 4px
+    );
+    pointer-events: none;
+    z-index: 10;
+  }
+
+  #title {
+    text-align: center;
+    font-size: 16px;
+    color: #f0d878;
+    text-shadow: 3px 3px 0 #4a2810;
+    margin-bottom: 12px;
+    letter-spacing: 4px;
+  }
+
+  #title span {
+    font-size: 10px;
+    color: #e8a040;
+    display: block;
+    margin-top: 4px;
+    text-shadow: 2px 2px 0 #4a2810;
+  }
+
+  #top-area {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+    min-height: 36px;
+  }
+
+  #captured-top {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+  }
+
+  #player-indicator {
+    font-size: 9px;
+    text-align: center;
+    padding: 4px 10px;
+    background: #1a0e04;
+    border: 2px solid #8b6b3a;
+    border-radius: 4px;
+    white-space: nowrap;
+  }
+
+  #player-indicator .active-turn {
+    color: #f0d878;
+  }
+  #player-indicator .waiting-turn {
+    color: #6a5a4a;
+  }
+
+  canvas {
+    display: block;
+    margin: 0 auto;
+    image-rendering: pixelated;
+    border: 4px solid #6a4a1a;
+    border-radius: 4px;
+    background: #c8a878;
+    box-shadow: inset 0 0 20px rgba(0,0,0,0.2);
+  }
+
+  #bottom-area {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 8px;
+    min-height: 36px;
+  }
+
+  #captured-bottom {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+  }
+
+  #status {
+    font-size: 8px;
+    padding: 6px 12px;
+    background: #1a0e04;
+    border: 2px solid #6a4a1a;
+    border-radius: 4px;
+    text-align: center;
+    flex: 1;
+    margin: 0 12px;
+    min-height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #e8d8c8;
+  }
+
+  #controls {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+  }
+
+  #controls button {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 8px;
+    padding: 6px 12px;
+    background: #4a3010;
+    color: #f0d878;
+    border: 3px solid #8b6b3a;
+    border-radius: 6px;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #1a0e04;
+    transition: all 0.05s;
+    text-shadow: 1px 1px 0 #1a0e04;
+  }
+
+  #controls button:active {
+    transform: translateY(4px);
+    box-shadow: none;
+  }
+
+  #controls button:hover {
+    background: #6a4a1a;
+  }
+
+  .capture-icon {
+    width: 24px;
+    height: 24px;
+    image-rendering: pixelated;
+  }
+
+  .capture-label {
+    font-size: 7px;
+    color: #c8a878;
+    margin: 0 4px;
+  }
+
+  #message-overlay {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background: rgba(0,0,0,0.7);
+    z-index: 20;
+    border-radius: 8px;
+    justify-content: center;
+    align-items: center;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  #message-overlay.show {
+    display: flex;
+  }
+
+  #message-overlay .msg {
+    font-size: 18px;
+    color: #f0d878;
+    text-shadow: 4px 4px 0 #4a2810;
+    text-align: center;
+    padding: 20px;
+  }
+
+  #message-overlay .sub-msg {
+    font-size: 10px;
+    color: #e8a040;
+    text-shadow: 2px 2px 0 #4a2810;
+  }
+
+  #message-overlay button {
+    font-family: 'Press Start 2P', monospace;
+    font-size: 10px;
+    padding: 10px 24px;
+    background: #6a4a1a;
+    color: #f0d878;
+    border: 3px solid #c8a040;
+    border-radius: 8px;
+    cursor: pointer;
+    box-shadow: 0 4px 0 #2a1a0a;
+  }
+
+  #message-overlay button:active {
+    transform: translateY(4px);
+    box-shadow: none;
+  }
+
+  .piece-count {
+    font-size: 7px;
+    color: #e8a040;
+    margin-left: -2px;
+  }
+</style>
+</head>
+<body>
+
+<div id="game-container">
+  <div id="title">
+    🏯 どうぶつ将棋
+    <span>ANIMAL SHOGI</span>
+  </div>
+
+  <div id="top-area">
+    <div id="captured-top"></div>
+    <div id="player-indicator">
+      <span id="turn-p1" class="waiting-turn">●先手</span>
+      &nbsp;
+      <span id="turn-p2" class="waiting-turn">○後手</span>
+    </div>
+  </div>
+
+  <canvas id="board-canvas" width="320" height="240"></canvas>
+
+  <div id="bottom-area">
+    <div id="captured-bottom"></div>
+    <div id="status">ゲーム開始！ タップして着手</div>
+    <div id="controls">
+      <button id="btn-undo">↩ UNDO</button>
+      <button id="btn-restart">↻ RESTART</button>
+    </div>
+  </div>
+
+  <div id="message-overlay">
+    <div class="msg" id="result-msg"></div>
+    <div class="sub-msg" id="result-sub"></div>
+    <button id="btn-ok">OK</button>
+  </div>
+</div>
+
+<script>
+// ============================================================
+// どうぶつ将棋 - Animal Shogi
+// Famicom-style pixel art game
+// ============================================================
+
+// --- Constants ---
+const BOARD_COLS = 4;
+const BOARD_ROWS = 3;
+const CELL_SIZE = 80;
+const SPRITE_SIZE = 12;
+const SPRITE_SCALE = 5;
+const DISPLAY_SPRITE = SPRITE_SIZE * SPRITE_SCALE;
+
+const P1 = 1;
+const P2 = 2;
+
+// --- Pixel Art Sprite Definitions ---
+// Each sprite is 12x12. Colors: 0=transparent, 1=outline, 2=primary, 3=secondary, 4=highlight, 5=detail
+
+const SPRITE_DATA = {
+  lion: {
+    palette: ['', '#4a2810', '#e8a040', '#f0d878', '#ffffff', '#e04040'],
+    data: [
+      "____________",
+      "____1111____",
+      "___122221___",
+      "__12233221__",
+      "_1223443221_",
+      "_1224543221_",
+      "_1221441221_",
+      "__11211211__",
+      "__12233221__",
+      "___122221___",
+      "____1111____",
+      "____________"
+    ]
+  },
+  giraffe: {
+    palette: ['', '#3a2818', '#f0d878', '#c88838', '#ffffff', '#683818'],
+    data: [
+      "____________",
+      "____11______",
+      "___1311_____",
+      "__133311____",
+      "_13333311___",
+      "_133353311__",
+      "_133333311__",
+      "_133313311__",
+      "__13333311__",
+      "___133311___",
+      "____1111____",
+      "____________"
+    ]
+  },
+  elephant: {
+    palette: ['', '#384050', '#8898a8', '#687888', '#ffffff', '#586878'],
+    data: [
+      "____________",
+      "____1111____",
+      "___122221___",
+      "__12233221__",
+      "_1223443221_",
+      "_1234333421_",
+      "_12233_3321_",
+      "_1223_33221_",
+      "__12233321__",
+      "___1223321__",
+      "____11111___",
+      "____________"
+    ]
+  },
+  chick: {
+    palette: ['', '#4a3a10', '#f0d878', '#e8a030', '#ffffff', '#e84848'],
+    data: [
+      "____________",
+      "____________",
+      "____1111____",
+      "___122221___",
+      "__12233221__",
+      "_1223443221_",
+      "_1223533221_",
+      "_1223333221_",
+      "__12333321__",
+      "___122221___",
+      "____1111____",
+      "____________"
+    ]
+  },
+  hen: {
+    palette: ['', '#4a3020', '#e8d8c8', '#d04040', '#ffffff', '#f0d040'],
+    data: [
+      "____________",
+      "____5_5_____",
+      "___55555____",
+      "__12233221__",
+      "_1223443221_",
+      "_1223533221_",
+      "_1223333221_",
+      "_1223_33221_",
+      "__12333321__",
+      "___122221___",
+      "____1111____",
+      "____________"
+    ]
+  },
+  // Mini sprites for captured pieces display (8x8)
+  lion_mini: {
+    palette: ['', '#4a2810', '#e8a040', '#f0d878', '#ffffff', '#e04040'],
+    data: [
+      "________",
+      "__1111__",
+      "_12221_",
+      "1234321_",
+      "1214121_",
+      "_12221_",
+      "__1111__",
+      "________"
+    ]
+  },
+  giraffe_mini: {
+    palette: ['', '#3a2818', '#f0d878', '#c88838', '#ffffff', '#683818'],
+    data: [
+      "________",
+      "___11___",
+      "__131___",
+      "_13311__",
+      "_13331__",
+      "__1331__",
+      "___111__",
+      "________"
+    ]
+  },
+  elephant_mini: {
+    palette: ['', '#384050', '#8898a8', '#687888', '#ffffff', '#586878'],
+    data: [
+      "________",
+      "__1111__",
+      "_12221_",
+      "1233321_",
+      "123_321_",
+      "_12321__",
+      "__1111__",
+      "________"
+    ]
+  },
+  chick_mini: {
+    palette: ['', '#4a3a10', '#f0d878', '#e8a030', '#ffffff', '#e84848'],
+    data: [
+      "________",
+      "________",
+      "__1111__",
+      "_12221_",
+      "1234321_",
+      "_12221_",
+      "__1111__",
+      "________"
+    ]
+  },
+  hen_mini: {
+    palette: ['', '#4a3020', '#e8d8c8', '#d04040', '#ffffff', '#f0d040'],
+    data: [
+      "________",
+      "__5_5___",
+      "_5555___",
+      "_12221_",
+      "1234321_",
+      "_12221_",
+      "__1111__",
+      "________"
+    ]
+  }
+};
+
+// --- Piece class ---
+const PIECE_TYPES = ['lion', 'giraffe', 'elephant', 'chick', 'hen'];
+const PIECE_JAPANESE = {
+  lion: 'ライオン',
+  giraffe: 'キリン',
+  elephant: 'ゾウ',
+  chick: 'ヒヨコ',
+  hen: 'ニワトリ'
+};
+const PIECE_CHAR = {
+  lion: 'L',
+  giraffe: 'G',
+  elephant: 'E',
+  chick: 'C',
+  hen: 'H'
+};
+
+const PROMOTABLE = { chick: 'hen' };
+const DEMOTE = { hen: 'chick' };
+
+function createPiece(type, player) {
+  return { type, player };
+}
+
+function isPromotable(piece) {
+  return piece.type === 'chick';
+}
+
+function promote(piece) {
+  if (piece.type === 'chick') return { type: 'hen', player: piece.player };
+  return piece;
+}
+
+function demote(piece) {
+  if (piece.type === 'hen') return { type: 'chick', player: piece.player };
+  return piece;
+}
+
+function pieceEqual(a, b) {
+  return a && b && a.type === b.type && a.player === b.player;
+}
+
+// --- Board ---
+class GameState {
+  constructor() {
+    this.reset();
+  }
+
+  reset() {
+    this.board = Array.from({ length: BOARD_ROWS }, () => Array(BOARD_COLS).fill(null));
+    // Player 1 (bottom = row 2)
+    this.board[2][0] = createPiece('giraffe', P1);
+    this.board[2][1] = createPiece('lion', P1);
+    this.board[2][2] = createPiece('elephant', P1);
+    this.board[2][3] = createPiece('chick', P1);
+    // Player 2 (top = row 0)
+    this.board[0][0] = createPiece('chick', P2);
+    this.board[0][1] = createPiece('elephant', P2);
+    this.board[0][2] = createPiece('lion', P2);
+    this.board[0][3] = createPiece('giraffe', P2);
+
+    this.turn = P1;
+    this.captured = { 1: [], 2: [] };
+    this.selected = null; // { row, col }
+    this.validMoves = [];
+    this.gameOver = false;
+    this.winner = null;
+    this.moveHistory = [];
+    this.handSelected = null; // type of piece selected from captured hand
+  }
+
+  clone() {
+    const g = new GameState();
+    g.board = this.board.map(row => row.map(p => p ? { ...p } : null));
+    g.turn = this.turn;
+    g.captured = {
+      1: this.captured[1].map(p => ({ ...p })),
+      2: this.captured[2].map(p => ({ ...p }))
+    };
+    g.selected = this.selected ? { ...this.selected } : null;
+    g.validMoves = [...this.validMoves];
+    g.gameOver = this.gameOver;
+    g.winner = this.winner;
+    g.moveHistory = [...this.moveHistory];
+    g.handSelected = this.handSelected;
+    return g;
+  }
+
+  opponent(p) { return p === P1 ? P2 : P1; }
+
+  // Generate moves for a piece at (row, col)
+  getMoves(row, col) {
+    const piece = this.board[row][col];
+    if (!piece) return [];
+    const p = piece.player;
+    const moves = [];
+    const opp = this.opponent(p);
+    const forward = p === P1 ? -1 : 1; // P1 moves upward
+
+    const inBounds = (r, c) => r >= 0 && r < BOARD_ROWS && c >= 0 && c < BOARD_COLS;
+    const canCapture = (r, c) => {
+      if (!inBounds(r, c)) return false;
+      const target = this.board[r][c];
+      return !target || target.player !== p;
+    };
+    const isEmpty = (r, c) => inBounds(r, c) && !this.board[r][c];
+
+    switch (piece.type) {
+      case 'lion':
+      case 'hen': {
+        const dirs = piece.type === 'lion'
+          ? [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,-1],[1,0],[1,1]]
+          : [[-1,-1],[-1,0],[-1,1],[0,-1],[0,1],[1,0]]; // Hen: no backward-diagonal
+        for (const [dr, dc] of dirs) {
+          const nr = row + dr, nc = col + dc;
+          if (canCapture(nr, nc)) moves.push({ row: nr, col: nc });
+        }
+        break;
+      }
+      case 'giraffe': {
+        const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+        for (const [dr, dc] of dirs) {
+          let nr = row + dr, nc = col + dc;
+          while (inBounds(nr, nc)) {
+            const target = this.board[nr][nc];
+            if (!target) {
+              moves.push({ row: nr, col: nc });
+            } else {
+              if (target.player !== p) moves.push({ row: nr, col: nc });
+              break;
+            }
+            nr += dr; nc += dc;
+          }
+        }
+        break;
+      }
+      case 'elephant': {
+        const dirs = [[-1,-1],[-1,1],[1,-1],[1,1]];
+        for (const [dr, dc] of dirs) {
+          let nr = row + dr, nc = col + dc;
+          while (inBounds(nr, nc)) {
+            const target = this.board[nr][nc];
+            if (!target) {
+              moves.push({ row: nr, col: nc });
+            } else {
+              if (target.player !== p) moves.push({ row: nr, col: nc });
+              break;
+            }
+            nr += dr; nc += dc;
+          }
+        }
+        break;
+      }
+      case 'chick': {
+        const nr = row + forward, nc = col;
+        if (canCapture(nr, nc)) moves.push({ row: nr, col: nc });
+        break;
+      }
+    }
+    return moves;
+  }
+
+  // Check if a piece at (row, col) can be promoted after moving
+  wouldPromote(row, col, toRow) {
+    const piece = this.board[row][col];
+    if (!piece || piece.type !== 'chick') return false;
+    return (piece.player === P1 && toRow === 0) || (piece.player === P2 && toRow === BOARD_ROWS - 1);
+  }
+
+  // Generate all legal moves (board moves + drops)
+  getAllMoves(player) {
+    const moves = [];
+
+    // Board piece moves
+    for (let r = 0; r < BOARD_ROWS; r++) {
+      for (let c = 0; c < BOARD_COLS; c++) {
+        const piece = this.board[r][c];
+        if (piece && piece.player === player) {
+          const pieceMoves = this.getMoves(r, c);
+          for (const m of pieceMoves) {
+            const promo = this.wouldPromote(r, c, m.row);
+            moves.push({ fromRow: r, fromCol: c, toRow: m.row, toCol: m.col, promote: promo });
+            if (!promo) {
+              moves.push({ fromRow: r, fromCol: c, toRow: m.row, toCol: m.col, promote: false });
+            }
+          }
+        }
+      }
+    }
+
+    // Drops
+    for (const captured of this.captured[player]) {
+      const type = captured.type;
+      const lastRank = player === P1 ? 0 : BOARD_ROWS - 1;
+      for (let r = 0; r < BOARD_ROWS; r++) {
+        for (let c = 0; c < BOARD_COLS; c++) {
+          if (!this.board[r][c] && !(type === 'chick' && r === lastRank)) {
+            moves.push({ drop: true, dropType: type, toRow: r, toCol: c });
+          }
+        }
+      }
+    }
+
+    return moves;
+  }
+
+  // Execute a move, return true if lion was captured
+  executeMove(move) {
+    let captured = null;
+    let promoted = false;
+
+    if (move.drop) {
+      const piece = createPiece(move.dropType, this.turn);
+      this.board[move.toRow][move.toCol] = piece;
+      // Remove from captured
+      const idx = this.captured[this.turn].findIndex(p => p.type === move.dropType);
+      if (idx >= 0) this.captured[this.turn].splice(idx, 1);
+      this.moveHistory.push({ type: 'drop', move, turn: this.turn });
+    } else {
+      const piece = this.board[move.fromRow][move.fromCol];
+      const target = this.board[move.toRow][move.toCol];
+
+      if (target) {
+        captured = target;
+        this.captured[this.turn].push(demote(target));
+        if (target.type === 'lion') {
+          this.gameOver = true;
+          this.winner = this.turn;
+        }
+      }
+
+      if (move.promote) {
+        this.board[move.toRow][move.toCol] = promote(piece);
+        promoted = true;
+      } else {
+        this.board[move.toRow][move.toCol] = piece;
+      }
+      this.board[move.fromRow][move.fromCol] = null;
+
+      this.moveHistory.push({
+        type: 'move',
+        move,
+        turn: this.turn,
+        captured,
+        promoted
+      });
+    }
+
+    // Check if opponent's lion is still on board
+    if (!this.gameOver) {
+      const opp = this.opponent(this.turn);
+      let lionAlive = false;
+      for (let r = 0; r < BOARD_ROWS && !lionAlive; r++) {
+        for (let c = 0; c < BOARD_COLS && !lionAlive; c++) {
+          const p = this.board[r][c];
+          if (p && p.type === 'lion' && p.player === opp) lionAlive = true;
+        }
+      }
+      if (!lionAlive) {
+        this.gameOver = true;
+        this.winner = this.turn;
+      }
+    }
+
+    this.turn = this.opponent(this.turn);
+    this.selected = null;
+    this.validMoves = [];
+    this.handSelected = null;
+    return captured;
+  }
+
+  undoLastMove() {
+    if (this.moveHistory.length === 0) return false;
+    const last = this.moveHistory.pop();
+
+    if (last.type === 'drop') {
+      const piece = this.board[last.move.toRow][last.move.toCol];
+      this.board[last.move.toRow][last.move.toCol] = null;
+      if (piece) {
+        this.captured[last.turn].push({ type: piece.type, player: last.turn });
+      }
+    } else {
+      const piece = this.board[last.move.toRow][last.move.toCol];
+      this.board[last.move.fromRow][last.move.fromCol] = piece;
+      this.board[last.move.toRow][last.move.toCol] = last.captured || null;
+
+      if (last.captured) {
+        const idx = this.captured[last.turn].findIndex(p =>
+          p.type === last.captured.type
+        );
+        if (idx >= 0) this.captured[last.turn].splice(idx, 1);
+      }
+
+      if (last.promoted && piece) {
+        this.board[last.move.fromRow][last.move.fromCol] = demote(piece);
+      }
+    }
+
+    this.turn = last.turn;
+    this.gameOver = false;
+    this.winner = null;
+    this.selected = null;
+    this.validMoves = [];
+    this.handSelected = null;
+    return true;
+  }
+}
+
+// --- AI Player ---
+class AIPlayer {
+  constructor(depth = 3) {
+    this.depth = depth;
+  }
+
+  evaluate(state, player) {
+    const opp = player === P1 ? P2 : P1;
+    let score = 0;
+
+    // Material values
+    const VALUES = { lion: 10000, giraffe: 600, elephant: 600, hen: 500, chick: 100 };
+
+    // Board evaluation
+    for (let r = 0; r < BOARD_ROWS; r++) {
+      for (let c = 0; c < BOARD_COLS; c++) {
+        const p = state.board[r][c];
+        if (p) {
+          const val = VALUES[p.type] || 0;
+          if (p.player === player) {
+            score += val;
+            // Positional bonus for chicks moving forward
+            if (p.type === 'chick') {
+              const progress = player === P1 ? (BOARD_ROWS - 1 - r) : r;
+              score += progress * 20;
+            }
+            // Center control bonus
+            if (c === 1 || c === 2) score += 10;
+          } else {
+            score -= val;
+            if (p.type === 'chick') {
+              const progress = opp === P1 ? (BOARD_ROWS - 1 - r) : r;
+              score -= progress * 20;
+            }
+            if (c === 1 || c === 2) score -= 10;
+          }
+        }
+      }
+    }
+
+    // Captured pieces
+    for (const c of state.captured[player]) {
+      score += VALUES[c.type] || 0;
+    }
+    for (const c of state.captured[opp]) {
+      score -= VALUES[c.type] || 0;
+    }
+
+    return score;
+  }
+
+  minimax(state, depth, alpha, beta, isMaximizing, player) {
+    if (depth === 0 || state.gameOver) {
+      return this.evaluate(state, player);
+    }
+
+    const moves = state.getAllMoves(state.turn);
+
+    if (isMaximizing) {
+      let maxEval = -Infinity;
+      for (const move of moves) {
+        const child = state.clone();
+        child.executeMove(move);
+        const evalScore = this.minimax(child, depth - 1, alpha, beta, false, player);
+        maxEval = Math.max(maxEval, evalScore);
+        alpha = Math.max(alpha, evalScore);
+        if (beta <= alpha) break;
+      }
+      return maxEval;
+    } else {
+      let minEval = Infinity;
+      for (const move of moves) {
+        const child = state.clone();
+        child.executeMove(move);
+        const evalScore = this.minimax(child, depth - 1, alpha, beta, true, player);
+        minEval = Math.min(minEval, evalScore);
+        beta = Math.min(beta, evalScore);
+        if (beta <= alpha) break;
+      }
+      return minEval;
+    }
+  }
+
+  getBestMove(state) {
+    const player = state.turn;
+    const moves = state.getAllMoves(player);
+
+    if (moves.length === 0) return null;
+
+    // Immediate lion capture
+    for (const move of moves) {
+      if (!move.drop) {
+        const target = state.board[move.toRow]?.[move.toCol];
+        if (target && target.type === 'lion') return move;
+      }
+    }
+
+    let bestMove = null;
+    let bestScore = -Infinity;
+
+    for (const move of moves) {
+      const child = state.clone();
+      child.executeMove(move);
+      const score = this.minimax(child, this.depth - 1, -Infinity, Infinity, false, player);
+      if (score > bestScore) {
+        bestScore = score;
+        bestMove = move;
+      }
+    }
+
+    return bestMove;
+  }
+}
+
+// --- Audio ---
+class AudioManager {
+  constructor() {
+    this.ctx = null;
+  }
+
+  init() {
+    if (!this.ctx) {
+      this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+    }
+  }
+
+  play(freq, duration, type = 'square') {
+    try {
+      this.init();
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.type = type;
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.15, this.ctx.currentTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      osc.start();
+      osc.stop(this.ctx.currentTime + duration);
+    } catch (e) {}
+  }
+
+  move() { this.play(440, 0.08); }
+  capture() { this.play(880, 0.12); }
+  drop() { this.play(660, 0.08); }
+  promote() { this.play(1100, 0.15, 'triangle'); }
+  win() { this.play(880, 0.3, 'triangle'); setTimeout(() => this.play(1100, 0.3, 'triangle'), 150); }
+  lose() { this.play(300, 0.3); setTimeout(() => this.play(200, 0.4), 200); }
+  select() { this.play(550, 0.05); }
+}
+
+// --- Pixel Art Renderer ---
+class SpriteRenderer {
+  constructor() {
+    this.cache = {};
+  }
+
+  getSprite(type) {
+    if (this.cache[type]) return this.cache[type];
+
+    const sd = SPRITE_DATA[type];
+    if (!sd) return null;
+
+    const size = sd.data.length;
+    const canvas = document.createElement('canvas');
+    canvas.width = size;
+    canvas.height = size;
+    const ctx = canvas.getContext('2d');
+    const imgData = ctx.createImageData(size, size);
+
+    for (let r = 0; r < size; r++) {
+      for (let c = 0; c < size; c++) {
+        const ch = sd.data[r][c];
+        const colorIdx = ch === '_' ? 0 : parseInt(ch, 10);
+        const color = sd.palette[colorIdx] || '';
+        const idx = (r * size + c) * 4;
+        if (color) {
+          imgData.data[idx] = parseInt(color.slice(1,3), 16);
+          imgData.data[idx+1] = parseInt(color.slice(3,5), 16);
+          imgData.data[idx+2] = parseInt(color.slice(5,7), 16);
+          imgData.data[idx+3] = 255;
+        } else {
+          imgData.data[idx+3] = 0;
+        }
+      }
+    }
+
+    ctx.putImageData(imgData, 0, 0);
+    this.cache[type] = canvas;
+    return canvas;
+  }
+
+  draw(ctx, type, x, y, scale = SPRITE_SCALE, flipped = false) {
+    const src = this.getSprite(type);
+    if (!src) return;
+
+    if (flipped) {
+      ctx.save();
+      ctx.translate(x + src.width * scale / 2, y + src.height * scale / 2);
+      ctx.scale(-1, 1);
+      ctx.drawImage(src, -src.width / 2, -src.height / 2, src.width, src.height, 0, 0, src.width * scale, src.height * scale);
+      ctx.restore();
+    } else {
+      ctx.drawImage(src, x, y, src.width * scale, src.height * scale);
+    }
+  }
+
+  drawMini(ctx, type, x, y, scale = 2) {
+    const key = type + '_mini';
+    const sd = SPRITE_DATA[key];
+    if (!sd) { // Fallback to full sprite
+      this.draw(ctx, type, x, y, scale);
+      return;
+    }
+
+    const size = sd.data.length;
+    const cvs = document.createElement('canvas');
+    cvs.width = size;
+    cvs.height = size;
+    const c = cvs.getContext('2d');
+    const imgData = c.createImageData(size, size);
+
+    for (let r = 0; r < size; r++) {
+      for (let c2 = 0; c2 < size; c2++) {
+        const ch = sd.data[r][c2];
+        const colorIdx = ch === '_' ? 0 : parseInt(ch, 10);
+        const color = sd.palette[colorIdx] || '';
+        const idx = (r * size + c2) * 4;
+        if (color) {
+          imgData.data[idx] = parseInt(color.slice(1,3), 16);
+          imgData.data[idx+1] = parseInt(color.slice(3,5), 16);
+          imgData.data[idx+2] = parseInt(color.slice(5,7), 16);
+          imgData.data[idx+3] = 255;
+        } else {
+          imgData.data[idx+3] = 0;
+        }
+      }
+    }
+
+    c.putImageData(imgData, 0, 0);
+    ctx.drawImage(cvs, x, y, size * scale, size * scale);
+  }
+}
+
+// ============================================================
+// GAME CONTROLLER
+// ============================================================
+
+const canvas = document.getElementById('board-canvas');
+const ctx = canvas.getContext('2d');
+
+const spriteRenderer = new SpriteRenderer();
+const audio = new AudioManager();
+const ai = new AIPlayer(3);
+
+let game = new GameState();
+let isAIThinking = false;
+let twoPlayerMode = false;
+
+// --- Rendering ---
+function drawBoard() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Board background
+  const boardX = 0, boardY = 0;
+  const boardW = BOARD_COLS * CELL_SIZE;
+  const boardH = BOARD_ROWS * CELL_SIZE;
+
+  // Wood texture background
+  ctx.fillStyle = '#c8a878';
+  ctx.fillRect(boardX, boardY, boardW, boardH);
+
+  // Grid lines
+  ctx.strokeStyle = '#6a4a1a';
+  ctx.lineWidth = 2;
+  for (let r = 0; r <= BOARD_ROWS; r++) {
+    ctx.beginPath();
+    ctx.moveTo(boardX, boardY + r * CELL_SIZE);
+    ctx.lineTo(boardX + boardW, boardY + r * CELL_SIZE);
+    ctx.stroke();
+  }
+  for (let c = 0; c <= BOARD_COLS; c++) {
+    ctx.beginPath();
+    ctx.moveTo(boardX + c * CELL_SIZE, boardY);
+    ctx.lineTo(boardX + c * CELL_SIZE, boardY + boardH);
+    ctx.stroke();
+  }
+
+  // Grid dots at intersections (FC-style)
+  ctx.fillStyle = '#8b6b3a';
+  for (let r = 0; r <= BOARD_ROWS; r++) {
+    for (let c = 0; c <= BOARD_COLS; c++) {
+      ctx.beginPath();
+      ctx.arc(boardX + c * CELL_SIZE, boardY + r * CELL_SIZE, 3, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Selected piece highlight
+  if (game.selected) {
+    const { row, col } = game.selected;
+    ctx.fillStyle = 'rgba(255, 255, 100, 0.3)';
+    ctx.fillRect(boardX + col * CELL_SIZE, boardY + row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    ctx.strokeStyle = '#ffff00';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(boardX + col * CELL_SIZE + 2, boardY + row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+  }
+
+  // Valid moves
+  for (const m of game.validMoves) {
+    const cx = boardX + m.col * CELL_SIZE + CELL_SIZE / 2;
+    const cy = boardY + m.row * CELL_SIZE + CELL_SIZE / 2;
+    const target = game.board[m.row][m.col];
+    if (target) {
+      ctx.fillStyle = 'rgba(255, 50, 50, 0.4)';
+      ctx.fillRect(boardX + m.col * CELL_SIZE, boardY + m.row * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+      ctx.strokeStyle = '#ff4444';
+      ctx.lineWidth = 3;
+      ctx.strokeRect(boardX + m.col * CELL_SIZE + 2, boardY + m.row * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+    } else {
+      ctx.fillStyle = 'rgba(100, 255, 100, 0.3)';
+      ctx.beginPath();
+      ctx.arc(cx, cy, 10, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  }
+
+  // Hand selection highlight (captured pieces area)
+  if (game.handSelected && game.turn === P1) {
+    document.querySelectorAll('#captured-bottom .capture-icon').forEach(el => {
+      if (el.dataset.type === game.handSelected) {
+        el.style.outline = '3px solid #ffff00';
+        el.style.outlineOffset = '2px';
+      } else {
+        el.style.outline = 'none';
+      }
+    });
+  } else if (game.handSelected && game.turn === P2) {
+    // Multiplayer: show for P2 captured area too
+  } else {
+    document.querySelectorAll('.capture-icon').forEach(el => {
+      el.style.outline = 'none';
+    });
+  }
+
+  // Draw pieces
+  const pieceOffsetX = (CELL_SIZE - DISPLAY_SPRITE) / 2;
+  const pieceOffsetY = (CELL_SIZE - DISPLAY_SPRITE) / 2;
+
+  for (let r = 0; r < BOARD_ROWS; r++) {
+    for (let c = 0; c < BOARD_COLS; c++) {
+      const piece = game.board[r][c];
+      if (piece) {
+        const x = boardX + c * CELL_SIZE + pieceOffsetX;
+        const y = boardY + r * CELL_SIZE + pieceOffsetY;
+        const flipped = piece.player === P2;
+        spriteRenderer.draw(ctx, piece.type, x, y, SPRITE_SCALE, flipped);
+      }
+    }
+  }
+
+  // Draw "promotion zone" label
+  ctx.fillStyle = 'rgba(100, 60, 20, 0.15)';
+  // P1 promotion zone (row 0, top)
+  ctx.fillRect(0, 0, boardW, CELL_SIZE);
+  // P2 promotion zone (row 2, bottom)
+  ctx.fillRect(0, boardH - CELL_SIZE, boardW, CELL_SIZE);
+
+  // Small zone labels
+  ctx.fillStyle = '#8b6b3a';
+  ctx.font = '7px "Press Start 2P", monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('P1陣', boardW / 2, CELL_SIZE - 6);
+  ctx.fillText('P2陣', boardW / 2, boardH - 4);
+}
+
+function updateCapturedDisplay() {
+  // P2 captured (top area)
+  const topArea = document.getElementById('captured-top');
+  topArea.innerHTML = '';
+  if (game.captured[2].length > 0) {
+    topArea.innerHTML = '<span class="capture-label">持駒:</span>';
+    for (const piece of game.captured[2]) {
+      const canvas = document.createElement('canvas');
+      canvas.className = 'capture-icon';
+      canvas.width = 24;
+      canvas.height = 24;
+      canvas.dataset.type = piece.type;
+      const c = canvas.getContext('2d');
+      spriteRenderer.drawMini(c, piece.type, 4, 4, 2);
+      topArea.appendChild(canvas);
+    }
+  }
+
+  // P1 captured (bottom area)
+  const bottomArea = document.getElementById('captured-bottom');
+  bottomArea.innerHTML = '';
+  if (game.captured[1].length > 0) {
+    bottomArea.innerHTML = '<span class="capture-label">持駒:</span>';
+    for (const piece of game.captured[1]) {
+      const canvas = document.createElement('canvas');
+      canvas.className = 'capture-icon';
+      canvas.width = 24;
+      canvas.height = 24;
+      canvas.dataset.type = piece.type;
+      const c = canvas.getContext('2d');
+      spriteRenderer.drawMini(c, piece.type, 4, 4, 2);
+      bottomArea.appendChild(canvas);
+    }
+  }
+}
+
+function updateTurnIndicator() {
+  const p1 = document.getElementById('turn-p1');
+  const p2 = document.getElementById('turn-p2');
+  p1.className = game.turn === P1 ? 'active-turn' : 'waiting-turn';
+  p2.className = game.turn === P2 ? 'active-turn' : 'waiting-turn';
+
+  const status = document.getElementById('status');
+  if (game.gameOver) {
+    if (game.winner === P1) {
+      status.textContent = '🎉 先手の勝ち！ ライオンを捕獲！';
+    } else if (game.winner === P2) {
+      status.textContent = '🎉 後手の勝ち！ ライオンを捕獲！';
+    } else {
+      status.textContent = '引き分け';
+    }
+  } else if (isAIThinking) {
+    status.textContent = '🤔 AI 考え中...';
+  } else if (game.turn === P1) {
+    status.textContent = '● 先手の番です';
+  } else {
+    status.textContent = '○ 後手の番です';
+  }
+}
+
+function render() {
+  drawBoard();
+  updateCapturedDisplay();
+  updateTurnIndicator();
+}
+
+// --- Interaction ---
+function handleBoardClick(event) {
+  if (game.gameOver || isAIThinking) return;
+  if (game.turn === P2 && !twoPlayerMode) return; // AI's turn
+
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const mx = (event.clientX - rect.left) * scaleX;
+  const my = (event.clientY - rect.top) * scaleY;
+
+  const col = Math.floor(mx / CELL_SIZE);
+  const row = Math.floor(my / CELL_SIZE);
+
+  if (row < 0 || row >= BOARD_ROWS || col < 0 || col >= BOARD_COLS) return;
+
+  const clickedPiece = game.board[row][col];
+
+  // If we have a piece selected, check if click is a valid move
+  if (game.selected) {
+    const isValid = game.validMoves.some(m => m.row === row && m.col === col);
+    if (isValid) {
+      // Execute move
+      const target = game.board[row][col];
+      const fromRow = game.selected.row;
+      const fromCol = game.selected.col;
+      const piece = game.board[fromRow][fromCol];
+      const promo = piece && piece.type === 'chick' &&
+        ((piece.player === P1 && row === 0) || (piece.player === P2 && row === BOARD_ROWS - 1));
+
+      const move = { fromRow, fromCol, toRow: row, toCol: col, promote: promo };
+      const captured = game.executeMove(move);
+
+      if (target) {
+        audio.capture();
+      } else if (promo) {
+        audio.promote();
+      } else {
+        audio.move();
+      }
+
+      render();
+      if (!game.gameOver && game.turn === P2 && !twoPlayerMode) {
+        setTimeout(() => aiTurn(), 300);
+      } else if (game.gameOver) {
+        showGameOver();
+      }
+      return;
+    }
+
+    // Clicked same piece = deselect
+    if (game.selected.row === row && game.selected.col === col) {
+      game.selected = null;
+      game.validMoves = [];
+      game.handSelected = null;
+      render();
+      return;
+    }
+
+    // Deselect current, select new piece if same player
+    if (clickedPiece && clickedPiece.player === game.turn) {
+      selectPiece(row, col);
+      return;
+    }
+
+    // Otherwise deselect
+    game.selected = null;
+    game.validMoves = [];
+    game.handSelected = null;
+    render();
+    return;
+  }
+
+  // No piece selected - try to select one
+  if (clickedPiece && clickedPiece.player === game.turn) {
+    selectPiece(row, col);
+  } else {
+    // Maybe clicking on empty square while hand is selected (for drop)
+    if (game.handSelected && !clickedPiece) {
+      handleDrop(row, col);
+      return;
+    }
+    game.selected = null;
+    game.validMoves = [];
+    render();
+  }
+}
+
+function selectPiece(row, col) {
+  const piece = game.board[row][col];
+  if (!piece || piece.player !== game.turn) return;
+
+  game.selected = { row, col };
+  game.validMoves = game.getMoves(row, col);
+  game.handSelected = null;
+  audio.select();
+  render();
+}
+
+function handleDrop(row, col) {
+  if (!game.handSelected || game.board[row][col]) return;
+  // Check not dropping chick on last rank
+  const lastRank = game.turn === P1 ? 0 : BOARD_ROWS - 1;
+  if (game.handSelected === 'chick' && row === lastRank) return;
+
+  // Check that this type is actually in captured
+  const hasPiece = game.captured[game.turn].some(p => p.type === game.handSelected);
+  if (!hasPiece) return;
+
+  const move = { drop: true, dropType: game.handSelected, toRow: row, toCol: col };
+  game.executeMove(move);
+  audio.drop();
+  game.handSelected = null;
+  render();
+
+  if (!game.gameOver && game.turn === P2 && !twoPlayerMode) {
+    setTimeout(() => aiTurn(), 300);
+  } else if (game.gameOver) {
+    showGameOver();
+  }
+}
+
+function handleCaptureClick(event) {
+  if (game.gameOver || isAIThinking) return;
+  if (game.turn === P2 && !twoPlayerMode) return;
+
+  const target = event.currentTarget;
+  const type = target.dataset.type;
+  if (!type) return;
+
+  const hasPiece = game.captured[game.turn].some(p => p.type === type);
+  if (!hasPiece) return;
+
+  // Toggle hand selection
+  if (game.handSelected === type) {
+    game.handSelected = null;
+  } else {
+    game.handSelected = type;
+  }
+  game.selected = null;
+  game.validMoves = [];
+  render();
+}
+
+// --- AI Turn ---
+function aiTurn() {
+  if (game.gameOver) return;
+  if (game.turn !== P2 || twoPlayerMode) return;
+
+  isAIThinking = true;
+  render();
+
+  setTimeout(() => {
+    try {
+      const move = ai.getBestMove(game);
+      if (move) {
+        const captured = game.executeMove(move);
+        if (move.drop) {
+          audio.drop();
+        } else if (captured) {
+          audio.capture();
+        } else {
+          audio.move();
+        }
+      }
+    } catch (e) {
+      console.error('AI error:', e);
+    }
+    isAIThinking = false;
+    render();
+    if (game.gameOver) {
+      showGameOver();
+    }
+  }, 200);
+}
+
+// --- Game Over ---
+function showGameOver() {
+  const overlay = document.getElementById('message-overlay');
+  const msg = document.getElementById('result-msg');
+  const sub = document.getElementById('result-sub');
+
+  const playerName = game.winner === P1 ? '先手 (あなた)' : '後手 (AI)';
+  msg.textContent = `🏆 ${playerName}の勝ち！`;
+  sub.textContent = 'ライオンを捕獲しました！';
+
+  if (game.winner === P1) audio.win();
+  else audio.lose();
+
+  overlay.classList.add('show');
+}
+
+// --- Controls ---
+function restartGame() {
+  game = new GameState();
+  isAIThinking = false;
+  document.getElementById('message-overlay').classList.remove('show');
+  render();
+  audio.move();
+}
+
+function undoMove() {
+  if (game.gameOver) return;
+  if (isAIThinking) return;
+  if (game.moveHistory.length === 0) return;
+
+  // Undo player's move + AI's move
+  game.undoLastMove();
+  if (!twoPlayerMode && game.moveHistory.length > 0 && game.turn === P1) {
+    game.undoLastMove(); // Undo AI's move too
+  }
+  render();
+}
+
+// --- Init ---
+function init() {
+  // Canvas click
+  canvas.addEventListener('click', handleBoardClick);
+
+  // Captured pieces click (delegated)
+  document.getElementById('captured-bottom').addEventListener('click', (e) => {
+    const icon = e.target.closest('.capture-icon');
+    if (icon) handleCaptureClick({ currentTarget: icon });
+  });
+  document.getElementById('captured-top').addEventListener('click', (e) => {
+    if (twoPlayerMode) {
+      const icon = e.target.closest('.capture-icon');
+      if (icon) handleCaptureClick({ currentTarget: icon });
+    }
+  });
+
+  // Buttons
+  document.getElementById('btn-restart').addEventListener('click', restartGame);
+  document.getElementById('btn-undo').addEventListener('click', undoMove);
+  document.getElementById('btn-ok').addEventListener('click', () => {
+    document.getElementById('message-overlay').classList.remove('show');
+    restartGame();
+  });
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'r' || e.key === 'R') restartGame();
+    if (e.key === 'u' || e.key === 'U') undoMove();
+    if (e.key === '2') {
+      twoPlayerMode = !twoPlayerMode;
+      document.getElementById('status').textContent = twoPlayerMode ? '👥 2人プレイモード' : '🤖 AI対戦モード';
+      setTimeout(() => render(), 1000);
+    }
+  });
+
+  render();
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+</body>
+</html>
