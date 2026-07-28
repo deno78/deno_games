@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>三目並べ</title>
+    <style>
+        body {
+            background-color: #1a1a1a;
+            color: #ffffff;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        h1 {
+            margin: 0 0 10px 0;
+            font-size: 24px;
+            letter-spacing: 2px;
+        }
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #2a2a2a;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+        .status {
+            font-size: 18px;
+            margin-bottom: 15px;
+            min-height: 27px;
+            font-weight: bold;
+        }
+        canvas {
+            border: 2px solid #555;
+            background-color: #000;
+            cursor: pointer;
+        }
+        .info-row {
+            display: flex;
+            gap: 20px;
+            margin: 15px 0;
+            width: 100%;
+            justify-content: center;
+        }
+        .info-box {
+            background: #333;
+            padding: 8px 16px;
+            border-radius: 5px;
+            text-align: center;
+        }
+        .info-box h2 {
+            font-size: 12px;
+            margin: 0 0 3px 0;
+            color: #aaa;
+        }
+        .info-box p {
+            font-size: 16px;
+            margin: 0;
+            font-weight: bold;
+        }
+        .btn {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            font-size: 14px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .btn:hover {
+            background-color: #45a049;
+        }
+    </style>
+</head>
+<body>
+    <h1>三目並べ</h1>
+    <div class="game-container">
+        <div class="status" id="status">● の番です</div>
+        <canvas id="board" width="300" height="300"></canvas>
+        <div class="info-row">
+            <div class="info-box">
+                <h2>● (PLAYER 1)</h2>
+                <p id="scoreX">0</p>
+            </div>
+            <div class="info-box">
+                <h2>○ (PLAYER 2)</h2>
+                <p id="scoreO">0</p>
+            </div>
+            <div class="info-box">
+                <h2>DRAW</h2>
+                <p id="scoreDraw">0</p>
+            </div>
+        </div>
+        <button class="btn" id="reset-btn">New Game</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('board');
+        const ctx = canvas.getContext('2d');
+        const statusEl = document.getElementById('status');
+        const scoreXEl = document.getElementById('scoreX');
+        const scoreOEl = document.getElementById('scoreO');
+        const scoreDrawEl = document.getElementById('scoreDraw');
+
+        const SIZE = 3;
+        const CELL = canvas.width / SIZE;
+        const PADDING = CELL * 0.2;
+
+        let board = [];
+        let currentPlayer = 1; // 1 = X (black), 2 = O (white)
+        let gameOver = false;
+        let scores = { X: 0, O: 0, draw: 0 };
+
+        function initBoard() {
+            board = Array.from({ length: SIZE }, () => Array(SIZE).fill(0));
+            currentPlayer = 1;
+            gameOver = false;
+            updateStatus();
+            draw();
+        }
+
+        function updateStatus() {
+            if (gameOver) return;
+            statusEl.textContent = (currentPlayer === 1 ? '●' : '○') + ' の番です';
+        }
+
+        function draw() {
+            ctx.fillStyle = '#000';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Grid lines
+            ctx.strokeStyle = '#555';
+            ctx.lineWidth = 2;
+            for (let i = 1; i < SIZE; i++) {
+                const pos = i * CELL;
+                ctx.beginPath();
+                ctx.moveTo(pos, 0);
+                ctx.lineTo(pos, canvas.height);
+                ctx.stroke();
+                ctx.beginPath();
+                ctx.moveTo(0, pos);
+                ctx.lineTo(canvas.width, pos);
+                ctx.stroke();
+            }
+
+            // Marks
+            for (let r = 0; r < SIZE; r++) {
+                for (let c = 0; c < SIZE; c++) {
+                    if (board[r][c] === 0) continue;
+                    const cx = c * CELL + CELL / 2;
+                    const cy = r * CELL + CELL / 2;
+                    if (board[r][c] === 1) {
+                        // X (black) - filled circle
+                        ctx.beginPath();
+                        ctx.arc(cx, cy, CELL / 2 - PADDING, 0, Math.PI * 2);
+                        ctx.fillStyle = '#fff';
+                        ctx.fill();
+                    } else {
+                        // O (white) - hollow circle
+                        ctx.beginPath();
+                        ctx.arc(cx, cy, CELL / 2 - PADDING, 0, Math.PI * 2);
+                        ctx.strokeStyle = '#fff';
+                        ctx.lineWidth = 4;
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        function checkWin() {
+            // Rows
+            for (let r = 0; r < SIZE; r++) {
+                if (board[r][0] !== 0 && board[r][0] === board[r][1] && board[r][1] === board[r][2]) {
+                    return board[r][0];
+                }
+            }
+            // Columns
+            for (let c = 0; c < SIZE; c++) {
+                if (board[0][c] !== 0 && board[0][c] === board[1][c] && board[1][c] === board[2][c]) {
+                    return board[0][c];
+                }
+            }
+            // Diagonals
+            if (board[0][0] !== 0 && board[0][0] === board[1][1] && board[1][1] === board[2][2]) {
+                return board[0][0];
+            }
+            if (board[0][2] !== 0 && board[0][2] === board[1][1] && board[1][1] === board[2][0]) {
+                return board[0][2];
+            }
+            return 0;
+        }
+
+        function isFull() {
+            return board.every(row => row.every(cell => cell !== 0));
+        }
+
+        function handleClick(e) {
+            if (gameOver) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const scaleX = canvas.width / rect.width;
+            const scaleY = canvas.height / rect.height;
+            const x = (e.clientX - rect.left) * scaleX;
+            const y = (e.clientY - rect.top) * scaleY;
+            const col = Math.floor(x / CELL);
+            const row = Math.floor(y / CELL);
+
+            if (row < 0 || row >= SIZE || col < 0 || col >= SIZE) return;
+            if (board[row][col] !== 0) return;
+
+            board[row][col] = currentPlayer;
+            draw();
+
+            const winner = checkWin();
+            if (winner !== 0) {
+                gameOver = true;
+                const mark = winner === 1 ? '●' : '○';
+                statusEl.textContent = mark + ' の勝ち！';
+                if (winner === 1) scores.X++;
+                else scores.O++;
+                updateScoreDisplay();
+                return;
+            }
+
+            if (isFull()) {
+                gameOver = true;
+                statusEl.textContent = '引き分け！';
+                scores.draw++;
+                updateScoreDisplay();
+                return;
+            }
+
+            currentPlayer = currentPlayer === 1 ? 2 : 1;
+            updateStatus();
+        }
+
+        function updateScoreDisplay() {
+            scoreXEl.textContent = scores.X;
+            scoreOEl.textContent = scores.O;
+            scoreDrawEl.textContent = scores.draw;
+        }
+
+        function resetGame() {
+            initBoard();
+        }
+
+        canvas.addEventListener('click', handleClick);
+        document.getElementById('reset-btn').addEventListener('click', resetGame);
+
+        initBoard();
+    </script>
+</body>
+</html>
