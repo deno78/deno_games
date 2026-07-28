@@ -6,3 +6,4 @@ Deno/Web games collection.
 
 - [01. Tetris](./01/index.html)
 - [02. ホソリス (Hosoris)](./02/index.html)
+- [03. フトリス (Futoris)](./03/index.html)
