@@ -11,3 +11,4 @@ Deno/Web games collection.
 - [05. どうぶつ将棋 (Animal Shogi)](./05/index.html)
 - [06. 城からの脱出 (Escape from DQ1 Castle)](./06/index.html)
 - [07. スマホテトリス (Mobile Tetris with Virtual Pad)](./07/index.html)
+- [08. オセロ (Othello vs CPU)](./08/index.html)
