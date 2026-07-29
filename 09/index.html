@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>逆オセロ (Reverse Othello vs CPU)</title>
+  <style>
+    :root {
+      --bg-color: #2b1b2d;
+      --card-bg: #3c2a3e;
+      --board-color: #8e24aa;
+      --board-border: #4a148c;
+      --cell-hover: #ab47bc;
+      --text-color: #f3e5f5;
+      --accent-color: #e91e63;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    body {
+      font-family: 'Helvetica Neue', Arial, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 8px;
+      font-size: 2rem;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+      color: #ff80ab;
+    }
+
+    .rule-desc {
+      margin-bottom: 16px;
+      font-size: 0.95rem;
+      color: #ce93d8;
+      background: rgba(0,0,0,0.2);
+      padding: 8px 16px;
+      border-radius: 20px;
+      text-align: center;
+      max-width: 500px;
+    }
+
+    .container {
+      background: var(--card-bg);
+      padding: 24px;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+      max-width: 500px;
+      width: 100%;
+    }
+
+    .controls {
+      display: flex;
+      gap: 12px;
+      width: 100%;
+      justify-content: center;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+
+    label {
+      font-weight: bold;
+      font-size: 0.95rem;
+    }
+
+    select, button {
+      padding: 8px 14px;
+      border-radius: 8px;
+      border: none;
+      background: #5c3866;
+      color: var(--text-color);
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    select:hover, button:hover {
+      background: #7b4a89;
+    }
+
+    button.btn-primary {
+      background: var(--accent-color);
+      color: #fff;
+      font-weight: bold;
+    }
+
+    button.btn-primary:hover {
+      background: #c2185b;
+    }
+
+    .score-board {
+      display: flex;
+      justify-content: space-around;
+      width: 100%;
+      background: #231226;
+      padding: 12px;
+      border-radius: 10px;
+    }
+
+    .player-info {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      font-size: 1.1rem;
+      font-weight: bold;
+      padding: 6px 12px;
+      border-radius: 8px;
+      transition: background 0.3s, transform 0.2s;
+    }
+
+    .player-info.active {
+      background: rgba(255, 255, 255, 0.15);
+      transform: scale(1.05);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+    }
+
+    .disc-icon {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      display: inline-block;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+    }
+
+    .disc-black {
+      background: radial-gradient(circle at 30% 30%, #444, #000);
+    }
+
+    .disc-white {
+      background: radial-gradient(circle at 30% 30%, #fff, #ccc);
+    }
+
+    .status-msg {
+      font-size: 1.1rem;
+      font-weight: bold;
+      min-height: 28px;
+      color: #ff80ab;
+      text-align: center;
+    }
+
+    .board {
+      display: grid;
+      grid-template-columns: repeat(8, 1fr);
+      grid-template-rows: repeat(8, 1fr);
+      gap: 2px;
+      background-color: var(--board-border);
+      border: 6px solid var(--board-border);
+      border-radius: 8px;
+      width: 100%;
+      aspect-ratio: 1;
+      box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+    }
+
+    .cell {
+      background-color: var(--board-color);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      position: relative;
+      user-select: none;
+    }
+
+    .cell.valid-move::after {
+      content: '';
+      width: 25%;
+      height: 25%;
+      border-radius: 50%;
+      background-color: rgba(255, 215, 0, 0.6);
+      box-shadow: 0 0 6px rgba(255, 215, 0, 0.8);
+    }
+
+    .cell.valid-move:hover {
+      background-color: var(--cell-hover);
+    }
+
+    .disc {
+      width: 82%;
+      height: 82%;
+      border-radius: 50%;
+      transition: transform 0.4s ease-in-out;
+      box-shadow: 2px 2px 5px rgba(0,0,0,0.5);
+      position: absolute;
+    }
+
+    .disc.black {
+      background: radial-gradient(circle at 30% 30%, #555, #000);
+    }
+
+    .disc.white {
+      background: radial-gradient(circle at 30% 30%, #ffffff, #dcdcdc);
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🌀 逆オセロ (Vs CPU)</h1>
+  <div class="rule-desc">💥 ルール: 相手の石を挟むと、<b>自分の石（置いた石＋挟んだ石）が相手の色</b>に化けます！</div>
+
+  <div class="container">
+    <div class="controls">
+      <div>
+        <label for="playerColor">あなたの色:</label>
+        <select id="playerColor">
+          <option value="1">黒 (先手)</option>
+          <option value="2">白 (後手)</option>
+        </select>
+      </div>
+
+      <div>
+        <label for="difficulty">難易度:</label>
+        <select id="difficulty">
+          <option value="easy">初級</option>
+          <option value="normal" selected>中級</option>
+          <option value="hard">上級</option>
+        </select>
+      </div>
+
+      <button id="resetBtn" class="btn-primary">新規対局</button>
+    </div>
+
+    <div class="score-board">
+      <div id="blackScore" class="player-info">
+        <span class="disc-icon disc-black"></span>
+        <span>黒: <span id="blackCount">2</span></span>
+      </div>
+      <div id="whiteScore" class="player-info">
+        <span class="disc-icon disc-white"></span>
+        <span>白: <span id="whiteCount">2</span></span>
+      </div>
+    </div>
+
+    <div id="statusMsg" class="status-msg">あなたの番です</div>
+
+    <div id="board" class="board"></div>
+  </div>
+
+  <script>
+    const EMPTY = 0;
+    const BLACK = 1;
+    const WHITE = 2;
+
+    const DIRS = [
+      [-1, -1], [-1, 0], [-1, 1],
+      [ 0, -1],          [ 0, 1],
+      [ 1, -1], [ 1, 0], [ 1, 1]
+    ];
+
+    const WEIGHTS = [
+      [ 120, -20,  20,   5,   5,  20, -20, 120],
+      [-20,  -40,  -5,  -5,  -5,  -5, -40, -20],
+      [  20,  -5,  15,   3,   3,  15,  -5,  20],
+      [   5,  -5,   3,   3,   3,   3,  -5,   5],
+      [   5,  -5,   3,   3,   3,   3,  -5,   5],
+      [  20,  -5,  15,   3,   3,  15,  -5,  20],
+      [-20,  -40,  -5,  -5,  -5,  -5, -40, -20],
+      [ 120, -20,  20,   5,   5,  20, -20, 120]
+    ];
+
+    let board = Array(8).fill(null).map(() => Array(8).fill(EMPTY));
+    let turn = BLACK;
+    let userColor = BLACK;
+    let cpuColor = WHITE;
+    let difficulty = 'normal';
+    let isGameOver = false;
+    let isProcessing = false;
+
+    const boardEl = document.getElementById('board');
+    const blackCountEl = document.getElementById('blackCount');
+    const whiteCountEl = document.getElementById('whiteCount');
+    const blackScoreEl = document.getElementById('blackScore');
+    const whiteScoreEl = document.getElementById('whiteScore');
+    const statusMsgEl = document.getElementById('statusMsg');
+    const playerColorSelect = document.getElementById('playerColor');
+    const difficultySelect = document.getElementById('difficulty');
+    const resetBtn = document.getElementById('resetBtn');
+
+    function initGame() {
+      userColor = parseInt(playerColorSelect.value, 10);
+      cpuColor = userColor === BLACK ? WHITE : BLACK;
+      difficulty = difficultySelect.value;
+      turn = BLACK;
+      isGameOver = false;
+      isProcessing = false;
+
+      board = Array(8).fill(null).map(() => Array(8).fill(EMPTY));
+      board[3][3] = WHITE;
+      board[3][4] = BLACK;
+      board[4][3] = BLACK;
+      board[4][4] = WHITE;
+
+      renderBoard();
+      updateUI();
+
+      if (turn === cpuColor) {
+        setTimeout(makeCpuMove, 600);
+      }
+    }
+
+    function renderBoard() {
+      boardEl.innerHTML = '';
+      const validMoves = getValidMoves(board, turn);
+
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'cell';
+          cell.dataset.row = r;
+          cell.dataset.col = c;
+
+          const isMoveValid = !isGameOver && turn === userColor && !isProcessing &&
+            validMoves.some(m => m.r === r && m.c === c);
+
+          if (isMoveValid) {
+            cell.classList.add('valid-move');
+            cell.addEventListener('click', () => handleCellClick(r, c));
+          }
+
+          if (board[r][c] !== EMPTY) {
+            const disc = document.createElement('div');
+            disc.className = `disc ${board[r][c] === BLACK ? 'black' : 'white'}`;
+            cell.appendChild(disc);
+          }
+
+          boardEl.appendChild(cell);
+        }
+      }
+    }
+
+    function updateUI() {
+      let blackCount = 0;
+      let whiteCount = 0;
+
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          if (board[r][c] === BLACK) blackCount++;
+          if (board[r][c] === WHITE) whiteCount++;
+        }
+      }
+
+      blackCountEl.textContent = blackCount;
+      whiteCountEl.textContent = whiteCount;
+
+      blackScoreEl.classList.toggle('active', turn === BLACK && !isGameOver);
+      whiteScoreEl.classList.toggle('active', turn === WHITE && !isGameOver);
+
+      if (isGameOver) {
+        if (blackCount > whiteCount) {
+          statusMsgEl.textContent = userColor === BLACK ? '🎉 あなたの勝ちです！' : '🤖 CPUの勝ちです...';
+        } else if (whiteCount > blackCount) {
+          statusMsgEl.textContent = userColor === WHITE ? '🎉 あなたの勝ちです！' : '🤖 CPUの勝ちです...';
+        } else {
+          statusMsgEl.textContent = '🤝 引き分けです！';
+        }
+      } else {
+        if (turn === userColor) {
+          statusMsgEl.textContent = 'あなたの番です (挟むと相手の色になります！)';
+        } else {
+          statusMsgEl.textContent = '🤖 CPUが考えています...';
+        }
+      }
+    }
+
+    // 挟める場所を探す標準オセロの判定
+    function getFlippableDiscs(b, row, col, color) {
+      if (b[row][col] !== EMPTY) return [];
+      const opponent = color === BLACK ? WHITE : BLACK;
+      let allFlippable = [];
+
+      for (const [dr, dc] of DIRS) {
+        let r = row + dr;
+        let c = col + dc;
+        let line = [];
+
+        while (r >= 0 && r < 8 && c >= 0 && c < 8 && b[r][c] === opponent) {
+          line.push({ r, c });
+          r += dr;
+          c += dc;
+        }
+
+        if (r >= 0 && r < 8 && c >= 0 && c < 8 && b[r][c] === color && line.length > 0) {
+          allFlippable = allFlippable.concat(line);
+        }
+      }
+
+      return allFlippable;
+    }
+
+    function getValidMoves(b, color) {
+      const moves = [];
+      for (let r = 0; r < 8; r++) {
+        for (let c = 0; c < 8; c++) {
+          const flippable = getFlippableDiscs(b, r, c, color);
+          if (flippable.length > 0) {
+            moves.push({ r, c, flippable });
+          }
+        }
+      }
+      return moves;
+    }
+
+    async function placeDisc(r, c, color) {
+      isProcessing = true;
+      const flippable = getFlippableDiscs(board, r, c, color);
+      const opponent = color === BLACK ? WHITE : BLACK;
+
+      // 逆オセロルール: 挟んだ石も、置いた石も「相手の色」に変わる！
+      board[r][c] = opponent;
+
+      renderBoard();
+
+      for (const pos of flippable) {
+        board[pos.r][pos.c] = opponent;
+      }
+
+      await new Promise(res => setTimeout(res, 350));
+      renderBoard();
+
+      // ターン交代
+      if (getValidMoves(board, opponent).length > 0) {
+        turn = opponent;
+      } else if (getValidMoves(board, color).length > 0) {
+        statusMsgEl.textContent = opponent === userColor ? 'あなたがパスしました' : 'CPUがパスしました';
+        await new Promise(res => setTimeout(res, 1000));
+      } else {
+        isGameOver = true;
+      }
+
+      isProcessing = false;
+      updateUI();
+      renderBoard();
+
+      if (!isGameOver && turn === cpuColor) {
+        setTimeout(makeCpuMove, 600);
+      }
+    }
+
+    function handleCellClick(r, c) {
+      if (isProcessing || isGameOver || turn !== userColor) return;
+      placeDisc(r, c, userColor);
+    }
+
+    function makeCpuMove() {
+      if (isGameOver || turn !== cpuColor) return;
+
+      const validMoves = getValidMoves(board, cpuColor);
+      if (validMoves.length === 0) return;
+
+      let selectedMove;
+
+      if (difficulty === 'easy') {
+        selectedMove = validMoves[Math.floor(Math.random() * validMoves.length)];
+      } else if (difficulty === 'normal') {
+        // 逆オセロでは挟む枚数が少ない方が自分（相手の色を増やさない）に有利になることが多いが、
+        // 盤面位置評価との組み合わせ
+        validMoves.sort((a, b) => {
+          const scoreA = (10 - a.flippable.length) + (WEIGHTS[a.r][a.c] > 50 ? 50 : 0);
+          const scoreB = (10 - b.flippable.length) + (WEIGHTS[b.r][b.c] > 50 ? 50 : 0);
+          return scoreB - scoreA;
+        });
+        selectedMove = validMoves[0];
+      } else if (difficulty === 'hard') {
+        let bestScore = -Infinity;
+        for (const move of validMoves) {
+          const simulatedBoard = board.map(row => [...row]);
+          const opponent = cpuColor === BLACK ? WHITE : BLACK;
+
+          simulatedBoard[move.r][move.c] = opponent;
+          for (const pos of move.flippable) {
+            simulatedBoard[pos.r][pos.c] = opponent;
+          }
+
+          // 逆オセロ特有の評価値 calculation
+          let score = - (move.flippable.length * 5) + WEIGHTS[move.r][move.c];
+
+          const opponentMoves = getValidMoves(simulatedBoard, userColor);
+          if (opponentMoves.some(m => WEIGHTS[m.r][m.c] >= 100)) {
+            score -= 100;
+          }
+
+          if (score > bestScore) {
+            bestScore = score;
+            selectedMove = move;
+          }
+        }
+
+        if (!selectedMove) {
+          selectedMove = validMoves[0];
+        }
+      }
+
+      placeDisc(selectedMove.r, selectedMove.c, cpuColor);
+    }
+
+    resetBtn.addEventListener('click', initGame);
+    playerColorSelect.addEventListener('change', initGame);
+    difficultySelect.addEventListener('change', initGame);
+
+    initGame();
+  </script>
+</body>
+</html>
