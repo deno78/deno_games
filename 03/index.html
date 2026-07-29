@@ -2,8 +2,8 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>フトリス (FUTORIS)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>フトリス (FUTORIS) with Virtual Pad</title>
     <style>
         body {
             background-color: #121212;
@@ -12,124 +12,218 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            height: 100vh;
+            justify-content: flex-start;
+            min-height: 100vh;
             margin: 0;
-            overflow: hidden;
+            padding: 5px;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow-x: hidden;
         }
         h1 {
-            margin: 0 0 5px 0;
-            font-size: 24px;
+            margin: 5px 0 2px 0;
+            font-size: 20px;
             letter-spacing: 2px;
             color: #06d6a0;
         }
         .subtitle {
-            font-size: 12px;
+            font-size: 11px;
             color: #888;
-            margin-bottom: 15px;
+            margin-bottom: 8px;
         }
         .game-container {
             display: flex;
-            background: #1e1e1e;
-            padding: 20px;
-            border-radius: 10px;
-            box-shadow: 0 0 25px rgba(0,0,0,0.9);
-            border: 1px solid #333;
-        }
-        canvas {
-            border: 2px solid #444;
-            background-color: #000;
-        }
-        .side-panel {
-            margin-left: 20px;
-            display: flex;
             flex-direction: column;
+            align-items: center;
+            background: #1e1e1e;
+            padding: 10px;
+            border-radius: 10px;
+            box-shadow: 0 0 20px rgba(0,0,0,0.9);
+            border: 1px solid #333;
+            max-width: 480px;
+            width: 100%;
+        }
+        .header-info {
+            display: flex;
             justify-content: space-between;
-            width: 130px;
+            width: 100%;
+            margin-bottom: 8px;
         }
         .info-box {
             background: #2a2a2a;
-            padding: 10px;
+            padding: 4px 8px;
             border-radius: 5px;
             text-align: center;
-            margin-bottom: 12px;
             border: 1px solid #3a3a3a;
+            flex: 1;
+            margin: 0 3px;
         }
         .info-box h2 {
-            font-size: 11px;
-            margin: 0 0 5px 0;
+            font-size: 9px;
+            margin: 0 0 2px 0;
             color: #aaa;
-            letter-spacing: 1px;
         }
         .info-box p {
-            font-size: 16px;
+            font-size: 14px;
             margin: 0;
             font-weight: bold;
             color: #fff;
         }
-        .btn {
+        .main-area {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        canvas {
+            border: 2px solid #444;
+            background-color: #000;
+            display: block;
+        }
+        .btn-start {
             background-color: #06d6a0;
             color: #000;
             border: none;
-            padding: 10px;
-            font-size: 13px;
+            padding: 8px;
+            font-size: 12px;
             cursor: pointer;
             border-radius: 5px;
             font-weight: bold;
-            text-transform: uppercase;
             width: 100%;
-            transition: background 0.2s;
+            margin-top: 8px;
+            margin-bottom: 5px;
         }
-        .btn:hover {
+        .btn-start:hover {
             background-color: #1b9aaa;
             color: #fff;
         }
-        .controls-hint {
-            font-size: 10px;
-            color: #777;
-            line-height: 1.4;
-            margin-top: 10px;
+
+        /* 半透明バーチャルパッド関連 */
+        .controls-overlay {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            pointer-events: none; /* コンテナ自体はタッチ透過 */
+        }
+        .pointer-events-auto {
+            pointer-events: auto;
+        }
+
+        /* 左下：十字キー風レイアウト */
+        .d-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 45px);
+            grid-template-rows: repeat(3, 45px);
+            gap: 4px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 4px;
+            border-radius: 12px;
+            backdrop-filter: blur(2px);
+        }
+        .d-btn {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            touch-action: manipulation;
+            user-select: none;
+        }
+        .d-btn:active {
+            background-color: rgba(6, 214, 160, 0.6);
+            border-color: #06d6a0;
+        }
+        /* 十字キーの配置調整 */
+        .btn-up    { grid-column: 2; grid-row: 1; }
+        .btn-left  { grid-column: 1; grid-row: 2; }
+        .btn-right { grid-column: 3; grid-row: 2; }
+        .btn-down  { grid-column: 2; grid-row: 3; }
+
+        /* 右側：高速落下（ハードドロップ）ボタン */
+        .action-pad {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .action-btn {
+            background-color: rgba(255, 190, 11, 0.3);
+            color: #fff;
+            border: 1px solid rgba(255, 190, 11, 0.6);
+            border-radius: 12px;
+            padding: 12px 16px;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+            touch-action: manipulation;
+            backdrop-filter: blur(2px);
+            user-select: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .action-btn:active {
+            background-color: rgba(255, 190, 11, 0.7);
+            border-color: #ffbe0b;
         }
     </style>
 </head>
 <body>
 
     <h1>フトリス</h1>
-    <div class="subtitle">〜 幅30マスの超ワイドテトリス 〜</div>
+    <div class="subtitle">〜 幅30マス超ワイドテトリス（スマホ対応） 〜</div>
     <div class="game-container">
-        <!-- 幅30マスなので、ブロックサイズを少し小さめ(15px)にして画面に収めるため scale(15, 15) にする -->
-        <canvas id="tetris" width="450" height="600"></canvas>
-        <div class="side-panel">
-            <div>
-                <div class="info-box">
-                    <h2>SCORE</h2>
-                    <p id="score">0</p>
-                </div>
-                <div class="info-box">
-                    <h2>LINES</h2>
-                    <p id="lines">0</p>
-                </div>
-                <div class="info-box">
-                    <h2>LEVEL</h2>
-                    <p id="level">1</p>
-                </div>
+        <div class="header-info">
+            <div class="info-box">
+                <h2>SCORE</h2>
+                <p id="score">0</p>
             </div>
-            <div>
-                <button class="btn" id="start-btn">START</button>
-                <div class="controls-hint">
-                    ← → : 移動<br>
-                    ↑ : 回転<br>
-                    ↓ : ソフト落下<br>
-                    Space : ハード落下
+            <div class="info-box">
+                <h2>LINES</h2>
+                <p id="lines">0</p>
+            </div>
+            <div class="info-box">
+                <h2>LEVEL</h2>
+                <p id="level">1</p>
+            </div>
+        </div>
+
+        <!-- メインエリア（Canvas + 半透明バーチャルパッド重ね合わせ） -->
+        <div class="main-area">
+            <!-- 幅30マス・高さ40マス, ブロック15px => canvas width 450, height 600 -->
+            <canvas id="tetris" width="450" height="600"></canvas>
+
+            <!-- 半透明バーチャルパッド -->
+            <div class="controls-overlay">
+                <!-- 左下：上下左右キー -->
+                <div class="d-pad pointer-events-auto">
+                    <button class="d-btn btn-up" id="btn-up">▲</button>
+                    <button class="d-btn btn-left" id="btn-left">◀</button>
+                    <button class="d-btn btn-right" id="btn-right">▶</button>
+                    <button class="d-btn btn-down" id="btn-down">▼</button>
+                </div>
+
+                <!-- 右側：高速落下ボタン -->
+                <div class="action-pad pointer-events-auto">
+                    <button class="action-btn" id="btn-harddrop">⚡ 落下</button>
                 </div>
             </div>
         </div>
+
+        <button class="btn-start" id="start-btn">スタート / リセット</button>
     </div>
 
     <script>
         const canvas = document.getElementById('tetris');
         const context = canvas.getContext('2d');
-        // 幅30マス・高さ40マス（ワイド＆トール）にするため、ブロックを15px（scale 15）にする
         const BLOCK_SIZE = 15;
         context.scale(BLOCK_SIZE, BLOCK_SIZE);
 
@@ -385,6 +479,7 @@
             document.getElementById('level').innerText = player.level;
         }
 
+        // キーボード操作
         document.addEventListener('keydown', event => {
             if (!isRunning) return;
 
@@ -400,6 +495,13 @@
                 playerHardDrop();
             }
         });
+
+        // バーチャルパッド操作
+        document.getElementById('btn-left').addEventListener('click', () => { if(isRunning) playerMove(-1); });
+        document.getElementById('btn-right').addEventListener('click', () => { if(isRunning) playerMove(1); });
+        document.getElementById('btn-up').addEventListener('click', () => { if(isRunning) playerRotate(1); });
+        document.getElementById('btn-down').addEventListener('click', () => { if(isRunning) playerDrop(); });
+        document.getElementById('btn-harddrop').addEventListener('click', () => { if(isRunning) playerHardDrop(); });
 
         const startBtn = document.getElementById('start-btn');
         startBtn.addEventListener('click', () => {
