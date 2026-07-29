@@ -70,341 +70,276 @@ canvas{display:block;border:2px solid #3a3a5a;border-radius:4px;image-rendering:
   </div>
 </div>
 <script>
-const canvas = document.getElementById('c');
-const ctx = canvas.getContext('2d');
-const msgText = document.getElementById('msg-text');
-const floorLabel = document.getElementById('floor-indicator');
+const C=document.getElementById('c'),X=C.getContext('2d');
+const M=document.getElementById('msg-text'),F=document.getElementById('floor-indicator');
+const TILE=40,COLS=13,ROWS=9;
+C.width=COLS*TILE;C.height=ROWS*TILE;
+const T={WALL:0,FLOOR:1,RUG:2};
+const E={KING:'king',STAIRS:'stairs',DOOR:'exit',GUARD:'guard',LOCKED:'locked_door',CHEST:'chest'};
 
-const TILE = 40;
-const COLS = 13;
-const ROWS = 9;
-canvas.width = COLS * TILE;
-canvas.height = ROWS * TILE;
-
-const T = { WALL:0, FLOOR:1, RUG:2 };
-
-const floor0 = (()=>{
-  const m = [];
-  for(let r=0;r<ROWS;r++){
-    m[r]=[];
-    for(let c=0;c<COLS;c++) m[r][c]=r===0||r===ROWS-1||c===0||c===COLS-1?T.WALL:T.FLOOR;
-  }
+const floor0=(()=>{
+  const m=[];
+  for(let r=0;r<ROWS;r++){m[r]=[];for(let c=0;c<COLS;c++)m[r][c]=r===0||r===ROWS-1||c===0||c===COLS-1?T.WALL:T.FLOOR;}
   m[4][6]=T.RUG;
+  m[6][9]=T.WALL;
   return m;
 })();
-
-const floor1 = (()=>{
-  const m = [];
-  for(let r=0;r<ROWS;r++){
-    m[r]=[];
-    for(let c=0;c<COLS;c++) m[r][c]=r===0||r===ROWS-1||c===0||c===COLS-1?T.WALL:T.FLOOR;
-  }
+const floor1=(()=>{
+  const m=[];
+  for(let r=0;r<ROWS;r++){m[r]=[];for(let c=0;c<COLS;c++)m[r][c]=r===0||r===ROWS-1||c===0||c===COLS-1?T.WALL:T.FLOOR;}
   return m;
 })();
+const maps=[floor0,floor1];
 
-const maps = [floor0, floor1];
+const baseEntities=[
+  {type:E.KING,x:6,y:3,floor:0},
+  {type:E.STAIRS,x:9,y:7,floor:0},
+  {type:E.LOCKED,x:8,y:6,floor:0,unlocked:false},
+];
+let entities=[...baseEntities];
+let chests=[];
 
-const ENT = { KING:'king', STAIRS:'stairs', DOOR:'exit', GUARD:'guard' };
+const inv={chestKey:0,doorKey:0};
+const player={x:6,y:5,floor:0};
+let dir=0,moving=false,kingTalked=false,chestsSpawned=false;
+let ending=false,endPhase='',endScrollY=0,endStart=0;
 
-const entities = [
-  {type:ENT.KING, x:6, y:3, floor:0},
-  {type:ENT.STAIRS, x:9, y:7, floor:0},
-  {type:ENT.GUARD, x:6, y:3, floor:1},
-  {type:ENT.DOOR, x:9, y:7, floor:1},
+const endTxt=[
+  '第1章　完','',
+  '勇者は王様の指令を受け、','魔王討伐の旅に出るのであった。','',
+  'しかし、その道のりは遠く、','数々の試練が待ち受けている。','',
+  '勇者の冒険は、','まだ始まったばかりだ。','',
+  '──　To Be Continued　──',
 ];
 
-const player = { x:6, y:5, floor:0 };
-let direction = 0;
-let moving = false;
-let gameWon = false;
-let kingTalked = false;
-let guardTalked = false;
+function shf(a){for(let i=a.length-1;i>0;i--){const j=Math.random()*(i+1)|0;[a[i],a[j]]=[a[j],a[i]];}}
 
-function isWalkable(f, r, c){
-  if(r<0||r>=ROWS||c<0||c>=COLS) return false;
-  if(maps[f][r][c]===T.WALL) return false;
-  return !entities.some(e=>e.floor===f&&e.x===c&&e.y===r
-    && e.type!==ENT.STAIRS&&e.type!==ENT.DOOR);
+function spawnChests(){
+  const t=[1,1,2,3,4];shf(t);
+  const pos=[{x:3,y:2},{x:9,y:2},{x:3,y:6},{x:10,y:6},{x:7,y:4}];
+  chests=pos.map((p,i)=>({type:E.CHEST,ct:t[i],x:p.x,y:p.y,floor:0,opened:false}));
+  entities=[...baseEntities,...chests];
+  chestsSpawned=true;
 }
 
-function getEntityAt(f, x, y){
-  return entities.find(e=>e.floor===f&&e.x===x&&e.y===y);
+function walkable(f,r,c){
+  if(r<0||r>=ROWS||c<0||c>=COLS||maps[f][r][c]===T.WALL)return false;
+  const e=entities.find(e=>e.floor===f&&e.x===c&&e.y===r);
+  if(!e)return true;
+  if(e.type===E.STAIRS||e.type===E.DOOR)return true;
+  if(e.type===E.LOCKED&&e.unlocked)return true;
+  if(e.type===E.CHEST&&e.opened)return true;
+  return false;
 }
 
-function getEntityAdjacent(f, x, y){
-  return entities.find(e=>e.floor===f
-    && Math.abs(e.x-x)+Math.abs(e.y-y)===1
-    && (e.type===ENT.KING||e.type===ENT.GUARD));
+function entAt(f,x,y){return entities.find(e=>e.floor===f&&e.x===x&&e.y===y);}
+function adjI(f,x,y){
+  return entities.find(e=>e.floor===f&&Math.abs(e.x-x)+Math.abs(e.y-y)===1
+    && (e.type===E.KING||e.type===E.GUARD||e.type===E.CHEST||(e.type===E.LOCKED&&!e.unlocked)));
 }
 
-function setMessage(html, duration=0){
-  msgText.innerHTML = html;
-  if(duration>0) setTimeout(()=>{
-    if(msgText.innerHTML===html) msgText.innerHTML = '<span class="system">▼ タップ or 矢印キーで移動 / Zで決定</span>';
-  }, duration);
+function msg(html,dur=0){
+  M.innerHTML=html;
+  if(dur>0)setTimeout(()=>{if(M.innerHTML===html)M.innerHTML='<span class="system">▼ タップ or 矢印キーで移動 / Zで決定</span>';},dur);
 }
 
-function showKingTalk(){
-  setMessage('<span class="name">👑 王様</span>「<span class="highlight">よく来たな、勇者よ。</span> わしはこの国を治める王である。魔王を倒すため、<span class="highlight">まずは城の外へ出る</span>がよい。階段を下りて門から出よ！」', 8000);
+function talkKing(){
+  if(!chestsSpawned){
+    spawnChests();
+    msg('<span class="name">👑 王様</span>「<span class="highlight">よく来たな、勇者よ！</span> 宝箱を開けて鍵を集め、<span class="highlight">先に進む</span>がよい！」<br><span class="system">▼ 宝箱が5つ現れた！</span>',7000);
+  }else{msg('<span class="name">👑 王様</span>「宝箱を開けて<span class="highlight">扉を開ける</span>のだ！」',3000);}
 }
 
-function showGuardTalk(){
-  setMessage('<span class="name">🛡 衛兵</span>「<span class="highlight">勇者様</span>、お気をつけて！城外には魔物が溢れております。」', 5000);
-}
-
-function showStairsMsg(){
-  setMessage('<span class="system">▼ 階段を下りた… 城内1階に着いた。</span>', 3000);
-}
-
-function showWin(){
-  gameWon = true;
-  padStop();
-  setMessage('<span class="highlight">★ 城の門をくぐった！ あなたは無事に城からの脱出に成功した！ ★</span><br><span class="system">✨ おめでとうございます！ ✨</span>');
-}
-
-function movePlayer(dx, dy){
-  if(moving||gameWon) return;
-  const nx = player.x + dx;
-  const ny = player.y + dy;
-  if(dx===0&&dy===1) direction=0;
-  else if(dx===-1&&dy===0) direction=1;
-  else if(dx===1&&dy===0) direction=2;
-  else if(dx===0&&dy===-1) direction=3;
-
-  if(!isWalkable(player.floor, ny, nx)){
-    setMessage('<span class="system">その方向へは進めない</span>', 1000);
-    draw();
-    return;
+function openChest(ch){
+  if(ch.opened)return '<span class="system">この宝箱はもう開いている。</span>';
+  if(ch.ct===1){ch.opened=true;inv.chestKey++;return '宝箱を開けた！<span class="highlight">宝箱の鍵</span>を手に入れた！';}
+  if(ch.ct===2){
+    if(inv.chestKey>0){inv.chestKey--;ch.opened=true;inv.doorKey++;return '宝箱の鍵で開けた！<span class="highlight">扉の鍵</span>を手に入れた！';}
+    return '鍵がかかっている。<span class="highlight">宝箱の鍵</span>が必要だ。';
   }
-
-  const ent = getEntityAt(player.floor, nx, ny);
-  if(ent&&ent.type===ENT.STAIRS){
-    moving = true;
-    player.x = nx; player.y = ny;
-    draw();
-    setTimeout(()=>{
-      player.floor = 1;
-      player.x = 6;
-      player.y = 5;
-      moving = false;
-      showStairsMsg();
-      updateFloorLabel();
-      draw();
-    }, 500);
-    return;
+  if(ch.ct===3){ch.opened=true;return '宝箱を開けた！<span class="highlight">こん棒</span>を手に入れた！';}
+  if(ch.ct===4){
+    if(inv.chestKey>0){inv.chestKey--;ch.opened=true;return '宝箱の鍵で開けた！<span class="highlight">勇者の盾</span>を手に入れた！';}
+    return '鍵がかかっている。<span class="highlight">宝箱の鍵</span>が必要だ。';
   }
-  if(ent&&ent.type===ENT.DOOR){
-    moving = true;
-    player.x = nx; player.y = ny;
-    draw();
-    setTimeout(showWin, 300);
-    return;
-  }
-
-  player.x = nx;
-  player.y = ny;
-  draw();
 }
 
-function updateFloorLabel(){
-  floorLabel.textContent = player.floor===0 ? '🏛 王の間' : '🏰 城内1階';
+function unlockDoor(){
+  const d=entities.find(e=>e.type===E.LOCKED&&!e.unlocked);
+  if(!d||d.unlocked)return null;
+  if(inv.doorKey>0){inv.doorKey--;d.unlocked=true;return '扉の鍵で<span class="highlight">扉を開けた！</span>先へ進める！';}
+  return '<span class="highlight">扉の鍵</span>が必要だ。';
 }
+
+function action(){
+  if(ending)return;
+  const t=adjI(player.floor,player.x,player.y);
+  if(!t){msg('<span class="system">話しかける相手がいない</span>',1200);return;}
+  if(t.type===E.KING){talkKing();draw();}
+  else if(t.type===E.CHEST){const m=openChest(t);msg(m,m.length>50?5000:3500);draw();}
+  else if(t.type===E.LOCKED){const m=unlockDoor();if(m)msg(m,4000);else msg('鍵はもう開いている。',2000);draw();}
+}
+
+function move(ox,oy){
+  if(moving||ending)return;
+  const nx=player.x+ox,ny=player.y+oy;
+  if(ox===0&&oy===1)dir=0;else if(ox===-1&&oy===0)dir=1;else if(ox===1&&oy===0)dir=2;else if(ox===0&&oy===-1)dir=3;
+  if(!walkable(player.floor,ny,nx)){
+    const e=entAt(player.floor,nx,ny);
+    if(e&&e.type===E.LOCKED&&!e.unlocked)msg('<span class="highlight">扉には鍵がかかっている</span>',2000);
+    else msg('<span class="system">その方向へは進めない</span>',1000);
+    draw();return;
+  }
+  const e=entAt(player.floor,nx,ny);
+  if(e&&e.type===E.STAIRS){moving=true;player.x=nx;player.y=ny;draw();setTimeout(endRoll,600);return;}
+  player.x=nx;player.y=ny;draw();
+}
+
+F.textContent='🏛 王の間';
+
+function endRoll(){
+  ending=true;endPhase='scroll';endScrollY=C.height+40;endStart=performance.now();
+  document.getElementById('vpad').style.display='none';
+  document.getElementById('controls').style.display='none';
+  M.innerHTML='';
+  requestAnimationFrame(drawEnd);
+}
+
+function drawEnd(ts){
+  X.fillStyle='#0a0a12';X.fillRect(0,0,C.width,C.height);
+  const s=(ts-endStart)/1000;endScrollY=C.height+40-s*36;
+  X.textAlign='center';let y=endScrollY;
+  for(const l of endTxt){
+    if(!l){y+=24;continue;}
+    if(l==='第1章　完'){X.font='bold 20px monospace';X.fillStyle='#f0d060';}
+    else if(l==='──　To Be Continued　──'){X.font='15px monospace';X.fillStyle='#c0a070';}
+    else{X.font='15px monospace';X.fillStyle='#d0c0a0';}
+    X.fillText(l,C.width/2,y);y+=32;
+  }
+  if(y>0){requestAnimationFrame(drawEnd);}
+  else{endPhase='wait';endWait();}
+}
+
+function endWait(){
+  X.fillStyle='#0a0a12';X.fillRect(0,0,C.width,C.height);
+  X.textAlign='center';
+  X.font='bold 20px monospace';X.fillStyle='#f0d060';
+  X.fillText('第1章　完',C.width/2,C.height/2-30);
+  X.font='15px monospace';X.fillStyle='#d0c0a0';
+  X.fillText('勇者は王様の命を受け、魔王討伐の旅に出た。',C.width/2,C.height/2+20);
+  X.fillText('──　To Be Continued　──',C.width/2,C.height/2+60);
+  X.font='13px monospace';X.fillStyle='#606070';
+  X.fillText('何かキーを押すと最初に戻ります',C.width/2,C.height-30);
+}
+
+function rst(){location.reload();}
 
 function draw(){
-  ctx.clearRect(0,0,canvas.width,canvas.height);
-  const f = player.floor;
-  const map = maps[f];
-
-  // tiles
-  for(let r=0;r<ROWS;r++){
-    for(let c=0;c<COLS;c++){
-      const x=c*TILE, y=r*TILE;
-      switch(map[r][c]){
-        case T.WALL:
-          ctx.fillStyle='#3a3a5a';
-          ctx.fillRect(x,y,TILE,TILE);
-          ctx.fillStyle='#2a2a48';
-          ctx.fillRect(x+2,y+2,TILE-4,TILE-4);
-          ctx.fillStyle='#48486a';
-          ctx.fillRect(x+4,y+4,3,3);
-          ctx.fillRect(x+TILE-8,y+4,3,3);
-          ctx.fillRect(x+4,y+TILE-8,3,3);
-          ctx.fillRect(x+TILE-8,y+TILE-8,3,3);
-          break;
-        case T.FLOOR:
-          ctx.fillStyle=(r+c)%2===0?'#3a3a2a':'#444430';
-          ctx.fillRect(x,y,TILE,TILE);
-          break;
-        case T.RUG:
-          ctx.fillStyle='#4a3a2a';
-          ctx.fillRect(x,y,TILE,TILE);
-          ctx.fillStyle='#5a4a3a';
-          ctx.fillRect(x+4,y+4,TILE-8,2);
-          ctx.fillRect(x+4,y+TILE-6,TILE-8,2);
-          ctx.fillStyle='#6a5a4a';
-          ctx.fillRect(x+6,y+6,4,TILE-12);
-          ctx.fillRect(x+TILE-10,y+6,4,TILE-12);
-          break;
-      }
+  X.clearRect(0,0,C.width,C.height);
+  const f=player.floor,map=maps[f];
+  for(let r=0;r<ROWS;r++)for(let c=0;c<COLS;c++){
+    const x=c*TILE,y=r*TILE;
+    switch(map[r][c]){
+      case T.WALL:
+        X.fillStyle='#3a3a5a';X.fillRect(x,y,TILE,TILE);
+        X.fillStyle='#2a2a48';X.fillRect(x+2,y+2,TILE-4,TILE-4);
+        X.fillStyle='#48486a';
+        X.fillRect(x+4,y+4,3,3);X.fillRect(x+TILE-8,y+4,3,3);
+        X.fillRect(x+4,y+TILE-8,3,3);X.fillRect(x+TILE-8,y+TILE-8,3,3);
+        break;
+      case T.FLOOR:
+        X.fillStyle=(r+c)%2===0?'#3a3a2a':'#444430';X.fillRect(x,y,TILE,TILE);break;
+      case T.RUG:
+        X.fillStyle='#4a3a2a';X.fillRect(x,y,TILE,TILE);
+        X.fillStyle='#5a4a3a';X.fillRect(x+4,y+4,TILE-8,2);X.fillRect(x+4,y+TILE-6,TILE-8,2);
+        X.fillStyle='#6a5a4a';X.fillRect(x+6,y+6,4,TILE-12);X.fillRect(x+TILE-10,y+6,4,TILE-12);break;
     }
   }
-
-  // entities
   for(const e of entities){
-    if(e.floor!==f) continue;
-    const ex=e.x*TILE, ey=e.y*TILE;
+    if(e.floor!==f)continue;
+    const ex=e.x*TILE,ey=e.y*TILE;
     switch(e.type){
-      case ENT.KING:
-        ctx.fillStyle='#e8c840';
-        ctx.beginPath();
-        ctx.arc(ex+TILE/2, ey+TILE/2-4, 10, 0, Math.PI*2);
-        ctx.fill();
-        ctx.fillStyle='#c8a020';
-        ctx.fillRect(ex+8, ey+TILE/2+4, 24, 18);
-        ctx.fillStyle='#f0e0a0';
-        ctx.fillRect(ex+12, ey+TILE/2+6, 16, 6);
-        ctx.fillStyle='#d0a030';
-        for(let i=0;i<3;i++){
-          ctx.fillRect(ex+10+i*8, ey+TILE/2-2, 4, 4);
-        }
-        ctx.fillStyle='#e8d8a0';
-        ctx.font='11px monospace';
-        ctx.textAlign='center';
-        ctx.fillText('王', ex+TILE/2, ey+TILE-6);
-        break;
-      case ENT.STAIRS:
-        ctx.fillStyle='#6a5a4a';
-        for(let i=0;i<4;i++){
-          ctx.fillRect(ex+8+i*3, ey+TILE-10-i*8, TILE-16-i*6, 6);
-        }
-        ctx.fillStyle='#8a7a5a';
-        ctx.fillRect(ex+TILE/2-1, ey+8, 2, TILE-16);
-        break;
-      case ENT.GUARD:
-        ctx.fillStyle='#6080a0';
-        ctx.fillRect(ex+8, ey+8, 24, 28);
-        ctx.fillStyle='#80a0c0';
-        ctx.fillRect(ex+10, ey+10, 8, 8);
-        ctx.fillRect(ex+22, ey+10, 8, 8);
-        ctx.fillStyle='#406080';
-        ctx.fillRect(ex+6, ey+28, 28, 4);
-        ctx.fillStyle='#c0c0c0';
-        ctx.font='11px monospace';
-        ctx.textAlign='center';
-        ctx.fillText('兵', ex+TILE/2, ey+TILE-6);
-        break;
-      case ENT.DOOR:
-        ctx.fillStyle='#6a4a2a';
-        ctx.fillRect(ex+2, ey+2, TILE-4, TILE-4);
-        ctx.fillStyle='#8a6a3a';
-        ctx.fillRect(ex+6, ey+6, TILE-12, TILE-12);
-        ctx.fillStyle='#5a3a1a';
-        ctx.fillRect(ex+TILE/2-2, ey+4, 4, TILE-8);
-        ctx.fillStyle='#c8a040';
-        ctx.fillRect(ex+TILE/2-4, ey+TILE/2-4, 8, 8);
-        ctx.fillStyle='#f0e0a0';
-        ctx.font='10px monospace';
-        ctx.textAlign='center';
-        ctx.fillText('門', ex+TILE/2, ey+TILE-6);
-        break;
+      case E.KING:
+        X.fillStyle='#e8c840';X.beginPath();X.arc(ex+TILE/2,ey+TILE/2-4,10,0,Math.PI*2);X.fill();
+        X.fillStyle='#c8a020';X.fillRect(ex+8,ey+TILE/2+4,24,18);
+        X.fillStyle='#f0e0a0';X.fillRect(ex+12,ey+TILE/2+6,16,6);
+        X.fillStyle='#d0a030';for(let i=0;i<3;i++)X.fillRect(ex+10+i*8,ey+TILE/2-2,4,4);
+        X.fillStyle='#e8d8a0';X.font='11px monospace';X.textAlign='center';X.fillText('王',ex+TILE/2,ey+TILE-6);break;
+      case E.STAIRS:
+        X.fillStyle='#6a5a4a';for(let i=0;i<4;i++)X.fillRect(ex+8+i*3,ey+TILE-10-i*8,TILE-16-i*6,6);
+        X.fillStyle='#8a7a5a';X.fillRect(ex+TILE/2-1,ey+8,2,TILE-16);break;
+      case E.LOCKED:
+        if(!e.unlocked){
+          X.fillStyle='#6a4a2a';X.fillRect(ex+2,ey+2,TILE-4,TILE-4);
+          X.fillStyle='#8a6a3a';X.fillRect(ex+6,ey+6,TILE-12,TILE-12);
+          X.fillStyle='#c8a040';X.fillRect(ex+TILE/2-4,ey+TILE/2-4,8,8);
+          X.fillStyle='#3a2a1a';X.fillRect(ex+TILE/2-2,ey+TILE/2-2,4,4);
+          X.fillStyle='#c0a060';X.font='9px monospace';X.textAlign='center';X.fillText('鍵',ex+TILE/2,ey+TILE-6);
+        }else{
+          X.fillStyle='#5a5a3a';X.fillRect(ex+2,ey+2,TILE-4,TILE-4);
+          X.fillStyle='#4a4a2a';X.fillRect(ex+6,ey+6,TILE-12,TILE-12);
+          X.fillStyle='#609040';X.font='9px monospace';X.textAlign='center';X.fillText('開',ex+TILE/2,ey+TILE-6);
+        }break;
+      case E.CHEST:
+        if(!e.opened){
+          X.fillStyle='#6a4a2a';X.fillRect(ex+4,ey+8,TILE-8,TILE-12);
+          X.fillStyle='#8a6a3a';X.fillRect(ex+6,ey+10,TILE-12,TILE-16);
+          X.fillStyle='#c8a040';X.fillRect(ex+8,ey+6,TILE-16,6);
+          X.fillStyle='#e8c840';X.fillRect(ex+TILE/2-6,ey+7,12,4);
+          X.fillStyle='#d0a030';X.font='9px monospace';X.textAlign='center';X.fillText('宝',ex+TILE/2,ey+TILE-6);
+        }else{
+          X.fillStyle='#3a2a1a';X.fillRect(ex+4,ey+10,TILE-8,TILE-10);
+          X.fillStyle='#5a3a1a';X.fillRect(ex+6,ey+12,TILE-12,TILE-14);
+          X.fillStyle='#2a1a0a';X.font='9px monospace';X.textAlign='center';X.fillText('空',ex+TILE/2,ey+TILE-6);
+        }break;
     }
   }
-
-  // player
-  const px=player.x*TILE, py=player.y*TILE;
-  ctx.fillStyle='#4888d0';
-  ctx.beginPath();
-  ctx.arc(px+TILE/2, py+TILE/2-6, 8, 0, Math.PI*2);
-  ctx.fill();
-  ctx.fillStyle='#3068b0';
-  ctx.fillRect(px+8, py+TILE/2+2, 24, 14);
-  ctx.fillStyle='#60a0e0';
-  ctx.fillRect(px+12, py+TILE/2+4, 6, 4);
-  ctx.fillRect(px+22, py+TILE/2+4, 6, 4);
-  ctx.fillStyle='#60a0e0';
-  ctx.fillRect(px+14, py+TILE/2+10, 12, 2);
-  ctx.fillStyle='#d0d0d0';
-  ctx.font='11px monospace';
-  ctx.textAlign='center';
-  ctx.fillText('ゆ', px+TILE/2, py+TILE-6);
+  const px=player.x*TILE,py=player.y*TILE;
+  X.fillStyle='#4888d0';X.beginPath();X.arc(px+TILE/2,py+TILE/2-6,8,0,Math.PI*2);X.fill();
+  X.fillStyle='#3068b0';X.fillRect(px+8,py+TILE/2+2,24,14);
+  X.fillStyle='#60a0e0';X.fillRect(px+12,py+TILE/2+4,6,4);X.fillRect(px+22,py+TILE/2+4,6,4);
+  X.fillStyle='#60a0e0';X.fillRect(px+14,py+TILE/2+10,12,2);
+  X.fillStyle='#d0d0d0';X.font='11px monospace';X.textAlign='center';X.fillText('ゆ',px+TILE/2,py+TILE-6);
+  // inventory
+  const ii=[];
+  if(inv.chestKey>0)ii.push(`🔑x${inv.chestKey}`);
+  if(inv.doorKey>0)ii.push(`🚪x${inv.doorKey}`);
+  if(ii.length){X.fillStyle='rgba(0,0,0,.5)';X.fillRect(2,2,ii.join(' ').length*10+14,20);X.fillStyle='#d0c090';X.font='11px monospace';X.textAlign='left';X.fillText(ii.join('  '),10,16);}
+  X.textAlign='start';
 }
 
-// input
-document.addEventListener('keydown', e=>{
-  const key = e.key;
-  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','z','Z'].includes(key)){
-    e.preventDefault();
-  }
-  switch(key){
-    case 'ArrowUp': movePlayer(0,-1); break;
-    case 'ArrowDown': movePlayer(0,1); break;
-    case 'ArrowLeft': movePlayer(-1,0); break;
-    case 'ArrowRight': movePlayer(1,0); break;
-    case 'z': case 'Z':
-      const adj = getEntityAdjacent(player.floor, player.x, player.y);
-      if(adj&&adj.type===ENT.KING){
-        if(!kingTalked){ kingTalked=true; showKingTalk(); }
-        else setMessage('<span class="name">👑 王様</span>「<span class="highlight">階段を下りて門から出るのだ！</span>」', 3000);
-      } else if(adj&&adj.type===ENT.GUARD){
-        if(!guardTalked){ guardTalked=true; showGuardTalk(); }
-        else setMessage('<span class="name">🛡 衛兵</span>「どうか無事で…」', 2500);
-      } else {
-        setMessage('<span class="system">話しかける相手がいない</span>', 1200);
-      }
-      break;
+document.addEventListener('keydown',e=>{
+  if(ending&&endPhase==='wait'){rst();return;}
+  if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','z','Z'].includes(e.key))e.preventDefault();
+  switch(e.key){
+    case 'ArrowUp':move(0,-1);break;case 'ArrowDown':move(0,1);break;
+    case 'ArrowLeft':move(-1,0);break;case 'ArrowRight':move(1,0);break;
+    case 'z':case 'Z':action();break;
   }
 });
 
-// virtual pad
-const dirMap = { up:[0,-1], down:[0,1], left:[-1,0], right:[1,0] };
-let repeatTimer = null;
-
-function padStart(dir){
-  movePlayer(dir[0], dir[1]);
-  if(repeatTimer) clearInterval(repeatTimer);
-  repeatTimer = setInterval(()=>movePlayer(dir[0], dir[1]), 180);
+const dM={up:[0,-1],down:[0,1],left:[-1,0],right:[1,0]};
+let rt=null;
+function ps(d){
+  if(ending&&endPhase==='wait'){rst();return;}
+  move(d[0],d[1]);
+  if(rt)clearInterval(rt);rt=setInterval(()=>move(d[0],d[1]),180);
 }
-
-function padStop(){
-  if(repeatTimer){ clearInterval(repeatTimer); repeatTimer = null; }
-}
-
-document.querySelectorAll('.dpad-btn').forEach(btn=>{
-  const dir = dirMap[btn.dataset.dir];
-  if(!dir) return;
-  btn.addEventListener('mousedown', e=>{ e.preventDefault(); padStart(dir); });
-  btn.addEventListener('touchstart', e=>{ e.preventDefault(); padStart(dir); }, {passive:false});
-  btn.addEventListener('mouseup', padStop);
-  btn.addEventListener('mouseleave', padStop);
-  btn.addEventListener('touchend', padStop);
-  btn.addEventListener('touchcancel', padStop);
+function pd(){if(rt){clearInterval(rt);rt=null;}}
+document.querySelectorAll('.dpad-btn').forEach(b=>{
+  const d=dM[b.dataset.dir];if(!d)return;
+  b.addEventListener('mousedown',e=>{e.preventDefault();ps(d);});
+  b.addEventListener('touchstart',e=>{e.preventDefault();ps(d);},{passive:false});
+  b.addEventListener('mouseup',pd);b.addEventListener('mouseleave',pd);
+  b.addEventListener('touchend',pd);b.addEventListener('touchcancel',pd);
 });
+const bA=document.getElementById('btn-a');
+bA.addEventListener('mousedown',e=>{e.preventDefault();if(ending&&endPhase==='wait')rst();else action();});
+bA.addEventListener('touchstart',e=>{e.preventDefault();if(ending&&endPhase==='wait')rst();else action();},{passive:false});
+document.addEventListener('mouseup',pd);document.addEventListener('touchend',pd);
 
-const btnA = document.getElementById('btn-a');
-function doAction(){
-  const adj = getEntityAdjacent(player.floor, player.x, player.y);
-  if(adj&&adj.type===ENT.KING){
-    if(!kingTalked){ kingTalked=true; showKingTalk(); }
-    else setMessage('<span class="name">👑 王様</span>「<span class="highlight">階段を下りて門から出るのだ！</span>」', 3000);
-  } else if(adj&&adj.type===ENT.GUARD){
-    if(!guardTalked){ guardTalked=true; showGuardTalk(); }
-    else setMessage('<span class="name">🛡 衛兵</span>「どうか無事で…」', 2500);
-  } else {
-    setMessage('<span class="system">話しかける相手がいない</span>', 1200);
-  }
-}
-btnA.addEventListener('mousedown', e=>{ e.preventDefault(); doAction(); });
-btnA.addEventListener('touchstart', e=>{ e.preventDefault(); doAction(); }, {passive:false});
-
-document.addEventListener('mouseup', padStop);
-document.addEventListener('touchend', padStop);
-
-// start
-updateFloorLabel();
 draw();
-setTimeout(()=>{
-  setMessage('<span class="name">👑 王様</span>「<span class="highlight">おお、目覚めたか勇者よ！</span> よくぞ参った。わしはこの国の王である。話しかけるがよい。<span class="system">（近づいてZキー）</span>」', 6000);
-}, 500);
+setTimeout(()=>msg('<span class="name">👑 王様</span>「<span class="highlight">おお、目覚めたか勇者よ！</span> 近づいて<span class="highlight">話しかける</span>がよい。<span class="system">（Zキー）</span>」',6000),500);
 </script>
 </body>
 </html>
