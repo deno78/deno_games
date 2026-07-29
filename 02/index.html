@@ -2,8 +2,8 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ホソリス (HOSORIS)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ホソリス (HOSORIS) with Virtual Pad</title>
     <style>
         body {
             background-color: #121212;
@@ -12,118 +12,201 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
-            height: 100vh;
+            justify-content: flex-start;
+            min-height: 100vh;
             margin: 0;
-            overflow: hidden;
+            padding: 5px;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            overflow-x: hidden;
         }
         h1 {
-            margin: 0 0 5px 0;
-            font-size: 24px;
+            margin: 5px 0 2px 0;
+            font-size: 20px;
             letter-spacing: 2px;
             color: #ffb703;
         }
         .subtitle {
-            font-size: 12px;
+            font-size: 11px;
             color: #888;
-            margin-bottom: 15px;
+            margin-bottom: 8px;
         }
         .game-container {
             display: flex;
+            flex-direction: column;
+            align-items: center;
             background: #1e1e1e;
-            padding: 20px;
+            padding: 10px;
             border-radius: 10px;
-            box-shadow: 0 0 25px rgba(0,0,0,0.9);
+            box-shadow: 0 0 20px rgba(0,0,0,0.9);
             border: 1px solid #333;
+            max-width: 300px;
+            width: 100%;
+        }
+        .header-info {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 8px;
+        }
+        .info-box {
+            background: #2a2a2a;
+            padding: 4px 8px;
+            border-radius: 5px;
+            text-align: center;
+            border: 1px solid #3a3a3a;
+            flex: 1;
+            margin: 0 3px;
+        }
+        .info-box h2 {
+            font-size: 9px;
+            margin: 0 0 2px 0;
+            color: #aaa;
+        }
+        .info-box p {
+            font-size: 14px;
+            margin: 0;
+            font-weight: bold;
+            color: #fff;
+        }
+        .main-area {
+            position: relative;
+            display: flex;
+            justify-content: center;
+            align-items: center;
         }
         canvas {
             border: 2px solid #444;
             background-color: #000;
-        }
-        .side-panel {
-            margin-left: 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            width: 130px;
-        }
-        .info-box {
-            background: #2a2a2a;
-            padding: 10px;
-            border-radius: 5px;
-            text-align: center;
-            margin-bottom: 12px;
-            border: 1px solid #3a3a3a;
-        }
-        .info-box h2 {
-            font-size: 11px;
-            margin: 0 0 5px 0;
-            color: #aaa;
-            letter-spacing: 1px;
-        }
-        .info-box p {
-            font-size: 16px;
-            margin: 0;
-            font-weight: bold;
-            color: #fff;
+            display: block;
         }
         .btn {
             background-color: #fb8500;
             color: white;
             border: none;
-            padding: 10px;
-            font-size: 13px;
+            padding: 8px;
+            font-size: 12px;
             cursor: pointer;
             border-radius: 5px;
             font-weight: bold;
-            text-transform: uppercase;
             width: 100%;
-            transition: background 0.2s;
+            margin-top: 8px;
+            text-transform: uppercase;
         }
         .btn:hover {
             background-color: #ffb703;
             color: #000;
         }
-        .controls-hint {
-            font-size: 10px;
-            color: #777;
-            line-height: 1.4;
-            margin-top: 10px;
+
+        /* 半透明バーチャルパッド */
+        .controls-overlay {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            right: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            pointer-events: none;
+        }
+        .pointer-events-auto {
+            pointer-events: auto;
+        }
+        .d-pad {
+            display: grid;
+            grid-template-columns: repeat(3, 40px);
+            grid-template-rows: repeat(3, 40px);
+            gap: 4px;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 4px;
+            border-radius: 12px;
+            backdrop-filter: blur(2px);
+        }
+        .d-btn {
+            background-color: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: bold;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            touch-action: manipulation;
+        }
+        .d-btn:active {
+            background-color: rgba(251, 133, 0, 0.6);
+            border-color: #fb8500;
+        }
+        .btn-up    { grid-column: 2; grid-row: 1; }
+        .btn-left  { grid-column: 1; grid-row: 2; }
+        .btn-right { grid-column: 3; grid-row: 2; }
+        .btn-down  { grid-column: 2; grid-row: 3; }
+
+        .action-pad {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+        .action-btn {
+            background-color: rgba(255, 183, 3, 0.3);
+            color: #fff;
+            border: 1px solid rgba(255, 183, 3, 0.6);
+            border-radius: 10px;
+            padding: 10px 12px;
+            font-size: 11px;
+            font-weight: bold;
+            text-align: center;
+            cursor: pointer;
+            touch-action: manipulation;
+            backdrop-filter: blur(2px);
+        }
+        .action-btn:active {
+            background-color: rgba(255, 183, 3, 0.7);
+            border-color: #ffb703;
         }
     </style>
 </head>
 <body>
 
     <h1>ホソリス</h1>
-    <div class="subtitle">〜 幅6マスの極細テトリス 〜</div>
+    <div class="subtitle">〜 幅6マス極細テトリス（スマホ対応） 〜</div>
     <div class="game-container">
-        <!-- 幅6マスなのでcanvas幅は 6 * 20 = 120px -->
-        <canvas id="tetris" width="120" height="400"></canvas>
-        <div class="side-panel">
-            <div>
-                <div class="info-box">
-                    <h2>SCORE</h2>
-                    <p id="score">0</p>
-                </div>
-                <div class="info-box">
-                    <h2>LINES</h2>
-                    <p id="lines">0</p>
-                </div>
-                <div class="info-box">
-                    <h2>LEVEL</h2>
-                    <p id="level">1</p>
-                </div>
+        <div class="header-info">
+            <div class="info-box">
+                <h2>SCORE</h2>
+                <p id="score">0</p>
             </div>
-            <div>
-                <button class="btn" id="start-btn">START</button>
-                <div class="controls-hint">
-                    ← → : 移動<br>
-                    ↑ : 回転<br>
-                    ↓ : ソフト落下<br>
-                    Space : ハード落下
+            <div class="info-box">
+                <h2>LINES</h2>
+                <p id="lines">0</p>
+            </div>
+            <div class="info-box">
+                <h2>LEVEL</h2>
+                <p id="level">1</p>
+            </div>
+        </div>
+
+        <div class="main-area">
+            <!-- 幅6マスなので 6 * 20 = 120px -->
+            <canvas id="tetris" width="120" height="400"></canvas>
+            
+            <div class="controls-overlay">
+                <div class="d-pad pointer-events-auto">
+                    <button class="d-btn btn-up" id="btn-up">▲</button>
+                    <button class="d-btn btn-left" id="btn-left">◀</button>
+                    <button class="d-btn btn-right" id="btn-right">▶</button>
+                    <button class="d-btn btn-down" id="btn-down">▼</button>
+                </div>
+                <div class="action-pad pointer-events-auto">
+                    <button class="action-btn" id="btn-harddrop">⚡ 落下</button>
                 </div>
             </div>
         </div>
+
+        <button class="btn" id="start-btn">START</button>
     </div>
 
     <script>
@@ -131,7 +214,6 @@
         const context = canvas.getContext('2d');
         context.scale(20, 20);
 
-        // 幅6マス、高さ20マスに変更
         const arena = createMatrix(6, 20);
 
         const player = {
@@ -399,6 +481,12 @@
                 playerHardDrop();
             }
         });
+
+        document.getElementById('btn-left').addEventListener('click', () => { if(isRunning) playerMove(-1); });
+        document.getElementById('btn-right').addEventListener('click', () => { if(isRunning) playerMove(1); });
+        document.getElementById('btn-up').addEventListener('click', () => { if(isRunning) playerRotate(1); });
+        document.getElementById('btn-down').addEventListener('click', () => { if(isRunning) playerDrop(); });
+        document.getElementById('btn-harddrop').addEventListener('click', () => { if(isRunning) playerHardDrop(); });
 
         const startBtn = document.getElementById('start-btn');
         startBtn.addEventListener('click', () => {
