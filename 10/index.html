@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ポケットモンスター はじまりの3匹 10連戦</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
+
+        body {
+            background-color: #2b2b2b;
+            color: #306230;
+            font-family: 'DotGothic16', monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        /* ゲームボーイ風コンソール */
+        .gb-console {
+            background-color: #c4cfae;
+            border: 12px solid #8b9575;
+            border-radius: 10px 10px 40px 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+            width: 420px;
+            max-width: 95vw;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .gb-screen-lens {
+            background-color: #8b9575;
+            padding: 15px;
+            border-radius: 6px;
+            width: 100%;
+            box-sizing: border-box;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.3);
+        }
+
+        .gb-screen {
+            background-color: #9bbc0f;
+            color: #0f380f;
+            border: 4px solid #306230;
+            height: 320px;
+            padding: 12px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            overflow: hidden;
+            image-rendering: pixelated;
+        }
+
+        h1 {
+            font-size: 18px;
+            margin: 0 0 10px 0;
+            text-align: center;
+            border-bottom: 2px solid #306230;
+            padding-bottom: 4px;
+        }
+
+        .screen-content {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            font-size: 14px;
+            line-height: 1.5;
+        }
+
+        .pokemon-grid {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+        }
+
+        .pokemon-card {
+            background-color: #8bac0f;
+            border: 2px solid #0f380f;
+            padding: 8px;
+            cursor: pointer;
+            width: 100px;
+            text-align: center;
+            transition: transform 0.1s;
+        }
+
+        .pokemon-card:hover {
+            background-color: #9bbc0f;
+            transform: scale(1.05);
+        }
+
+        .pokemon-card img, .pixel-art {
+            font-size: 32px;
+            margin-bottom: 4px;
+        }
+
+        .btn {
+            background-color: #306230;
+            color: #9bbc0f;
+            border: 2px solid #0f380f;
+            font-family: 'DotGothic16', monospace;
+            padding: 6px 12px;
+            font-size: 14px;
+            cursor: pointer;
+            margin-top: 10px;
+        }
+
+        .btn:hover {
+            background-color: #0f380f;
+            color: #8bac0f;
+        }
+
+        .log-box {
+            background-color: #8bac0f;
+            border: 2px solid #306230;
+            height: 230px;
+            overflow-y: auto;
+            text-align: left;
+            padding: 8px;
+            font-size: 12px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .log-line {
+            margin-bottom: 4px;
+            border-bottom: 1px dotted #306230;
+            padding-bottom: 2px;
+        }
+
+        .win { color: #0f380f; font-weight: bold; }
+        .lose { color: #552222; }
+
+        .gb-brand {
+            margin-top: 15px;
+            font-size: 12px;
+            color: #4a523b;
+            font-weight: bold;
+            letter-spacing: 2px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+<div class="gb-console">
+    <div class="gb-screen-lens">
+        <div class="gb-screen" id="app">
+            <!-- 動的コンテンツがここに描画されます -->
+        </div>
+    </div>
+    <div class="gb-brand">GAME BOY 🅡 - POCKET MONSTER QUICK BATTLE</div>
+</div>
+
+<script>
+    const starters = [
+        { id: 'lizard', name: 'トカゲ（ほのお）', type: 'fire', icon: '🔥', desc: 'しっぽのほのおが めじるし。こうげきが たかい！' },
+        { id: 'turtle', name: 'カメ（みず）', type: 'water', icon: '💧', desc: 'こうらに入ってぼうぎょ。タフなやつ！' },
+        { id: 'weed', name: '雑草型（くさ）', type: 'grass', icon: '🌱', desc: 'あたまの芽がとくちょう。バランスがよい！' }
+    ];
+
+    const enemies = [
+        { name: 'ポッポ', type: 'normal', icon: '🐦' },
+        { name: 'コラッタ', type: 'normal', icon: '🐀' },
+        { name: 'キャタピー', type: 'bug', icon: '🐛' },
+        { name: 'ビードル', type: 'bug', icon: '🐝' },
+        { name: 'アーボ', type: 'poison', icon: '🐍' },
+        { name: 'ピカチュウ', type: 'electric', icon: '⚡' },
+        { name: 'ニドラン', type: 'poison', icon: '🐹' },
+        { name: 'プリン', type: 'normal', icon: '🎤' },
+        { name: 'ズバット', type: 'poison', icon: '🦇' },
+        { name: 'イシツブテ', type: 'rock', icon: '🪨' }
+    ];
+
+    let gameState = 'TITLE'; // TITLE, MONOLOGUE, BATTLE, RESULT
+    let selectedPokemon = null;
+    let battleLogs = [];
+    let wins = 0;
+    let losses = 0;
+    let currentBattleIndex = 0;
+
+    function render() {
+        const app = document.getElementById('app');
+        app.innerHTML = '';
+
+        if (gameState === 'TITLE') {
+            app.innerHTML = `
+                <h1>ポケットモンスター</h1>
+                <div class="screen-content">
+                    <p style="margin: 0 0 5px 0;">はかせ「ほうもんしゃ！<br>さいしょの1匹を えらぶのじゃ！」</p>
+                    <div class="pokemon-grid">
+                        ${starters.map(p => `
+                            <div class="pokemon-card" onclick="selectStarter('${p.id}')">
+                                <div class="pixel-art">${p.icon}</div>
+                                <div style="font-weight:bold; font-size:12px;">${p.name.split('（')[0]}</div>
+                                <div style="font-size:10px; margin-top:2px;">${p.name.split('（')[1].replace('）','')}</div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                <div style="font-size:10px; text-align:center; color:#306230;">すきなポケモンをクリックしてね</div>
+            `;
+        } else if (gameState === 'MONOLOGUE') {
+            app.innerHTML = `
+                <h1>たびだちのとき</h1>
+                <div class="screen-content" style="justify-content: flex-start; text-align: left; padding-top: 10px;">
+                    <div style="font-size: 13px; line-height: 1.6;">
+                        <p>「おお！ <strong>${selectedPokemon.name}</strong> に<br>きめたのだな！」</p>
+                        <p>キミは ${selectedPokemon.name} とともに<br>いま、ひろい世界へと あしを踏み出した……。</p>
+                        <p style="text-align: center; margin-top: 15px; font-weight: bold; animation: blink 1s infinite;">
+                            草むらが こうはんすうに うごめく…！
+                        </p>
+                    </div>
+                </div>
+                <button class="btn" onclick="startBattles()">10連戦 スタート！</button>
+            `;
+        } else if (gameState === 'BATTLE') {
+            app.innerHTML = `
+                <h1>${selectedPokemon.name.split('（')[0]} の 10連戦</h1>
+                <div class="log-box" id="logBox">
+                    ${battleLogs.map(log => `<div class="log-line ${log.result}">${log.text}</div>`).join('')}
+                </div>
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 5px; font-size: 12px;">
+                    <span>しんこう: ${currentBattleIndex}/10 戦</span>
+                    <span>かち: ${wins} / まけ: ${losses}</span>
+                </div>
+            `;
+            const logBox = document.getElementById('logBox');
+            logBox.scrollTop = logBox.scrollHeight;
+        } else if (gameState === 'RESULT') {
+            app.innerHTML = `
+                <h1>ぼうけいの けっか</h1>
+                <div class="screen-content" style="justify-content: center;">
+                    <div style="font-size: 16px; font-weight: bold; margin-bottom: 10px;">
+                        10戦 ${wins}勝 ${losses}敗！
+                    </div>
+                    <p style="font-size: 13px; margin: 5px 0;">
+                        ${wins >= 7 ? 'すごいぞ！ 立派な ポケモンマスターの たまごだ！' : wins >= 4 ? 'よくがんばった！ まずは 上出来の 旅立ちだ！' : 'まけた数だけ つよくなる…！ つぎは 勝てるさ！'}
+                    </p>
+                    <div style="font-size: 11px; color: #306230; margin-top: 10px;">
+                        えらんだ相棒: ${selectedPokemon.name}
+                    </div>
+                </div>
+                <button class="btn" onclick="resetGame()">もういちど えらぶ</button>
+            `;
+        }
+    }
+
+    function selectStarter(id) {
+        selectedPokemon = starters.find(p => p.id === id);
+        gameState = 'MONOLOGUE';
+        render();
+    }
+
+    function startBattles() {
+        gameState = 'BATTLE';
+        battleLogs = [];
+        wins = 0;
+        losses = 0;
+        currentBattleIndex = 0;
+        render();
+        runNextBattle();
+    }
+
+    function runNextBattle() {
+        if (currentBattleIndex >= 10) {
+            setTimeout(() => {
+                gameState = 'RESULT';
+                render();
+            }, 800);
+            return;
+        }
+
+        const enemy = enemies[currentBattleIndex];
+        currentBattleIndex++;
+
+        // 相性計算と勝敗判定
+        // fire > grass > water > fire, normal/poison/electric/rock are neutral
+        let advantage = false;
+        let disadvantage = false;
+
+        if (selectedPokemon.type === 'fire' && enemy.type === 'bug') advantage = true;
+        if (selectedPokemon.type === 'water' && (enemy.type === 'rock' || enemy.type === 'electric' === false)) advantage = true; // simplified
+        if (selectedPokemon.type === 'grass' && enemy.type === 'rock') advantage = true;
+
+        // ランダム要素を加味した勝敗
+        let winChance = 0.5;
+        if (advantage) winChance = 0.8;
+        if (selectedPokemon.type === enemy.type) winChance = 0.5;
+
+        const isWin = Math.random() < winChance;
+        if (isWin) {
+            wins++;
+            battleLogs.push({ text: `第${currentBattleIndex}戦: VS ${enemy.icon} ${enemy.name} ⇒ <span class="win">かち！</span>`, result: 'win' });
+        } else {
+            losses++;
+            battleLogs.push({ text: `第${currentBattleIndex}戦: VS ${enemy.icon} ${enemy.name} ⇒ <span class="lose">まけ…</span>`, result: 'lose' });
+        }
+
+        render();
+
+        // 次のバトルへ少しウェイトを入れて進む
+        setTimeout(runNextBattle, 400);
+    }
+
+    function resetGame() {
+        gameState = 'TITLE';
+        selectedPokemon = null;
+        battleLogs = [];
+        wins = 0;
+        losses = 0;
+        currentBattleIndex = 0;
+        render();
+    }
+
+    // 初期描画
+    render();
+</script>
+
+</body>
+</html>
