@@ -6,13 +6,13 @@
 <title>ドラクエ1 城からの脱出</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#0a0a12;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:'MS Gothic','BIZ UD Gothic',monospace;overflow:hidden}
-#game{background:#181828;padding:24px 32px;border-radius:16px;border:2px solid #3a3a5a;box-shadow:0 8px 32px rgba(0,0,0,.8)}
-#header{display:flex;justify-content:space-between;align-items:center;padding:0 4px 12px 4px;color:#c8b88a;border-bottom:1px solid #3a3a5a;margin-bottom:12px}
-#title{font-size:20px;font-weight:bold;letter-spacing:2px;text-shadow:0 0 8px rgba(200,184,138,.3)}
-#floor-indicator{font-size:15px;color:#a89878;background:#222238;padding:4px 14px;border-radius:20px;border:1px solid #3a3a5a}
-#canvas-wrap{display:flex;justify-content:center}
-canvas{display:block;border:2px solid #3a3a5a;border-radius:4px;image-rendering:pixelated}
+body{background:#0a0a12;display:flex;justify-content:center;align-items:center;min-height:100vh;font-family:'MS Gothic','BIZ UD Gothic',monospace;overflow-x:hidden;padding:4px;margin:0}
+#game{background:#181828;padding:24px 32px;border-radius:16px;border:2px solid #3a3a5a;box-shadow:0 8px 32px rgba(0,0,0,.8);width:fit-content;max-width:100%;margin:0 auto}
+#header{display:flex;justify-content:space-between;align-items:center;padding:0 4px 12px 4px;color:#c8b88a;border-bottom:1px solid #3a3a5a;margin-bottom:12px;gap:8px}
+#title{font-size:20px;font-weight:bold;letter-spacing:2px;white-space:nowrap;text-shadow:0 0 8px rgba(200,184,138,.3)}
+#floor-indicator{font-size:15px;color:#a89878;background:#222238;padding:4px 14px;border-radius:20px;border:1px solid #3a3a5a;white-space:nowrap;flex-shrink:0}
+#canvas-wrap{display:flex;justify-content:center;width:100%}
+canvas{display:block;border:2px solid #3a3a5a;border-radius:4px;image-rendering:pixelated;max-width:100%;height:auto;aspect-ratio:13/9}
 #msg-box{background:#0e0e1a;border:2px solid #3a3a5a;border-radius:4px;padding:10px 14px;margin-top:12px;min-height:68px;color:#c0b090;font-size:14px;line-height:1.6;position:relative}
 #msg-box .name{color:#e8d8a0;font-weight:bold}
 #msg-box .highlight{color:#f0d060}
@@ -31,10 +31,27 @@ canvas{display:block;border:2px solid #3a3a5a;border-radius:4px;image-rendering:
 #action-wrap .label{color:#6a6a8a;font-size:10px;letter-spacing:1px}
 @media(max-width:560px){
   #game{padding:12px 10px;border-radius:8px}
-  #title{font-size:16px;letter-spacing:1px}
+  #title{font-size:15px;letter-spacing:1px}
+  #floor-indicator{font-size:12px;padding:3px 10px}
   .dpad{grid-template-columns:repeat(3,48px);grid-template-rows:repeat(3,48px);gap:2px}
   .dpad-btn{font-size:18px;border-radius:6px}
-  #btn-a{width:64px;height:64px;font-size:14px}
+  #btn-a{width:64px;height:64px;font-size:13px}
+  #msg-box{font-size:13px;min-height:56px;padding:8px 10px}
+  #controls{font-size:11px;gap:12px}
+}
+@media(max-width:400px){
+  #game{padding:8px 6px;border-radius:6px;border-width:1px}
+  #title{font-size:13px}
+  #floor-indicator{font-size:11px;padding:2px 8px}
+  #msg-box{font-size:12px;min-height:48px;padding:6px 8px;margin-top:8px}
+  #vpad{gap:8px;margin-top:10px}
+  #controls{font-size:10px;gap:8px;flex-wrap:wrap}
+  .dpad{grid-template-columns:repeat(3,40px);grid-template-rows:repeat(3,40px);gap:2px}
+  .dpad-btn{font-size:15px;border-radius:4px}
+  #btn-a{width:52px;height:52px;font-size:11px}
+  #btn-a small{font-size:8px}
+  #action-wrap .label{font-size:8px}
+  canvas{border-width:1px;border-radius:2px}
 }
 </style>
 </head>
