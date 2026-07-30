@@ -81,7 +81,8 @@ const floor0=(()=>{
   const m=[];
   for(let r=0;r<ROWS;r++){m[r]=[];for(let c=0;c<COLS;c++)m[r][c]=r===0||r===ROWS-1||c===0||c===COLS-1?T.WALL:T.FLOOR;}
   m[4][6]=T.RUG;
-  m[6][9]=T.WALL;
+  m[6][10]=T.WALL;
+  m[7][10]=T.WALL;
   return m;
 })();
 const floor1=(()=>{
@@ -95,6 +96,8 @@ const baseEntities=[
   {type:E.KING,x:6,y:3,floor:0},
   {type:E.STAIRS,x:9,y:7,floor:0},
   {type:E.LOCKED,x:8,y:6,floor:0,unlocked:false},
+  {type:E.LOCKED,x:9,y:6,floor:0,unlocked:false},
+  {type:E.LOCKED,x:8,y:7,floor:0,unlocked:false},
 ];
 let entities=[...baseEntities];
 let chests=[];
@@ -164,20 +167,18 @@ function openChest(ch){
   }
 }
 
-function unlockDoor(){
-  const d=entities.find(e=>e.type===E.LOCKED&&!e.unlocked);
-  if(!d||d.unlocked)return null;
-  if(inv.doorKey>0){inv.doorKey--;d.unlocked=true;return '扉の鍵で<span class="highlight">扉を開けた！</span>先へ進める！';}
-  return '<span class="highlight">扉の鍵</span>が必要だ。';
-}
-
 function action(){
   if(ending)return;
   const t=adjI(player.floor,player.x,player.y);
   if(!t){msg('<span class="system">話しかける相手がいない</span>',1200);return;}
   if(t.type===E.KING){talkKing();draw();}
   else if(t.type===E.CHEST){const m=openChest(t);msg(m,m.length>50?5000:3500);draw();}
-  else if(t.type===E.LOCKED){const m=unlockDoor();if(m)msg(m,4000);else msg('鍵はもう開いている。',2000);draw();}
+  else if(t.type===E.LOCKED){
+    if(t.unlocked){msg('この扉はもう開いている。',2000);draw();return;}
+    if(inv.doorKey>0){inv.doorKey--;t.unlocked=true;msg('扉の鍵で<span class="highlight">扉を開けた！</span>',4000);}
+    else msg('<span class="highlight">扉の鍵</span>が必要だ。',2500);
+    draw();
+  }
 }
 
 function move(ox,oy){
