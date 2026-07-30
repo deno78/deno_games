@@ -14,3 +14,4 @@ Deno/Web games collection.
 - [08. オセロ (Othello vs CPU)](./08/index.html)
 - [09. 逆オセロ (Reverse Othello vs CPU)](./09/index.html)
 - [10. 手乗り怪獣はじまりの3匹 10連戦 (Tenoori Kaiju Quick Battle)](./10/index.html)
+- [11. 勇者王チャレンジ (Yuusha Oh Challenge)](./11/index.html)

@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>勇者王チャレンジ - ドラクエ世界の王様体験</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DotGothic16&display=swap');
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background-color: #0d0e15;
+            color: #ffffff;
+            font-family: 'DotGothic16', 'Courier New', monospace;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 640px;
+            height: 100vh;
+            max-height: 800px;
+            background: #111122;
+            border: 4px solid #d4af37;
+            box-shadow: 0 0 20px rgba(212, 175, 55, 0.4);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* ヘッダー・ステータス表示 */
+        #header {
+            background: #000000;
+            border-bottom: 4px solid #ffffff;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10;
+        }
+
+        .title {
+            font-size: 1.2rem;
+            color: #f1c40f;
+            text-shadow: 2px 2px #000;
+            margin: 0;
+        }
+
+        .status-box {
+            display: flex;
+            gap: 15px;
+            font-size: 1rem;
+        }
+
+        .trust-meter {
+            color: #e74c3c;
+        }
+
+        .score-meter {
+            color: #2ecc71;
+        }
+
+        /* 玉座の間ステージ */
+        #throne-room {
+            flex: 1;
+            position: relative;
+            background: #1a102f;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* ドット絵風グラフィック背景 */
+        .carpet {
+            position: absolute;
+            bottom: 0;
+            width: 120px;
+            height: 100%;
+            background: #8b0000;
+            border-left: 4px solid #ffd700;
+            border-right: 4px solid #ffd700;
+            z-index: 1;
+        }
+
+        .throne {
+            position: absolute;
+            top: 25px;
+            width: 80px;
+            height: 90px;
+            background: #4a0e17;
+            border: 4px solid #d4af37;
+            border-radius: 8px 8px 0 0;
+            z-index: 2;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+
+        .king {
+            font-size: 42px;
+            z-index: 3;
+            transform: translateY(-5px);
+            filter: drop-shadow(0 4px 0 #000);
+        }
+
+        .treasure-chests {
+            position: absolute;
+            top: 60px;
+            width: 240px;
+            display: flex;
+            justify-content: space-between;
+            z-index: 2;
+        }
+
+        .chest {
+            font-size: 28px;
+            filter: drop-shadow(0 2px 0 #000);
+        }
+
+        /* 歩いてくる勇者 */
+        #hero-container {
+            position: absolute;
+            bottom: -80px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 5;
+            transition: bottom 0.1s linear;
+        }
+
+        .hero-sprite {
+            font-size: 48px;
+            filter: drop-shadow(0 4px 0 #000);
+            animation: walk-bounce 0.4s infinite alternate ease-in-out;
+        }
+
+        @keyframes walk-bounce {
+            0% { transform: translateY(0) scaleX(1); }
+            100% { transform: translateY(-6px) scaleX(1); }
+        }
+
+        .hero-nametag {
+            background: rgba(0, 0, 0, 0.85);
+            border: 2px solid #ffffff;
+            padding: 3px 10px;
+            border-radius: 4px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            white-space: nowrap;
+            margin-top: -5px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.5);
+        }
+
+        .hero-nametag.normal {
+            color: #ffffff;
+        }
+
+        .hero-nametag.dead {
+            color: #ff4d4d;
+            text-shadow: 0 0 5px rgba(255, 0, 0, 0.7);
+        }
+
+        /* 吹き出し・対話ウィンドウ */
+        #dialog-box {
+            position: absolute;
+            bottom: 190px;
+            left: 5%;
+            width: 90%;
+            background: #000000;
+            border: 4px solid #ffffff;
+            border-radius: 6px;
+            padding: 12px 16px;
+            z-index: 8;
+            box-shadow: inset 0 0 0 2px #000, 0 4px 15px rgba(0,0,0,0.8);
+            min-height: 85px;
+            display: flex;
+            align-items: center;
+        }
+
+        .dialog-text {
+            font-size: 1.1rem;
+            line-height: 1.4;
+            color: #ffffff;
+            margin: 0;
+            width: 100%;
+        }
+
+        /* 王様のコマンド選択ボタンエリア */
+        #controls {
+            background: #000000;
+            border-top: 4px solid #ffffff;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .cmd-btn {
+            background: #111122;
+            color: #ffffff;
+            border: 3px solid #ffffff;
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'DotGothic16', monospace;
+            font-size: 1.05rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.15s ease;
+            display: flex;
+            align-items: center;
+            position: relative;
+        }
+
+        .cmd-btn:hover:not(:disabled) {
+            background: #222255;
+            border-color: #f1c40f;
+            color: #f1c40f;
+        }
+
+        .cmd-btn:active:not(:disabled) {
+            transform: scale(0.98);
+        }
+
+        .cmd-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .cmd-num {
+            background: #ffffff;
+            color: #000000;
+            width: 24px;
+            height: 24px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 3px;
+            margin-right: 10px;
+            font-weight: bold;
+        }
+
+        .cmd-btn:hover .cmd-num {
+            background: #f1c40f;
+        }
+
+        /* スタート＆オーバー画面 */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.92);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            text-align: center;
+            z-index: 20;
+        }
+
+        .overlay h1 {
+            color: #f1c40f;
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            text-shadow: 3px 3px #8b0000;
+        }
+
+        .overlay p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            max-width: 500px;
+            margin-bottom: 25px;
+        }
+
+        .start-btn {
+            background: #e74c3c;
+            color: #ffffff;
+            border: 4px solid #ffffff;
+            padding: 15px 40px;
+            font-family: 'DotGothic16', monospace;
+            font-size: 1.4rem;
+            cursor: pointer;
+            border-radius: 8px;
+            box-shadow: 0 4px 0 #952323;
+            transition: all 0.1s;
+        }
+
+        .start-btn:hover {
+            background: #ff5252;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 #952323;
+        }
+
+        .start-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #952323;
+        }
+
+        /* 隠居エンディング演出 */
+        .merchant-avatar {
+            font-size: 64px;
+            margin-bottom: 15px;
+        }
+
+        /* ポップアップエフェクト */
+        .feedback-pop {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 1.8rem;
+            font-weight: bold;
+            pointer-events: none;
+            z-index: 15;
+            animation: pop-up 0.8s forwards ease-out;
+        }
+
+        @keyframes pop-up {
+            0% { opacity: 1; transform: translate(-50%, -20%) scale(0.8); }
+            50% { transform: translate(-50%, -60%) scale(1.2); }
+            100% { opacity: 0; transform: translate(-50%, -100%) scale(1); }
+        }
+
+        .pop-success { color: #2ecc71; text-shadow: 2px 2px #000; }
+        .pop-fail { color: #e74c3c; text-shadow: 2px 2px #000; }
+
+        /* キーボードショートカットヒント */
+        .key-hint {
+            position: absolute;
+            right: 12px;
+            font-size: 0.8rem;
+            color: #888;
+            border: 1px solid #666;
+            padding: 2px 6px;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- ヘッダー -->
+        <div id="header">
+            <h1 class="title">👑 勇者王チャレンジ</h1>
+            <div class="status-box">
+                <div class="score-meter">接客: <span id="score-val">0</span>人</div>
+                <div class="trust-meter">信頼度: <span id="trust-val">♥♥♥</span></div>
+            </div>
+        </div>
+
+        <!-- 玉座の間 -->
+        <div id="throne-room">
+            <div class="throne">
+                <div class="king">👑</div>
+            </div>
+            <div class="treasure-chests">
+                <div class="chest">🎁</div>
+                <div class="chest">🎁</div>
+            </div>
+            <div class="carpet"></div>
+
+            <!-- 勇者 -->
+            <div id="hero-container">
+                <div class="hero-sprite" id="hero-sprite">🗡️</div>
+                <div class="hero-nametag normal" id="hero-nametag">ゆうしゃ</div>
+            </div>
+
+            <!-- 台詞ウィンドウ -->
+            <div id="dialog-box">
+                <p class="dialog-text" id="dialog-text">勇者が玉座へと近づいてくる…</p>
+            </div>
+        </div>
+
+        <!-- コマンドボタン -->
+        <div id="controls">
+            <button class="cmd-btn" id="btn-1" onclick="selectCommand(1)">
+                <span class="cmd-num">1</span>
+                <span>よく来たな、その宝箱を開けて旅の支度を整えるがよい。</span>
+                <span class="key-hint">[Key 1]</span>
+            </button>
+            <button class="cmd-btn" id="btn-2" onclick="selectCommand(2)">
+                <span class="cmd-num">2</span>
+                <span>よく来たな、復活の呪文を教えよう</span>
+                <span class="key-hint">[Key 2]</span>
+            </button>
+            <button class="cmd-btn" id="btn-3" onclick="selectCommand(3)">
+                <span class="cmd-num">3</span>
+                <span>おお、死んでしまうとは情けない</span>
+                <span class="key-hint">[Key 3]</span>
+            </button>
+        </div>
+
+        <!-- スタート画面 -->
+        <div id="start-screen" class="overlay">
+            <h1>👑 勇者王チャレンジ</h1>
+            <p>
+                あなたはドラゴンクエストの世界の王様です！<br>
+                ひっきりなしにやってくる勇者たちを素早く見極め、<br>
+                適切な言葉をかけて送り出しましょう。<br><br>
+                <b>【判定ルール】</b><br>
+                1. <b>初めての勇者</b> ➔ 宝箱を開けさせる<br>
+                2. <b>2回目以降の勇者</b> ➔ 復活の呪文を教える<br>
+                3. <b>赤文字の勇者</b> ➔ 死んでしまうとは情けない<br><br>
+                ※間違えると塩対応されて信頼度が下がり、<b>3回失敗で武器屋の店主に隠居させられます！</b>
+            </p>
+            <button class="start-btn" onclick="startGame()">王として君臨する！</button>
+        </div>
+
+        <!-- ゲームオーバー画面 -->
+        <div id="gameover-screen" class="overlay" style="display: none;">
+            <div class="merchant-avatar">🧓⚔️</div>
+            <h1 style="color: #e74c3c;">【隠居勧告】</h1>
+            <p id="gameover-reason">
+                「王様、もう潮時ですな…これ以上勇者様たちを混乱させられては商売あがったりですわ。あとの国政はわしら武器屋にお任せいただき、静かに隠居なさってください。」
+            </p>
+            <p style="font-size: 1.3rem; color: #f1c40f;">
+                最終成果: <b><span id="final-score">0</span>人</b> の勇者を導いた
+            </p>
+            <button class="start-btn" onclick="startGame()">もう一度王様になる</button>
+        </div>
+    </div>
+
+    <script>
+        // 音声効果（Web Audio API）
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+
+            if (type === 'ok') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+                osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'ng') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(220, now); // A3
+                osc.frequency.setValueAtTime(164.81, now + 0.12); // E3
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+                osc.start(now);
+                osc.stop(now + 0.35);
+            } else if (type === 'walk') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(150, now);
+                gain.gain.setValueAtTime(0.03, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            }
+        }
+
+        // 勇者の名前サンプル
+        const HERO_NAMES = [
+            "ロト", "トンヌラ", "エニックス", "ももたろう", "アーサー",
+            "あべる", "ソロ", "レックス", "クッキー", "プリン",
+            "すけさん", "たくや", "ひろし", "ゆうしゃ", "ポポロ",
+            "ダイ", "ポップ", "ヒュンケル", "マァム", "ヘンリー",
+            "ライアン", "クリフト", "ブライ", "トルネコ", "アリーナ"
+        ];
+
+        const HERO_SPRITES = ["🗡️", "🛡️", "🧙‍♂️", "🏹", "🥷", "🧝‍♂️"];
+
+        // 状態変数
+        let trust = 3;
+        let score = 0;
+        let visitedHeroes = new Set(); // 訪問済み勇者の名前
+        let currentHero = null;
+        let isProcessing = false;
+        let heroWalkInterval = null;
+        let heroPosY = -80; // 歩行アニメーションの位置
+        let speed = 2.0; // 歩く速度
+
+        // DOM要素
+        const trustValEl = document.getElementById('trust-val');
+        const scoreValEl = document.getElementById('score-val');
+        const heroContainer = document.getElementById('hero-container');
+        const heroSpriteEl = document.getElementById('hero-sprite');
+        const heroNametagEl = document.getElementById('hero-nametag');
+        const dialogTextEl = document.getElementById('dialog-text');
+        const startScreen = document.getElementById('start-screen');
+        const gameoverScreen = document.getElementById('gameover-screen');
+        const finalScoreEl = document.getElementById('final-score');
+        const btn1 = document.getElementById('btn-1');
+        const btn2 = document.getElementById('btn-2');
+        const btn3 = document.getElementById('btn-3');
+
+        // キーボード入力サポート
+        window.addEventListener('keydown', (e) => {
+            if (isProcessing) return;
+            if (e.key === '1') selectCommand(1);
+            if (e.key === '2') selectCommand(2);
+            if (e.key === '3') selectCommand(3);
+        });
+
+        function updateUI() {
+            trustValEl.textContent = "♥".repeat(trust) + "♡".repeat(3 - trust);
+            scoreValEl.textContent = score;
+        }
+
+        function startGame() {
+            trust = 3;
+            score = 0;
+            speed = 2.0;
+            visitedHeroes.clear();
+            updateUI();
+            startScreen.style.display = 'none';
+            gameoverScreen.style.display = 'none';
+            enableButtons(true);
+            spawnHero();
+        }
+
+        function enableButtons(enabled) {
+            btn1.disabled = !enabled;
+            btn2.disabled = !enabled;
+            btn3.disabled = !enabled;
+        }
+
+        // 新しい勇者の生成
+        function spawnHero() {
+            isProcessing = false;
+            enableButtons(true);
+
+            // ランダムな名前決定
+            const name = HERO_NAMES[Math.floor(Math.random() * HERO_NAMES.length)];
+            const sprite = HERO_SPRITES[Math.floor(Math.random() * HERO_SPRITES.length)];
+
+            // 勇者のタイプ決定
+            // 1: 初めて, 2: 2回目以降, 3: 死亡(赤文字)
+            let type = 1;
+            const rand = Math.random();
+
+            if (rand < 0.30) {
+                // 赤文字の勇者（死亡）
+                type = 3;
+            } else if (visitedHeroes.size > 0 && rand < 0.65) {
+                // 既に訪問したことがある勇者（2回目以降）
+                type = 2;
+            } else {
+                // 初めての勇者
+                type = 1;
+            }
+
+            // 2回目以降のタイプなら、実際に過去訪問した名前から選ぶ（無ければ新規追加）
+            let heroName = name;
+            if (type === 2 && visitedHeroes.size > 0) {
+                const visitedArray = Array.from(visitedHeroes);
+                heroName = visitedArray[Math.floor(Math.random() * visitedArray.length)];
+            }
+
+            currentHero = {
+                name: heroName,
+                type: type, // 1: 初めて, 2: 2回目以降, 3: 赤文字(死亡)
+                sprite: sprite
+            };
+
+            // DOMへセット
+            heroSpriteEl.textContent = currentHero.sprite;
+            heroNametagEl.textContent = currentHero.name;
+
+            if (currentHero.type === 3) {
+                heroNametagEl.className = "hero-nametag dead";
+            } else {
+                heroNametagEl.className = "hero-nametag normal";
+            }
+
+            dialogTextEl.textContent = `勇者「${currentHero.name}」が玉座の前にやってきた！`;
+
+            // アニメーション設定 (下から上へ歩いてくる)
+            heroPosY = -80;
+            heroContainer.style.bottom = `${heroPosY}px`;
+
+            if (heroWalkInterval) clearInterval(heroWalkInterval);
+
+            heroWalkInterval = setInterval(() => {
+                if (heroPosY < 90) { // 玉座の手前でストップ
+                    heroPosY += speed;
+                    heroContainer.style.bottom = `${heroPosY}px`;
+                    if (Math.floor(heroPosY) % 15 === 0) {
+                        playSound('walk');
+                    }
+                } else {
+                    clearInterval(heroWalkInterval);
+                }
+            }, 30);
+        }
+
+        // プレイヤーのコマンド選択
+        function selectCommand(cmdNumber) {
+            if (isProcessing) return;
+            isProcessing = true;
+            enableButtons(false);
+            if (heroWalkInterval) clearInterval(heroWalkInterval);
+
+            // 正解判定
+            let correctCmd = 1;
+            if (currentHero.type === 1) correctCmd = 1;
+            else if (currentHero.type === 2) correctCmd = 2;
+            else if (currentHero.type === 3) correctCmd = 3;
+
+            if (cmdNumber === correctCmd) {
+                handleSuccess();
+            } else {
+                handleFailure(cmdNumber);
+            }
+        }
+
+        // 成功処理
+        function handleSuccess() {
+            playSound('ok');
+            score++;
+            // 初めての勇者なら訪問済みに登録
+            if (currentHero.type === 1) {
+                visitedHeroes.add(currentHero.name);
+            }
+
+            // スピード少しずつ加速
+            speed = Math.min(6.0, 2.0 + score * 0.15);
+
+            showFeedback("⭕ 適切な対応！", "pop-success");
+
+            if (currentHero.type === 1) {
+                dialogTextEl.textContent = `勇者「${currentHero.name}」は嬉しそうに宝箱を開け、旅立った！`;
+            } else if (currentHero.type === 2) {
+                dialogTextEl.textContent = `勇者「${currentHero.name}」は復活の呪文をメモして、元気に冒険へ戻った！`;
+            } else {
+                dialogTextEl.textContent = `勇者「${currentHero.name}」は王の言葉に深々と頷き、教会へ引き返していった…`;
+            }
+
+            updateUI();
+
+            setTimeout(() => {
+                spawnHero();
+            }, 1100);
+        }
+
+        // 失敗処理（塩対応）
+        function handleFailure(cmdNumber) {
+            playSound('ng');
+            trust--;
+            updateUI();
+
+            showFeedback("❌ 信頼度低下！", "pop-fail");
+
+            // 塩対応セリフの決定
+            let saltyText = "";
+            if (currentHero.type === 1) {
+                // 初めてなのに間違えられた
+                if (cmdNumber === 2) {
+                    saltyText = `勇者「え…？まだ旅立ってもないのに早く復活の呪文教えてよって…まずは装備と宝箱でしょ…」`;
+                } else {
+                    saltyText = `勇者「いきなり『死んでしまうとは情けない』って…まだ死んでないし初対面なんですけど…」`;
+                }
+            } else if (currentHero.type === 2) {
+                // 2回目以降なのに間違えられた
+                if (cmdNumber === 1) {
+                    saltyText = `勇者「宝箱…？いや、もうその宝箱の中身もらったけど？？早く復活の呪文教えてよ」`;
+                } else {
+                    saltyText = `勇者「死んでないですけど！？ちゃんと生きてます！早く復活の呪文教えてよ！」`;
+                }
+            } else {
+                // 赤文字（死亡）なのに間違えられた
+                if (cmdNumber === 1) {
+                    saltyText = `勇者「いや僕もう死んでるんですけど…宝箱開ける体力もないです…『死んでしまうとは～』って言ってくれないの？」`;
+                } else {
+                    saltyText = `勇者「死んでるのに復活の呪文だけ教えられても困ります…まずは『死んでしまうとは～』でお約束のお叱りくださいよ…」`;
+                }
+            }
+
+            dialogTextEl.textContent = saltyText;
+
+            setTimeout(() => {
+                if (trust <= 0) {
+                    triggerGameOver();
+                } else {
+                    spawnHero();
+                }
+            }, 1800);
+        }
+
+        function showFeedback(text, className) {
+            const el = document.createElement('div');
+            el.className = `feedback-pop ${className}`;
+            el.textContent = text;
+            document.getElementById('throne-room').appendChild(el);
+            setTimeout(() => {
+                el.remove();
+            }, 800);
+        }
+
+        function triggerGameOver() {
+            finalScoreEl.textContent = score;
+            gameoverScreen.style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
