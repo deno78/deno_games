@@ -61,8 +61,12 @@
 
         .status-box {
             display: flex;
-            gap: 15px;
-            font-size: 1rem;
+            gap: 12px;
+            font-size: 0.95rem;
+        }
+
+        .target-meter {
+            color: #f39c12;
         }
 
         .trust-meter {
@@ -361,8 +365,9 @@
         <div id="header">
             <h1 class="title">👑 勇者王チャレンジ</h1>
             <div class="status-box">
-                <div class="score-meter">接客: <span id="score-val">0</span>人</div>
-                <div class="trust-meter">信頼度: <span id="trust-val">♥♥♥</span></div>
+                <div class="target-meter">勇者: <span id="hero-target-el">-</span> (<span id="hero-count-el">0</span>/10)</div>
+                <div class="score-meter">接客: <span id="score-val">0</span></div>
+                <div class="trust-meter">信頼: <span id="trust-val">♥♥♥</span></div>
             </div>
         </div>
 
@@ -436,6 +441,22 @@
             </p>
             <button class="start-btn" onclick="startGame()">もう一度王様になる</button>
         </div>
+
+        <!-- エンディング（ゲームクリア）画面 -->
+        <div id="clear-screen" class="overlay" style="display: none;">
+            <div class="merchant-avatar">👑✨🏰</div>
+            <h1 style="color: #f1c40f;">【世界平和達成！】</h1>
+            <p style="font-size: 1.2rem; line-height: 1.8;">
+                おお、見事なり！<br>
+                あなたが幾度となく言葉をかけ、励まし続けた勇者<br>
+                <b style="color: #2ecc71; font-size: 1.4rem;" id="clear-hero-name">「ロト」</b> がついに<b>魔王を討伐</b>しました！<br><br>
+                世界に平和が訪れ、あなたは大名君として歴史にその名を刻みました！
+            </p>
+            <p style="font-size: 1.1rem; color: #3498db;">
+                総接客数: <b><span id="clear-total-score">0</span>人</b>
+            </p>
+            <button class="start-btn" style="background: #2ecc71;" onclick="startGame()">もう一度王様として君臨する</button>
+        </div>
     </div>
 
     <script>
@@ -477,6 +498,20 @@
                 gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
                 osc.start(now);
                 osc.stop(now + 0.05);
+            } else if (type === 'fanfare') {
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                notes.forEach((freq, idx) => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.type = 'triangle';
+                    o.frequency.setValueAtTime(freq, now + idx * 0.12);
+                    g.gain.setValueAtTime(0.2, now + idx * 0.12);
+                    g.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.12 + 0.4);
+                    o.connect(g);
+                    g.connect(audioCtx.destination);
+                    o.start(now + idx * 0.12);
+                    o.stop(now + idx * 0.12 + 0.4);
+                });
             }
         }
 
@@ -495,6 +530,8 @@
         let trust = 3;
         let score = 0;
         let visitedHeroes = new Set(); // 訪問済み勇者の名前
+        let heroCounts = {}; // 各勇者の対応成功回数 { "ロト": 3, "トンヌラ": 1 }
+        let mainHeroName = ""; // 主人公（最多対応の勇者）
         let currentHero = null;
         let isProcessing = false;
         let heroWalkInterval = null;
@@ -504,13 +541,18 @@
         // DOM要素
         const trustValEl = document.getElementById('trust-val');
         const scoreValEl = document.getElementById('score-val');
+        const heroTargetEl = document.getElementById('hero-target-el');
+        const heroCountEl = document.getElementById('hero-count-el');
         const heroContainer = document.getElementById('hero-container');
         const heroSpriteEl = document.getElementById('hero-sprite');
         const heroNametagEl = document.getElementById('hero-nametag');
         const dialogTextEl = document.getElementById('dialog-text');
         const startScreen = document.getElementById('start-screen');
         const gameoverScreen = document.getElementById('gameover-screen');
+        const clearScreen = document.getElementById('clear-screen');
         const finalScoreEl = document.getElementById('final-score');
+        const clearHeroNameEl = document.getElementById('clear-hero-name');
+        const clearTotalScoreEl = document.getElementById('clear-total-score');
         const btn1 = document.getElementById('btn-1');
         const btn2 = document.getElementById('btn-2');
         const btn3 = document.getElementById('btn-3');
@@ -526,6 +568,19 @@
         function updateUI() {
             trustValEl.textContent = "♥".repeat(trust) + "♡".repeat(3 - trust);
             scoreValEl.textContent = score;
+
+            // 一番対応回数が多い勇者の進捗を表示
+            let maxHero = "-";
+            let maxCount = 0;
+            for (const name in heroCounts) {
+                if (heroCounts[name] > maxCount) {
+                    maxCount = heroCounts[name];
+                    maxHero = name;
+                }
+            }
+            mainHeroName = maxHero;
+            heroTargetEl.textContent = maxHero;
+            heroCountEl.textContent = maxCount;
         }
 
         function startGame() {
@@ -533,9 +588,12 @@
             score = 0;
             speed = 2.0;
             visitedHeroes.clear();
+            heroCounts = {};
+            mainHeroName = "";
             updateUI();
             startScreen.style.display = 'none';
             gameoverScreen.style.display = 'none';
+            clearScreen.style.display = 'none';
             enableButtons(true);
             spawnHero();
         }
@@ -644,6 +702,9 @@
                 visitedHeroes.add(currentHero.name);
             }
 
+            // 対応成功カウント加算
+            heroCounts[currentHero.name] = (heroCounts[currentHero.name] || 0) + 1;
+
             // スピード少しずつ加速
             speed = Math.min(6.0, 2.0 + score * 0.15);
 
@@ -658,6 +719,14 @@
             }
 
             updateUI();
+
+            // 同じ勇者で10回対応成功したらクリア！
+            if (heroCounts[currentHero.name] >= 10) {
+                setTimeout(() => {
+                    triggerGameClear(currentHero.name);
+                }, 1000);
+                return;
+            }
 
             setTimeout(() => {
                 spawnHero();
@@ -721,6 +790,13 @@
         function triggerGameOver() {
             finalScoreEl.textContent = score;
             gameoverScreen.style.display = 'flex';
+        }
+
+        function triggerGameClear(heroName) {
+            playSound('fanfare');
+            clearHeroNameEl.textContent = `「${heroName}」`;
+            clearTotalScoreEl.textContent = score;
+            clearScreen.style.display = 'flex';
         }
     </script>
 </body>
