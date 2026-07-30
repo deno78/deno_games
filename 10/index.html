@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ポケットモンスター はじまりの3匹 10連戦</title>
+    <title>手乗り怪獣のはじまり 10連戦</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
 
@@ -98,7 +98,7 @@
             transform: scale(1.05);
         }
 
-        .pokemon-card img, .pixel-art {
+        .pixel-art {
             font-size: 32px;
             margin-bottom: 4px;
         }
@@ -158,31 +158,31 @@
             <!-- 動的コンテンツがここに描画されます -->
         </div>
     </div>
-    <div class="gb-brand">GAME BOY 🅡 - POCKET MONSTER QUICK BATTLE</div>
+    <div class="gb-brand">GAME BOY 🅡 - TENOORI KAIJU QUICK BATTLE</div>
 </div>
 
 <script>
     const starters = [
-        { id: 'lizard', name: 'トカゲ（ほのお）', type: 'fire', icon: '🔥', desc: 'しっぽのほのおが めじるし。こうげきが たかい！' },
-        { id: 'turtle', name: 'カメ（みず）', type: 'water', icon: '💧', desc: 'こうらに入ってぼうぎょ。タフなやつ！' },
-        { id: 'weed', name: '雑草型（くさ）', type: 'grass', icon: '🌱', desc: 'あたまの芽がとくちょう。バランスがよい！' }
+        { id: 'lizard', name: 'ヒノカゲ（ほのお）', type: 'fire', icon: '🔥', desc: 'しっぽのほのおが めじるし。こうげきが たかい！' },
+        { id: 'turtle', name: 'ミズカメ（みず）', type: 'water', icon: '💧', desc: 'こうらに入ってぼうぎょ。タフなやつ！' },
+        { id: 'weed', name: 'クサダネ（くさ）', type: 'grass', icon: '🌱', desc: 'あたまの芽がとくちょう。バランスがよい！' }
     ];
 
     const enemies = [
-        { name: 'ポッポ', type: 'normal', icon: '🐦' },
-        { name: 'コラッタ', type: 'normal', icon: '🐀' },
-        { name: 'キャタピー', type: 'bug', icon: '🐛' },
-        { name: 'ビードル', type: 'bug', icon: '🐝' },
-        { name: 'アーボ', type: 'poison', icon: '🐍' },
-        { name: 'ピカチュウ', type: 'electric', icon: '⚡' },
-        { name: 'ニドラン', type: 'poison', icon: '🐹' },
-        { name: 'プリン', type: 'normal', icon: '🎤' },
-        { name: 'ズバット', type: 'poison', icon: '🦇' },
-        { name: 'イシツブテ', type: 'rock', icon: '🪨' }
+        { name: 'ハトもどき', type: 'normal', icon: '🐦' },
+        { name: 'ドブネズミ', type: 'normal', icon: '🐀' },
+        { name: 'イモムシ', type: 'bug', icon: '🐛' },
+        { name: 'ハリマムシ', type: 'bug', icon: '🐝' },
+        { name: 'ニセヘビ', type: 'poison', icon: '🐍' },
+        { name: '電気鼠', type: 'electric', icon: '⚡' },
+        { name: 'トゲウサギ', type: 'poison', icon: '🐹' },
+        { name: 'ピンク玉', type: 'normal', icon: '🎤' },
+        { name: 'コウモリ', type: 'poison', icon: '🦇' },
+        { name: 'イワオニ', type: 'rock', icon: '🪨' }
     ];
 
     let gameState = 'TITLE'; // TITLE, MONOLOGUE, BATTLE, RESULT
-    let selectedPokemon = null;
+    let selectedMonster = null;
     let battleLogs = [];
     let wins = 0;
     let losses = 0;
@@ -194,7 +194,7 @@
 
         if (gameState === 'TITLE') {
             app.innerHTML = `
-                <h1>ポケットモンスター</h1>
+                <h1>手乗り怪獣</h1>
                 <div class="screen-content">
                     <p style="margin: 0 0 5px 0;">はかせ「ほうもんしゃ！<br>さいしょの1匹を えらぶのじゃ！」</p>
                     <div class="pokemon-grid">
@@ -207,17 +207,17 @@
                         `).join('')}
                     </div>
                 </div>
-                <div style="font-size:10px; text-align:center; color:#306230;">すきなポケモンをクリックしてね</div>
+                <div style="font-size:10px; text-align:center; color:#306230;">すきな怪獣をクリックしてね</div>
             `;
         } else if (gameState === 'MONOLOGUE') {
             app.innerHTML = `
                 <h1>たびだちのとき</h1>
                 <div class="screen-content" style="justify-content: flex-start; text-align: left; padding-top: 10px;">
                     <div style="font-size: 13px; line-height: 1.6;">
-                        <p>「おお！ <strong>${selectedPokemon.name}</strong> に<br>きめたのだな！」</p>
-                        <p>キミは ${selectedPokemon.name} とともに<br>いま、ひろい世界へと あしを踏み出した……。</p>
-                        <p style="text-align: center; margin-top: 15px; font-weight: bold; animation: blink 1s infinite;">
-                            草むらが こうはんすうに うごめく…！
+                        <p>「おお！ <strong>${selectedMonster.name}</strong> に<br>きめたのだな！」</p>
+                        <p>キミは ${selectedMonster.name} とともに<br>いま、ひろい世界へと あしを踏み出した……。</p>
+                        <p style="text-align: center; margin-top: 15px; font-weight: bold;">
+                            草むらが おそいかかってくる…！
                         </p>
                     </div>
                 </div>
@@ -225,7 +225,7 @@
             `;
         } else if (gameState === 'BATTLE') {
             app.innerHTML = `
-                <h1>${selectedPokemon.name.split('（')[0]} の 10連戦</h1>
+                <h1>${selectedMonster.name.split('（')[0]} の 10連戦</h1>
                 <div class="log-box" id="logBox">
                     ${battleLogs.map(log => `<div class="log-line ${log.result}">${log.text}</div>`).join('')}
                 </div>
@@ -244,10 +244,10 @@
                         10戦 ${wins}勝 ${losses}敗！
                     </div>
                     <p style="font-size: 13px; margin: 5px 0;">
-                        ${wins >= 7 ? 'すごいぞ！ 立派な ポケモンマスターの たまごだ！' : wins >= 4 ? 'よくがんばった！ まずは 上出来の 旅立ちだ！' : 'まけた数だけ つよくなる…！ つぎは 勝てるさ！'}
+                        ${wins >= 7 ? 'すごいぞ！ 立派な 怪獣マスターの たまごだ！' : wins >= 4 ? 'よくがんばった！ まずは 上出来の 旅立ちだ！' : 'まけた数だけ つよくなる…！ つぎは 勝てるさ！'}
                     </p>
                     <div style="font-size: 11px; color: #306230; margin-top: 10px;">
-                        えらんだ相棒: ${selectedPokemon.name}
+                        えらんだ相棒: ${selectedMonster.name}
                     </div>
                 </div>
                 <button class="btn" onclick="resetGame()">もういちど えらぶ</button>
@@ -256,7 +256,7 @@
     }
 
     function selectStarter(id) {
-        selectedPokemon = starters.find(p => p.id === id);
+        selectedMonster = starters.find(p => p.id === id);
         gameState = 'MONOLOGUE';
         render();
     }
@@ -283,19 +283,14 @@
         const enemy = enemies[currentBattleIndex];
         currentBattleIndex++;
 
-        // 相性計算と勝敗判定
-        // fire > grass > water > fire, normal/poison/electric/rock are neutral
         let advantage = false;
-        let disadvantage = false;
+        if (selectedMonster.type === 'fire' && enemy.type === 'bug') advantage = true;
+        if (selectedMonster.type === 'water' && enemy.type === 'rock') advantage = true;
+        if (selectedMonster.type === 'grass' && enemy.type === 'rock') advantage = true;
 
-        if (selectedPokemon.type === 'fire' && enemy.type === 'bug') advantage = true;
-        if (selectedPokemon.type === 'water' && (enemy.type === 'rock' || enemy.type === 'electric' === false)) advantage = true; // simplified
-        if (selectedPokemon.type === 'grass' && enemy.type === 'rock') advantage = true;
-
-        // ランダム要素を加味した勝敗
         let winChance = 0.5;
         if (advantage) winChance = 0.8;
-        if (selectedPokemon.type === enemy.type) winChance = 0.5;
+        if (selectedMonster.type === enemy.type) winChance = 0.5;
 
         const isWin = Math.random() < winChance;
         if (isWin) {
@@ -307,14 +302,12 @@
         }
 
         render();
-
-        // 次のバトルへ少しウェイトを入れて進む
         setTimeout(runNextBattle, 400);
     }
 
     function resetGame() {
         gameState = 'TITLE';
-        selectedPokemon = null;
+        selectedMonster = null;
         battleLogs = [];
         wins = 0;
         losses = 0;
@@ -322,7 +315,6 @@
         render();
     }
 
-    // 初期描画
     render();
 </script>
 

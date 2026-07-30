@@ -13,4 +13,4 @@ Deno/Web games collection.
 - [07. スマホテトリス (Mobile Tetris with Virtual Pad)](./07/index.html)
 - [08. オセロ (Othello vs CPU)](./08/index.html)
 - [09. 逆オセロ (Reverse Othello vs CPU)](./09/index.html)
-- [10. ポケモンはじまりの3匹 10連戦 (Pokemon Starter Quick Battle)](./10/index.html)
+- [10. 手乗り怪獣はじまりの3匹 10連戦 (Tenoori Kaiju Quick Battle)](./10/index.html)
