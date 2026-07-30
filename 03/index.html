@@ -22,50 +22,50 @@
             overflow-x: hidden;
         }
         h1 {
-            margin: 5px 0 2px 0;
-            font-size: 20px;
+            margin: 4px 0 2px 0;
+            font-size: 18px;
             letter-spacing: 2px;
             color: #06d6a0;
         }
         .subtitle {
-            font-size: 11px;
+            font-size: 10px;
             color: #888;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         .game-container {
             display: flex;
             flex-direction: column;
             align-items: center;
             background: #1e1e1e;
-            padding: 10px;
+            padding: 8px;
             border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.9);
+            box-shadow: 0 0 15px rgba(0,0,0,0.9);
             border: 1px solid #333;
-            max-width: 480px;
-            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
         }
         .header-info {
             display: flex;
             justify-content: space-between;
             width: 100%;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         .info-box {
             background: #2a2a2a;
-            padding: 4px 8px;
+            padding: 3px 6px;
             border-radius: 5px;
             text-align: center;
             border: 1px solid #3a3a3a;
             flex: 1;
-            margin: 0 3px;
+            margin: 0 2px;
         }
         .info-box h2 {
-            font-size: 9px;
+            font-size: 8px;
             margin: 0 0 2px 0;
             color: #aaa;
         }
         .info-box p {
-            font-size: 14px;
+            font-size: 12px;
             margin: 0;
             font-weight: bold;
             color: #fff;
@@ -80,19 +80,22 @@
             border: 2px solid #444;
             background-color: #000;
             display: block;
+            /* レスポンシブに画面幅へ完全に収まるよう最大幅を指定 */
+            max-width: 100%;
+            height: auto;
         }
         .btn-start {
             background-color: #06d6a0;
             color: #000;
             border: none;
-            padding: 8px;
-            font-size: 12px;
+            padding: 6px;
+            font-size: 11px;
             cursor: pointer;
             border-radius: 5px;
             font-weight: bold;
             width: 100%;
-            margin-top: 8px;
-            margin-bottom: 5px;
+            margin-top: 6px;
+            margin-bottom: 4px;
         }
         .btn-start:hover {
             background-color: #1b9aaa;
@@ -102,35 +105,35 @@
         /* 半透明バーチャルパッド関連 */
         .controls-overlay {
             position: absolute;
-            bottom: 10px;
-            left: 10px;
-            right: 10px;
+            bottom: 5px;
+            left: 5px;
+            right: 5px;
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            pointer-events: none; /* コンテナ自体はタッチ透過 */
+            pointer-events: none;
         }
         .pointer-events-auto {
             pointer-events: auto;
         }
 
-        /* 左下：十字キー風レイアウト */
+        /* 左下：十字キー風レイアウト（スマホで押しやすいよう少しコンパクトに） */
         .d-pad {
             display: grid;
-            grid-template-columns: repeat(3, 45px);
-            grid-template-rows: repeat(3, 45px);
-            gap: 4px;
-            background: rgba(0, 0, 0, 0.2);
-            padding: 4px;
-            border-radius: 12px;
+            grid-template-columns: repeat(3, 40px);
+            grid-template-rows: repeat(3, 40px);
+            gap: 3px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 3px;
+            border-radius: 10px;
             backdrop-filter: blur(2px);
         }
         .d-btn {
-            background-color: rgba(255, 255, 255, 0.2);
+            background-color: rgba(255, 255, 255, 0.25);
             color: #fff;
             border: 1px solid rgba(255, 255, 255, 0.4);
             border-radius: 8px;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: bold;
             display: flex;
             align-items: center;
@@ -140,28 +143,27 @@
             user-select: none;
         }
         .d-btn:active {
-            background-color: rgba(6, 214, 160, 0.6);
+            background-color: rgba(6, 214, 160, 0.7);
             border-color: #06d6a0;
         }
-        /* 十字キーの配置調整 */
         .btn-up    { grid-column: 2; grid-row: 1; }
         .btn-left  { grid-column: 1; grid-row: 2; }
         .btn-right { grid-column: 3; grid-row: 2; }
         .btn-down  { grid-column: 2; grid-row: 3; }
 
-        /* 右側：高速落下（ハードドロップ）ボタン */
+        /* 右側：高速落下ボタン */
         .action-pad {
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            gap: 4px;
         }
         .action-btn {
-            background-color: rgba(255, 190, 11, 0.3);
+            background-color: rgba(255, 190, 11, 0.35);
             color: #fff;
             border: 1px solid rgba(255, 190, 11, 0.6);
-            border-radius: 12px;
-            padding: 12px 16px;
-            font-size: 12px;
+            border-radius: 10px;
+            padding: 10px 14px;
+            font-size: 11px;
             font-weight: bold;
             text-align: center;
             cursor: pointer;
@@ -171,7 +173,7 @@
             box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
         .action-btn:active {
-            background-color: rgba(255, 190, 11, 0.7);
+            background-color: rgba(255, 190, 11, 0.8);
             border-color: #ffbe0b;
         }
     </style>
@@ -179,7 +181,7 @@
 <body>
 
     <h1>フトリス</h1>
-    <div class="subtitle">〜 幅30マス超ワイドテトリス（スマホ対応） 〜</div>
+    <div class="subtitle">〜 幅30マス超ワイドテトリス 〜</div>
     <div class="game-container">
         <div class="header-info">
             <div class="info-box">
@@ -196,22 +198,17 @@
             </div>
         </div>
 
-        <!-- メインエリア（Canvas + 半透明バーチャルパッド重ね合わせ） -->
         <div class="main-area">
-            <!-- 幅30マス・高さ40マス, ブロック15px => canvas width 450, height 600 -->
+            <!-- 幅30マス・高さ40マス, 内部解像度450x600 -->
             <canvas id="tetris" width="450" height="600"></canvas>
 
-            <!-- 半透明バーチャルパッド -->
             <div class="controls-overlay">
-                <!-- 左下：上下左右キー -->
                 <div class="d-pad pointer-events-auto">
                     <button class="d-btn btn-up" id="btn-up">▲</button>
                     <button class="d-btn btn-left" id="btn-left">◀</button>
                     <button class="d-btn btn-right" id="btn-right">▶</button>
                     <button class="d-btn btn-down" id="btn-down">▼</button>
                 </div>
-
-                <!-- 右側：高速落下ボタン -->
                 <div class="action-pad pointer-events-auto">
                     <button class="action-btn" id="btn-harddrop">⚡ 落下</button>
                 </div>
@@ -479,7 +476,6 @@
             document.getElementById('level').innerText = player.level;
         }
 
-        // キーボード操作
         document.addEventListener('keydown', event => {
             if (!isRunning) return;
 
@@ -496,7 +492,6 @@
             }
         });
 
-        // バーチャルパッド操作
         document.getElementById('btn-left').addEventListener('click', () => { if(isRunning) playerMove(-1); });
         document.getElementById('btn-right').addEventListener('click', () => { if(isRunning) playerMove(1); });
         document.getElementById('btn-up').addEventListener('click', () => { if(isRunning) playerRotate(1); });

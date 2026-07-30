@@ -22,50 +22,50 @@
             overflow-x: hidden;
         }
         h1 {
-            margin: 5px 0 2px 0;
-            font-size: 20px;
+            margin: 4px 0 2px 0;
+            font-size: 18px;
             letter-spacing: 2px;
             color: #ffb703;
         }
         .subtitle {
-            font-size: 11px;
+            font-size: 10px;
             color: #888;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         .game-container {
             display: flex;
             flex-direction: column;
             align-items: center;
             background: #1e1e1e;
-            padding: 10px;
+            padding: 8px;
             border-radius: 10px;
-            box-shadow: 0 0 20px rgba(0,0,0,0.9);
+            box-shadow: 0 0 15px rgba(0,0,0,0.9);
             border: 1px solid #333;
-            max-width: 300px;
-            width: 100%;
+            max-width: 100%;
+            box-sizing: border-box;
         }
         .header-info {
             display: flex;
             justify-content: space-between;
             width: 100%;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
         }
         .info-box {
             background: #2a2a2a;
-            padding: 4px 8px;
+            padding: 3px 6px;
             border-radius: 5px;
             text-align: center;
             border: 1px solid #3a3a3a;
             flex: 1;
-            margin: 0 3px;
+            margin: 0 2px;
         }
         .info-box h2 {
-            font-size: 9px;
+            font-size: 8px;
             margin: 0 0 2px 0;
             color: #aaa;
         }
         .info-box p {
-            font-size: 14px;
+            font-size: 12px;
             margin: 0;
             font-weight: bold;
             color: #fff;
@@ -80,18 +80,20 @@
             border: 2px solid #444;
             background-color: #000;
             display: block;
+            max-width: 100%;
+            height: auto;
         }
         .btn {
             background-color: #fb8500;
             color: white;
             border: none;
             padding: 8px;
-            font-size: 12px;
+            font-size: 11px;
             cursor: pointer;
             border-radius: 5px;
             font-weight: bold;
             width: 100%;
-            margin-top: 8px;
+            margin-top: 6px;
             text-transform: uppercase;
         }
         .btn:hover {
@@ -99,36 +101,45 @@
             color: #000;
         }
 
-        /* 半透明バーチャルパッド */
-        .controls-overlay {
-            position: absolute;
-            bottom: 10px;
-            left: 10px;
-            right: 10px;
+        /* 仮想パッドがゲーム画面に被らないよう、キャンバスの左右/下部に余白スペース（外側配置）を設けるか、またはオーバーレイをゲーム領域外に配置 */
+        .game-layout {
+            display: flex;
+            flex-direction: row;
+            gap: 10px;
+            align-items: flex-start;
+            justify-content: center;
+        }
+        .side-controls {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            height: 400px; /* canvasの高さに合わせる */
+        }
+
+        /* スマホ向けの左右セパレート・外側配置コントロール */
+        .external-controls {
             display: flex;
             justify-content: space-between;
-            align-items: flex-end;
-            pointer-events: none;
+            width: 100%;
+            max-width: 320px;
+            margin-top: 8px;
         }
-        .pointer-events-auto {
-            pointer-events: auto;
-        }
+
         .d-pad {
             display: grid;
-            grid-template-columns: repeat(3, 40px);
-            grid-template-rows: repeat(3, 40px);
-            gap: 4px;
-            background: rgba(0, 0, 0, 0.2);
-            padding: 4px;
-            border-radius: 12px;
-            backdrop-filter: blur(2px);
+            grid-template-columns: repeat(3, 38px);
+            grid-template-rows: repeat(3, 38px);
+            gap: 3px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 3px;
+            border-radius: 10px;
         }
         .d-btn {
-            background-color: rgba(255, 255, 255, 0.2);
+            background-color: rgba(255, 255, 255, 0.25);
             color: #fff;
             border: 1px solid rgba(255, 255, 255, 0.4);
             border-radius: 8px;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: bold;
             display: flex;
             align-items: center;
@@ -137,7 +148,7 @@
             touch-action: manipulation;
         }
         .d-btn:active {
-            background-color: rgba(251, 133, 0, 0.6);
+            background-color: rgba(251, 133, 0, 0.8);
             border-color: #fb8500;
         }
         .btn-up    { grid-column: 2; grid-row: 1; }
@@ -148,23 +159,23 @@
         .action-pad {
             display: flex;
             flex-direction: column;
-            gap: 5px;
+            justify-content: center;
         }
         .action-btn {
-            background-color: rgba(255, 183, 3, 0.3);
+            background-color: rgba(255, 183, 3, 0.35);
             color: #fff;
             border: 1px solid rgba(255, 183, 3, 0.6);
             border-radius: 10px;
-            padding: 10px 12px;
-            font-size: 11px;
+            padding: 15px 16px;
+            font-size: 12px;
             font-weight: bold;
             text-align: center;
             cursor: pointer;
             touch-action: manipulation;
-            backdrop-filter: blur(2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
         .action-btn:active {
-            background-color: rgba(255, 183, 3, 0.7);
+            background-color: rgba(255, 183, 3, 0.9);
             border-color: #ffb703;
         }
     </style>
@@ -190,19 +201,20 @@
         </div>
 
         <div class="main-area">
-            <!-- 幅6マスなので 6 * 20 = 120px -->
+            <!-- 幅6マス 6 * 20 = 120px -->
             <canvas id="tetris" width="120" height="400"></canvas>
-            
-            <div class="controls-overlay">
-                <div class="d-pad pointer-events-auto">
-                    <button class="d-btn btn-up" id="btn-up">▲</button>
-                    <button class="d-btn btn-left" id="btn-left">◀</button>
-                    <button class="d-btn btn-right" id="btn-right">▶</button>
-                    <button class="d-btn btn-down" id="btn-down">▼</button>
-                </div>
-                <div class="action-pad pointer-events-auto">
-                    <button class="action-btn" id="btn-harddrop">⚡ 落下</button>
-                </div>
+        </div>
+
+        <!-- ホソリスは幅が狭いため、ゲーム画面の下部にコントロールを独立配置して画面にかからないようにする -->
+        <div class="external-controls">
+            <div class="d-pad">
+                <button class="d-btn btn-up" id="btn-up">▲</button>
+                <button class="d-btn btn-left" id="btn-left">◀</button>
+                <button class="d-btn btn-right" id="btn-right">▶</button>
+                <button class="d-btn btn-down" id="btn-down">▼</button>
+            </div>
+            <div class="action-pad">
+                <button class="action-btn" id="btn-harddrop">⚡ 落下</button>
             </div>
         </div>
 
@@ -470,7 +482,7 @@
             if (!isRunning) return;
 
             if (event.keyCode === 37) {
-                playerMove(-1);
+                playerMap(-1);
             } else if (event.keyCode === 39) {
                 playerMove(1);
             } else if (event.keyCode === 40) {
