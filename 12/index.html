@@ -361,9 +361,8 @@
       return n.toString(16).padStart(2, '0');
     }
 
-    function createColor(val) {
-      const hex = numToHex(val);
-      return `#${hex}${hex}${hex}`;
+    function createRgbColor(r, g, b) {
+      return `#${numToHex(r)}${numToHex(g)}${numToHex(b)}`;
     }
 
     function initGrids() {
@@ -394,30 +393,34 @@
     }
 
     function startGame() {
-      // Range: #bbbbbb (187) to #ffffff (255) -> 69 available shade levels
+      // Range for each RGB component: 187 (#bb) to 255 (#ff)
       const MIN_VAL = 187;
       const MAX_VAL = 255;
       const NUM_CHOICES = 9;
 
-      // Select 9 UNIQUE color values from range 187 to 255 so no two choices share a color
-      const availableValues = [];
-      for (let v = MIN_VAL; v <= MAX_VAL; v++) {
-        availableValues.push(v);
-      }
+      // Generate 9 distinct RGB colors
+      const choiceColors = [];
+      const usedHexes = new Set();
 
-      // Shuffle available values
-      for (let i = availableValues.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [availableValues[i], availableValues[j]] = [availableValues[j], availableValues[i]];
-      }
+      while (choiceColors.length < NUM_CHOICES) {
+        // Base value for brightness control
+        const base = Math.floor(Math.random() * (MAX_VAL - MIN_VAL + 1)) + MIN_VAL;
+        
+        // Random slight variation for R, G, B components (-12 to +12 from base)
+        const r = Math.min(MAX_VAL, Math.max(MIN_VAL, base + (Math.floor(Math.random() * 25) - 12)));
+        const g = Math.min(MAX_VAL, Math.max(MIN_VAL, base + (Math.floor(Math.random() * 25) - 12)));
+        const b = Math.min(MAX_VAL, Math.max(MIN_VAL, base + (Math.floor(Math.random() * 25) - 12)));
 
-      // Pick 9 distinct values for the choices
-      const choiceValues = availableValues.slice(0, NUM_CHOICES);
+        const hex = createRgbColor(r, g, b);
+        if (!usedHexes.has(hex)) {
+          usedHexes.add(hex);
+          choiceColors.push(hex);
+        }
+      }
 
       // Randomly choose 1 of the 9 choices to be the target
       targetIndex = Math.floor(Math.random() * NUM_CHOICES);
-      const targetVal = choiceValues[targetIndex];
-      targetColorHex = createColor(targetVal);
+      targetColorHex = choiceColors[targetIndex];
 
       // Set target panel color
       targetPanel.style.backgroundColor = targetColorHex;
@@ -427,8 +430,8 @@
       const panels = choiceGrid.querySelectorAll('.panel');
       panels.forEach((panel, idx) => {
         panel.className = 'panel';
-        panel.style.pointerEvents = 'auto'; // Reset pointer-events so previous wrong clicks don't stay disabled
-        const color = createColor(choiceValues[idx]);
+        panel.style.pointerEvents = 'auto'; // Reset pointer-events
+        const color = choiceColors[idx];
         panel.style.backgroundColor = color;
         panel.querySelector('.color-code').textContent = color;
       });
