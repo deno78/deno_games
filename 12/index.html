@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>白って256種類あるんやで - White Color Finding Game</title>
+  <title>白って256種類あるんやで - White Color Matching Game</title>
   <style>
     :root {
       --bg-color: #121214;
@@ -36,7 +36,7 @@
 
     .container {
       width: 100%;
-      max-width: 900px;
+      max-width: 800px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -102,22 +102,58 @@
 
     .game-area {
       display: flex;
-      gap: 30px;
+      gap: 40px;
       justify-content: center;
       align-items: center;
       width: 100%;
       flex-wrap: wrap;
     }
 
+    .target-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .target-title {
+      font-size: 0.95rem;
+      color: #38bdf8;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .target-panel-box {
+      width: 160px;
+      height: 160px;
+      background-color: #27272a;
+      padding: 10px;
+      border-radius: 16px;
+      border: 2px solid #38bdf8;
+      box-shadow: 0 10px 20px -3px rgba(56, 189, 248, 0.2);
+    }
+
+    .target-panel {
+      width: 100%;
+      height: 100%;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(0, 0, 0, 0.1);
+    }
+
     .grid-container {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
     }
 
     .grid-title {
-      font-size: 0.9rem;
+      font-size: 0.95rem;
       color: #a1a1aa;
       font-weight: 600;
     }
@@ -127,8 +163,8 @@
       grid-template-columns: repeat(3, 1fr);
       grid-template-rows: repeat(3, 1fr);
       gap: 10px;
-      width: 320px;
-      height: 320px;
+      width: 300px;
+      height: 300px;
       background-color: #27272a;
       padding: 10px;
       border-radius: 16px;
@@ -148,14 +184,14 @@
       border: 1px solid rgba(0, 0, 0, 0.08);
     }
 
-    .panel:hover {
-      transform: scale(1.03);
+    .grid .panel:hover {
+      transform: scale(1.05);
       box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
       z-index: 2;
     }
 
-    .panel:active {
-      transform: scale(0.97);
+    .grid .panel:active {
+      transform: scale(0.95);
     }
 
     .panel.disabled {
@@ -168,7 +204,7 @@
       font-weight: 700;
       font-size: 0.85rem;
       color: #111;
-      background: rgba(255, 255, 255, 0.85);
+      background: rgba(255, 255, 255, 0.88);
       padding: 4px 6px;
       border-radius: 6px;
       box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
@@ -237,10 +273,14 @@
       color: var(--accent-color);
     }
 
-    /* Modal / Result Overlay */
-    @media (max-width: 720px) {
+    @media (max-width: 600px) {
       .game-area {
         flex-direction: column;
+        gap: 20px;
+      }
+      .target-panel-box {
+        width: 130px;
+        height: 130px;
       }
       .grid {
         width: 280px;
@@ -254,7 +294,7 @@
   <div class="container">
     <header>
       <h1>白って256種類あるんやで</h1>
-      <p class="subtitle">全18枚のパネル（左右3x3）から1枚だけ異なる色の白を見つけ出せ！</p>
+      <p class="subtitle">お題の「白」と同じ色のパネルを 3x3 の選択肢から見つけ出せ！</p>
     </header>
 
     <div class="status-bar">
@@ -271,13 +311,18 @@
     <div class="message" id="message">「スタート」ボタンを押してゲームを開始してください</div>
 
     <div class="game-area">
-      <div class="grid-container">
-        <span class="grid-title">LEFT GRID</span>
-        <div class="grid" id="left-grid"></div>
+      <div class="target-container">
+        <span class="target-title">🎯 お題の「白」</span>
+        <div class="target-panel-box" id="target-box">
+          <div class="target-panel panel disabled" id="target-panel">
+            <span class="color-code" id="target-code"></span>
+          </div>
+        </div>
       </div>
+
       <div class="grid-container">
-        <span class="grid-title">RIGHT GRID</span>
-        <div class="grid" id="right-grid"></div>
+        <span class="grid-title">3x3 選択肢</span>
+        <div class="grid" id="choice-grid"></div>
       </div>
     </div>
 
@@ -287,8 +332,10 @@
   </div>
 
   <script>
-    const leftGrid = document.getElementById('left-grid');
-    const rightGrid = document.getElementById('right-grid');
+    const targetBox = document.getElementById('target-box');
+    const targetPanel = document.getElementById('target-panel');
+    const targetCode = document.getElementById('target-code');
+    const choiceGrid = document.getElementById('choice-grid');
     const timerEl = document.getElementById('timer');
     const livesEl = document.getElementById('lives');
     const messageEl = document.getElementById('message');
@@ -300,10 +347,7 @@
     let mistakes = 0;
     const MAX_MISTAKES = 3;
 
-    // Correct target location: grid ('left' or 'right') and index (0..8)
-    let targetGrid = null;
     let targetIndex = -1;
-    let baseColorHex = '';
     let targetColorHex = '';
 
     function numToHex(n) {
@@ -316,33 +360,20 @@
     }
 
     function initGrids() {
-      leftGrid.innerHTML = '';
-      rightGrid.innerHTML = '';
-      leftGrid.classList.remove('show-codes');
-      rightGrid.classList.remove('show-codes');
+      choiceGrid.innerHTML = '';
+      choiceGrid.classList.remove('show-codes');
+      targetBox.classList.remove('show-codes');
 
       for (let i = 0; i < 9; i++) {
-        const pLeft = document.createElement('div');
-        pLeft.className = 'panel disabled';
-        pLeft.dataset.grid = 'left';
-        pLeft.dataset.index = i;
-        pLeft.addEventListener('click', handlePanelClick);
+        const p = document.createElement('div');
+        p.className = 'panel disabled';
+        p.dataset.index = i;
+        p.addEventListener('click', handlePanelClick);
 
-        const codeLeft = document.createElement('span');
-        codeLeft.className = 'color-code';
-        pLeft.appendChild(codeLeft);
-        leftGrid.appendChild(pLeft);
-
-        const pRight = document.createElement('div');
-        pRight.className = 'panel disabled';
-        pRight.dataset.grid = 'right';
-        pRight.dataset.index = i;
-        pRight.addEventListener('click', handlePanelClick);
-
-        const codeRight = document.createElement('span');
-        codeRight.className = 'color-code';
-        pRight.appendChild(codeRight);
-        rightGrid.appendChild(pRight);
+        const code = document.createElement('span');
+        code.className = 'color-code';
+        p.appendChild(code);
+        choiceGrid.appendChild(p);
       }
     }
 
@@ -356,70 +387,46 @@
     }
 
     function startGame() {
-      // Range: #bbbbbb (187) to #ffffff (255)
+      // Range: #bbbbbb (187) to #ffffff (255) -> 69 available shade levels
       const MIN_VAL = 187;
       const MAX_VAL = 255;
-      const totalPanels = 18;
+      const NUM_CHOICES = 9;
 
-      // Select target grid and index
-      targetGrid = Math.random() < 0.5 ? 'left' : 'right';
-      targetIndex = Math.floor(Math.random() * 9);
-
-      // Generate 18 UNIQUE color values so no two panels share the same color.
-      // To make 1 panel "different" (the target), 17 panels are placed in a close cluster,
-      // and 1 panel (target) is placed significantly outside that cluster.
-      
-      // Cluster center between 187 + 15 and 255 - 15 (202 to 240)
-      const clusterCenter = Math.floor(Math.random() * (240 - 202 + 1)) + 202;
-      
-      // Target offset (+15 to +25 or -15 to -25)
-      let offset = Math.floor(Math.random() * 11) + 15; // 15..25
-      if (clusterCenter + offset > MAX_VAL || (clusterCenter - offset >= MIN_VAL && Math.random() < 0.5)) {
-        offset = -offset;
-      }
-      const targetVal = Math.min(MAX_VAL, Math.max(MIN_VAL, clusterCenter + offset));
-
-      // 17 unique values around clusterCenter, excluding targetVal
-      const availableClusterVals = [];
-      for (let v = Math.max(MIN_VAL, clusterCenter - 12); v <= Math.min(MAX_VAL, clusterCenter + 12); v++) {
-        if (v !== targetVal) {
-          availableClusterVals.push(v);
-        }
+      // Select 9 UNIQUE color values from range 187 to 255 so no two choices share a color
+      const availableValues = [];
+      for (let v = MIN_VAL; v <= MAX_VAL; v++) {
+        availableValues.push(v);
       }
 
-      // Shuffle available cluster values
-      for (let i = availableClusterVals.length - 1; i > 0; i--) {
+      // Shuffle available values
+      for (let i = availableValues.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
-        [availableClusterVals[i], availableClusterVals[j]] = [availableClusterVals[j], availableClusterVals[i]];
+        [availableValues[i], availableValues[j]] = [availableValues[j], availableValues[i]];
       }
 
-      const clusterVals = availableClusterVals.slice(0, 17);
+      // Pick 9 distinct values for the choices
+      const choiceValues = availableValues.slice(0, NUM_CHOICES);
 
-      // Assign colors to all 18 panels
-      let clusterIdx = 0;
-      const leftPanels = leftGrid.querySelectorAll('.panel');
-      const rightPanels = rightGrid.querySelectorAll('.panel');
+      // Randomly choose 1 of the 9 choices to be the target
+      targetIndex = Math.floor(Math.random() * NUM_CHOICES);
+      const targetVal = choiceValues[targetIndex];
+      targetColorHex = createColor(targetVal);
 
-      leftPanels.forEach((panel, idx) => {
+      // Set target panel color
+      targetPanel.style.backgroundColor = targetColorHex;
+      targetCode.textContent = targetColorHex;
+
+      // Render choice panels
+      const panels = choiceGrid.querySelectorAll('.panel');
+      panels.forEach((panel, idx) => {
         panel.className = 'panel';
-        const isTarget = (targetGrid === 'left' && targetIndex === idx);
-        const val = isTarget ? targetVal : clusterVals[clusterIdx++];
-        const color = createColor(val);
+        const color = createColor(choiceValues[idx]);
         panel.style.backgroundColor = color;
         panel.querySelector('.color-code').textContent = color;
       });
 
-      rightPanels.forEach((panel, idx) => {
-        panel.className = 'panel';
-        const isTarget = (targetGrid === 'right' && targetIndex === idx);
-        const val = isTarget ? targetVal : clusterVals[clusterIdx++];
-        const color = createColor(val);
-        panel.style.backgroundColor = color;
-        panel.querySelector('.color-code').textContent = color;
-      });
-
-      leftGrid.classList.remove('show-codes');
-      rightGrid.classList.remove('show-codes');
+      choiceGrid.classList.remove('show-codes');
+      targetBox.classList.remove('show-codes');
 
       mistakes = 0;
       updateLivesDisplay();
@@ -428,7 +435,7 @@
       timerEl.textContent = timeLeft.toFixed(1) + 's';
 
       gameActive = true;
-      messageEl.textContent = '異なる色のパネルを選択してください！';
+      messageEl.textContent = 'お題と同じ色のパネルを選んでタップ！';
       messageEl.className = 'message';
       startBtn.style.display = 'none';
 
@@ -449,21 +456,20 @@
       if (!gameActive) return;
 
       const panel = e.currentTarget;
-      const g = panel.dataset.grid;
       const idx = parseInt(panel.dataset.index, 10);
 
-      if (g === targetGrid && idx === targetIndex) {
-        endGame(true, 'クリア！見事な観察力です！');
+      if (idx === targetIndex) {
+        endGame(true, 'クリア！見事お題の「白」を当てました！');
       } else {
         panel.classList.add('wrong-clicked');
-        panel.style.pointerEvents = 'none'; // disable further clicks on wrong panels
+        panel.style.pointerEvents = 'none'; // disable further clicks on wrong panel
         mistakes++;
         updateLivesDisplay();
 
         if (mistakes >= MAX_MISTAKES) {
           endGame(false, 'ゲームオーバー！3回ミスタッチしました。');
         } else {
-          messageEl.textContent = `違います！あと ${MAX_MISTAKES - mistakes} 回までミス可能`;
+          messageEl.textContent = `違います！あと ${MAX_MISTAKES - mistakes} 回ミス可能`;
           messageEl.className = 'message lose';
         }
       }
@@ -476,20 +482,19 @@
       messageEl.textContent = text;
       messageEl.className = 'message ' + (isWin ? 'win' : 'lose');
 
-      // Disable clicks on all panels
-      const allPanels = document.querySelectorAll('.panel');
+      // Disable clicks on all choice panels
+      const allPanels = choiceGrid.querySelectorAll('.panel');
       allPanels.forEach(p => p.classList.add('disabled'));
 
-      // Highlight target panel
-      const targetSelector = `[data-grid="${targetGrid}"][data-index="${targetIndex}"]`;
-      const targetPanel = document.querySelector(targetSelector);
-      if (targetPanel) {
-        targetPanel.classList.add('correct-target');
+      // Highlight target panel in grid
+      const correctPanel = choiceGrid.querySelector(`[data-index="${targetIndex}"]`);
+      if (correctPanel) {
+        correctPanel.classList.add('correct-target');
       }
 
-      // Reveal hex code answers
-      leftGrid.classList.add('show-codes');
-      rightGrid.classList.add('show-codes');
+      // Reveal hex code answers on choices and target
+      choiceGrid.classList.add('show-codes');
+      targetBox.classList.add('show-codes');
 
       startBtn.textContent = 'もう一度プレイ';
       startBtn.style.display = 'inline-block';
@@ -497,7 +502,7 @@
 
     startBtn.addEventListener('click', startGame);
 
-    // Initial state setup
+    // Initial setup
     initGrids();
   </script>
 </body>
