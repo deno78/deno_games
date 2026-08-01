@@ -109,11 +109,17 @@
       flex-wrap: wrap;
     }
 
+    .target-section {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
     .target-container {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
     }
 
     .target-title {
@@ -124,8 +130,8 @@
     }
 
     .target-panel-box {
-      width: 160px;
-      height: 160px;
+      width: 150px;
+      height: 150px;
       background-color: #27272a;
       padding: 10px;
       border-radius: 16px;
@@ -231,8 +237,7 @@
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 12px;
-      margin-top: 10px;
+      justify-content: center;
     }
 
     .btn {
@@ -311,12 +316,18 @@
     <div class="message" id="message">「スタート」ボタンを押してゲームを開始してください</div>
 
     <div class="game-area">
-      <div class="target-container">
-        <span class="target-title">🎯 お題の「白」</span>
-        <div class="target-panel-box" id="target-box">
-          <div class="target-panel panel disabled" id="target-panel">
-            <span class="color-code" id="target-code"></span>
+      <div class="target-section">
+        <div class="target-container">
+          <span class="target-title">🎯 お題の「白」</span>
+          <div class="target-panel-box" id="target-box">
+            <div class="target-panel panel disabled" id="target-panel">
+              <span class="color-code" id="target-code"></span>
+            </div>
           </div>
+        </div>
+
+        <div class="controls">
+          <button class="btn" id="start-btn">ゲームスタート</button>
         </div>
       </div>
 
@@ -324,10 +335,6 @@
         <span class="grid-title">3x3 選択肢</span>
         <div class="grid" id="choice-grid"></div>
       </div>
-    </div>
-
-    <div class="controls">
-      <button class="btn" id="start-btn">ゲームスタート</button>
     </div>
   </div>
 
