@@ -1,0 +1,479 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>白って256種類あるんやで - White Color Finding Game</title>
+  <style>
+    :root {
+      --bg-color: #121214;
+      --card-bg: #1e1e24;
+      --text-color: #f0f0f5;
+      --accent-color: #ef4444;
+      --accent-hover: #dc2626;
+      --success-color: #22c55e;
+      --panel-border: #33333e;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 900px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    header {
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #ffffff 0%, #a1a1aa 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+
+    p.subtitle {
+      color: #9ca3af;
+      font-size: 0.95rem;
+    }
+
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      background-color: var(--card-bg);
+      padding: 14px 24px;
+      border-radius: 12px;
+      border: 1px solid var(--panel-border);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.2);
+    }
+
+    .status-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .status-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: #9ca3af;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+
+    .status-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    .life-container {
+      display: flex;
+      gap: 6px;
+      font-size: 1.4rem;
+    }
+
+    .game-area {
+      display: flex;
+      gap: 30px;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    .grid-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .grid-title {
+      font-size: 0.9rem;
+      color: #a1a1aa;
+      font-weight: 600;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 10px;
+      width: 320px;
+      height: 320px;
+      background-color: #27272a;
+      padding: 10px;
+      border-radius: 16px;
+      border: 1px solid var(--panel-border);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.3);
+    }
+
+    .panel {
+      border-radius: 10px;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border: 1px solid rgba(0, 0, 0, 0.08);
+    }
+
+    .panel:hover {
+      transform: scale(1.03);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+      z-index: 2;
+    }
+
+    .panel:active {
+      transform: scale(0.97);
+    }
+
+    .panel.disabled {
+      cursor: default;
+      pointer-events: none;
+    }
+
+    .color-code {
+      font-family: 'Courier New', Courier, monospace;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: #111;
+      background: rgba(255, 255, 255, 0.85);
+      padding: 4px 6px;
+      border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      letter-spacing: 0.5px;
+    }
+
+    .show-codes .color-code {
+      opacity: 1;
+    }
+
+    .panel.correct-target {
+      outline: 4px solid var(--success-color);
+      outline-offset: -4px;
+    }
+
+    .panel.wrong-clicked {
+      outline: 4px solid var(--accent-color);
+      outline-offset: -4px;
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+      margin-top: 10px;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #f3f4f6 0%, #e5e7eb 100%);
+      color: #111827;
+      font-size: 1.1rem;
+      font-weight: 700;
+      padding: 14px 40px;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(255, 255, 255, 0.2);
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+      background: linear-gradient(135deg, #ffffff 0%, #f3f4f6 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(255, 255, 255, 0.3);
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .message {
+      font-size: 1.2rem;
+      font-weight: 700;
+      min-height: 1.8rem;
+      text-align: center;
+    }
+
+    .message.win {
+      color: var(--success-color);
+    }
+
+    .message.lose {
+      color: var(--accent-color);
+    }
+
+    /* Modal / Result Overlay */
+    @media (max-width: 720px) {
+      .game-area {
+        flex-direction: column;
+      }
+      .grid {
+        width: 280px;
+        height: 280px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>白って256種類あるんやで</h1>
+      <p class="subtitle">全18枚のパネル（左右3x3）から1枚だけ異なる色の白を見つけ出せ！</p>
+    </header>
+
+    <div class="status-bar">
+      <div class="status-item">
+        <span class="status-label">残り時間</span>
+        <span class="status-value" id="timer">10.0s</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">ライフ</span>
+        <div class="life-container" id="lives">❤️❤️❤️</div>
+      </div>
+    </div>
+
+    <div class="message" id="message">「スタート」ボタンを押してゲームを開始してください</div>
+
+    <div class="game-area">
+      <div class="grid-container">
+        <span class="grid-title">LEFT GRID</span>
+        <div class="grid" id="left-grid"></div>
+      </div>
+      <div class="grid-container">
+        <span class="grid-title">RIGHT GRID</span>
+        <div class="grid" id="right-grid"></div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn" id="start-btn">ゲームスタート</button>
+    </div>
+  </div>
+
+  <script>
+    const leftGrid = document.getElementById('left-grid');
+    const rightGrid = document.getElementById('right-grid');
+    const timerEl = document.getElementById('timer');
+    const livesEl = document.getElementById('lives');
+    const messageEl = document.getElementById('message');
+    const startBtn = document.getElementById('start-btn');
+
+    let gameActive = false;
+    let timerInterval = null;
+    let timeLeft = 10.0;
+    let mistakes = 0;
+    const MAX_MISTAKES = 3;
+
+    // Correct target location: grid ('left' or 'right') and index (0..8)
+    let targetGrid = null;
+    let targetIndex = -1;
+    let baseColorHex = '';
+    let targetColorHex = '';
+
+    function numToHex(n) {
+      return n.toString(16).padStart(2, '0');
+    }
+
+    function createColor(val) {
+      const hex = numToHex(val);
+      return `#${hex}${hex}${hex}`;
+    }
+
+    function initGrids() {
+      leftGrid.innerHTML = '';
+      rightGrid.innerHTML = '';
+      leftGrid.classList.remove('show-codes');
+      rightGrid.classList.remove('show-codes');
+
+      for (let i = 0; i < 9; i++) {
+        const pLeft = document.createElement('div');
+        pLeft.className = 'panel disabled';
+        pLeft.dataset.grid = 'left';
+        pLeft.dataset.index = i;
+        pLeft.addEventListener('click', handlePanelClick);
+
+        const codeLeft = document.createElement('span');
+        codeLeft.className = 'color-code';
+        pLeft.appendChild(codeLeft);
+        leftGrid.appendChild(pLeft);
+
+        const pRight = document.createElement('div');
+        pRight.className = 'panel disabled';
+        pRight.dataset.grid = 'right';
+        pRight.dataset.index = i;
+        pRight.addEventListener('click', handlePanelClick);
+
+        const codeRight = document.createElement('span');
+        codeRight.className = 'color-code';
+        pRight.appendChild(codeRight);
+        rightGrid.appendChild(pRight);
+      }
+    }
+
+    function updateLivesDisplay() {
+      const remaining = MAX_MISTAKES - mistakes;
+      let hearts = '';
+      for (let i = 0; i < MAX_MISTAKES; i++) {
+        hearts += i < remaining ? '❤️' : '🖤';
+      }
+      livesEl.textContent = hearts;
+    }
+
+    function startGame() {
+      // #ffffff is 255, #dddddd is 221 (range: 221 to 255)
+      const MIN_VAL = 221;
+      const MAX_VAL = 255;
+
+      const baseVal = Math.floor(Math.random() * (MAX_VAL - MIN_VAL + 1)) + MIN_VAL;
+      let targetVal = baseVal;
+      while (targetVal === baseVal) {
+        // Vary target color slightly (within range 221-255)
+        targetVal = Math.floor(Math.random() * (MAX_VAL - MIN_VAL + 1)) + MIN_VAL;
+      }
+
+      baseColorHex = createColor(baseVal);
+      targetColorHex = createColor(targetVal);
+
+      targetGrid = Math.random() < 0.5 ? 'left' : 'right';
+      targetIndex = Math.floor(Math.random() * 9);
+
+      // Render colors
+      const leftPanels = leftGrid.querySelectorAll('.panel');
+      const rightPanels = rightGrid.querySelectorAll('.panel');
+
+      leftPanels.forEach((panel, idx) => {
+        panel.className = 'panel';
+        const isTarget = (targetGrid === 'left' && targetIndex === idx);
+        const color = isTarget ? targetColorHex : baseColorHex;
+        panel.style.backgroundColor = color;
+        panel.querySelector('.color-code').textContent = color;
+      });
+
+      rightPanels.forEach((panel, idx) => {
+        panel.className = 'panel';
+        const isTarget = (targetGrid === 'right' && targetIndex === idx);
+        const color = isTarget ? targetColorHex : baseColorHex;
+        panel.style.backgroundColor = color;
+        panel.querySelector('.color-code').textContent = color;
+      });
+
+      leftGrid.classList.remove('show-codes');
+      rightGrid.classList.remove('show-codes');
+
+      mistakes = 0;
+      updateLivesDisplay();
+
+      timeLeft = 10.0;
+      timerEl.textContent = timeLeft.toFixed(1) + 's';
+
+      gameActive = true;
+      messageEl.textContent = '異なる色のパネルを選択してください！';
+      messageEl.className = 'message';
+      startBtn.style.display = 'none';
+
+      clearInterval(timerInterval);
+      const startTime = Date.now();
+      timerInterval = setInterval(() => {
+        const elapsed = (Date.now() - startTime) / 1000;
+        timeLeft = Math.max(0, 10.0 - elapsed);
+        timerEl.textContent = timeLeft.toFixed(1) + 's';
+
+        if (timeLeft <= 0) {
+          endGame(false, 'タイムアップ！時間切れです。');
+        }
+      }, 50);
+    }
+
+    function handlePanelClick(e) {
+      if (!gameActive) return;
+
+      const panel = e.currentTarget;
+      const g = panel.dataset.grid;
+      const idx = parseInt(panel.dataset.index, 10);
+
+      if (g === targetGrid && idx === targetIndex) {
+        endGame(true, 'クリア！見事な観察力です！');
+      } else {
+        panel.classList.add('wrong-clicked');
+        panel.style.pointerEvents = 'none'; // disable further clicks on wrong panels
+        mistakes++;
+        updateLivesDisplay();
+
+        if (mistakes >= MAX_MISTAKES) {
+          endGame(false, 'ゲームオーバー！3回ミスタッチしました。');
+        } else {
+          messageEl.textContent = `違います！あと ${MAX_MISTAKES - mistakes} 回までミス可能`;
+          messageEl.className = 'message lose';
+        }
+      }
+    }
+
+    function endGame(isWin, text) {
+      gameActive = false;
+      clearInterval(timerInterval);
+
+      messageEl.textContent = text;
+      messageEl.className = 'message ' + (isWin ? 'win' : 'lose');
+
+      // Disable clicks on all panels
+      const allPanels = document.querySelectorAll('.panel');
+      allPanels.forEach(p => p.classList.add('disabled'));
+
+      // Highlight target panel
+      const targetSelector = `[data-grid="${targetGrid}"][data-index="${targetIndex}"]`;
+      const targetPanel = document.querySelector(targetSelector);
+      if (targetPanel) {
+        targetPanel.classList.add('correct-target');
+      }
+
+      // Reveal hex code answers
+      leftGrid.classList.add('show-codes');
+      rightGrid.classList.add('show-codes');
+
+      startBtn.textContent = 'もう一度プレイ';
+      startBtn.style.display = 'inline-block';
+    }
+
+    startBtn.addEventListener('click', startGame);
+
+    // Initial state setup
+    initGrids();
+  </script>
+</body>
+</html>
