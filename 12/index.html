@@ -427,6 +427,7 @@
       const panels = choiceGrid.querySelectorAll('.panel');
       panels.forEach((panel, idx) => {
         panel.className = 'panel';
+        panel.style.pointerEvents = 'auto'; // Reset pointer-events so previous wrong clicks don't stay disabled
         const color = createColor(choiceValues[idx]);
         panel.style.backgroundColor = color;
         panel.querySelector('.color-code').textContent = color;
