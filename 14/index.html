@@ -1,0 +1,851 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>三重長の野望</title>
+    <style>
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Noto Sans JP', 'Hiragino Sans', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        .game-container {
+            background: rgba(255, 255, 255, 0.95);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            max-width: 800px;
+            width: 90%;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .game-container::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 5px;
+            background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1);
+            border-radius: 20px 20px 0 0;
+        }
+        
+        h1 {
+            color: #2c3e50;
+            font-size: 2.5em;
+            margin: 0 0 10px 0;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .subtitle {
+            color: #7f8c8d;
+            font-size: 1.1em;
+            margin-bottom: 30px;
+        }
+        
+        .characters-container {
+            display: flex;
+            justify-content: space-around;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+            gap: 15px;
+        }
+        
+        .character-card {
+            background: white;
+            border-radius: 15px;
+            padding: 15px;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            cursor: pointer;
+            position: relative;
+            min-width: 120px;
+        }
+        
+        .character-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+        }
+        
+        .character-card.selected {
+            border: 3px solid #3498db;
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .character-card.selected .character-name {
+            color: white;
+        }
+        
+        .character-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: #f0f0f0;
+            margin: 0 auto 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2em;
+            overflow: hidden;
+        }
+        
+        .character-avatar img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .character-name {
+            font-weight: bold;
+            color: #2c3e50;
+            margin-bottom: 5px;
+        }
+        
+        .character-question {
+            font-size: 0.9em;
+            color: #7f8c8d;
+        }
+        
+        .game-screen {
+            display: none;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .game-screen.active {
+            display: block;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .question-area {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            padding: 20px;
+            border-radius: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .character-display {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+        }
+        
+        .character-portrait {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: white;
+            margin: 0 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5em;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            overflow: hidden;
+        }
+        
+        .character-portrait img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+        
+        .character-info h2 {
+            margin: 0;
+            font-size: 1.8em;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+        }
+        
+        .character-info p {
+            margin: 5px 0 0 0;
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+        
+        .question-text {
+            font-size: 1.3em;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .options-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        
+        .option-btn {
+            background: white;
+            border: 2px solid #3498db;
+            border-radius: 10px;
+            padding: 15px;
+            font-size: 1.1em;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            color: #2c3e50;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .option-btn:hover:not(:disabled) {
+            background: #3498db;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        .option-btn.selected {
+            background: #3498db;
+            color: white;
+            border-color: #2980b9;
+        }
+        
+        .option-btn.correct {
+            background: #2ecc71;
+            border-color: #27ae60;
+            color: white;
+            animation: pulse 0.5s ease;
+        }
+        
+        .option-btn.incorrect {
+            background: #e74c3c;
+            border-color: #c0392b;
+            color: white;
+            animation: shake 0.3s ease;
+        }
+        
+        .option-btn:disabled {
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+        
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            75% { transform: translateX(5px); }
+        }
+        
+        .status-area {
+            display: flex;
+            justify-content: space-around;
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        
+        .status-item {
+            text-align: center;
+            min-width: 80px;
+        }
+        
+        .status-label {
+            font-size: 0.9em;
+            color: #7f8c8d;
+            margin-bottom: 5px;
+        }
+        
+        .status-value {
+            font-size: 1.3em;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        
+        .feedback-area {
+            min-height: 60px;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 1.1em;
+            font-weight: bold;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .feedback-area.show {
+            opacity: 1;
+        }
+        
+        .feedback-correct {
+            background: #d5f4e6;
+            color: #27ae60;
+            border: 2px solid #2ecc71;
+        }
+        
+        .feedback-incorrect {
+            background: #fadbd8;
+            color: #c0392b;
+            border: 2px solid #e74c3c;
+        }
+        
+        .result-screen {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        
+        .result-title {
+            font-size: 2em;
+            margin-bottom: 20px;
+            color: #2c3e50;
+        }
+        
+        .result-message {
+            font-size: 1.3em;
+            margin-bottom: 30px;
+            padding: 20px;
+            border-radius: 10px;
+            background: #e8f4f8;
+            border-left: 5px solid #3498db;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.1em;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .btn.restart {
+            background: linear-gradient(135deg, #f093fb, #f5576c);
+        }
+        
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #f1c40f;
+            border-radius: 50%;
+            animation: confettiRain 3s infinite linear;
+            opacity: 0;
+        }
+        
+        @keyframes confettiRain {
+            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+        
+        .hidden {
+            display: none;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #ecf0f1;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #2ecc71, #27ae60);
+            width: 0%;
+            transition: width 0.5s ease;
+            border-radius: 10px;
+        }
+        
+        .game-over-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.7);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+        
+        .game-over-overlay.show {
+            opacity: 1;
+            pointer-events: all;
+        }
+        
+        .game-over-content {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+        }
+        
+        .game-over-title {
+            color: #e74c3c;
+            font-size: 2em;
+            margin-bottom: 15px;
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <!-- キャラクター選択画面 -->
+        <div id="character-screen" class="game-screen active">
+            <h1>三重長の野望</h1>
+            <p class="subtitle">プレイするキャラクターを選びましょう</p>
+            
+            <div class="characters-container" id="characters-container">
+                <!-- キャラクターカードはJavaScriptで動的に生成 -->
+            </div>
+            
+            <button class="btn" id="start-game-btn" disabled>ゲームスタート</button>
+        </div>
+        
+        <!-- ゲーム画面 -->
+        <div id="game-screen" class="game-screen">
+            <div class="question-area">
+                <div class="character-display">
+                    <div class="character-portrait" id="current-character">
+                        <!-- キャラクター画像はJavaScriptで設定 -->
+                    </div>
+                    <div class="character-info">
+                        <h2 id="character-name">-</h2>
+                        <p id="character-question">-</p>
+                    </div>
+                </div>
+                <div class="question-text" id="question-text">-</div>
+            </div>
+            
+            <div class="status-area">
+                <div class="status-item">
+                    <div class="status-label">正解数</div>
+                    <div class="status-value" id="correct-count">0</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">挑戦回数</div>
+                    <div class="status-value" id="attempt-count">0</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">残機</div>
+                    <div class="status-value" id="lives">3</div>
+                </div>
+                <div class="status-item">
+                    <div class="status-label">進捗</div>
+                    <div class="status-value" id="progress">0/10</div>
+                </div>
+            </div>
+            
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            
+            <div class="options-container" id="options-container">
+                <!-- オプションはJavaScriptで動的に生成 -->
+            </div>
+            
+            <div class="feedback-area" id="feedback-area">
+                <!-- フィードバックはJavaScriptで設定 -->
+            </div>
+            
+            <div class="game-over-overlay" id="game-over-overlay">
+                <div class="game-over-content">
+                    <div class="game-over-title">ゲームオーバー</div>
+                    <p>残念でした... もう一度挑戦して勝利を掴みましょう！</p>
+                    <button class="btn restart" id="restart-btn">再挑戦</button>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 結果画面 -->
+        <div id="result-screen" class="game-screen result-screen">
+            <div class="result-title">ゲームクリア！</div>
+            <div class="result-message">
+                おめでとうございます！10問すべて正解しました。<br>
+                三重長の野望を制覇しました！
+            </div>
+            <button class="btn restart" id="restart-final-btn">再度プレイ</button>
+        </div>
+    </div>
+    
+    <script>
+        // キャラクター情報
+        const characters = [
+            {
+                name: '家康',
+                correctRegion: '東海地方',
+                avatar: '🔴',
+                question: '三河の民、徳川家康はどの地方の出身？'
+            },
+            {
+                name: '秀吉',
+                correctRegion: '関西地方',
+                avatar: '🟢',
+                question: '赤地の百姓から太閤へ、豊臣秀吉の出身地は？'
+            },
+            {
+                name: '信長',
+                correctRegion: '近畿地方',
+                avatar: '🔵',
+                question: '桶狭間の戦いから天下人へ、美濃の民、織田信長の出身地は？'
+            }
+        ];
+        
+        // 地域オプション
+        const regions = ['東海地方', '近畿地方', '関西地方', '関東地方', '九州地方', '中国地方'];
+        
+        // ゲーム状態
+        let gameState = {
+            currentCharacter: null,
+            correctAnswers: 0,
+            attempts: 0,
+            lives: 3,
+            progress: 0,
+            gameOver: false,
+            gameComplete: false
+        };
+        
+        // DOM要素
+        const elements = {
+            characterScreen: document.getElementById('character-screen'),
+            gameScreen: document.getElementById('game-screen'),
+            resultScreen: document.getElementById('result-screen'),
+            charactersContainer: document.getElementById('characters-container'),
+            startGameBtn: document.getElementById('start-game-btn'),
+            currentCharacter: document.getElementById('current-character'),
+            characterName: document.getElementById('character-name'),
+            characterQuestion: document.getElementById('character-question'),
+            questionText: document.getElementById('question-text'),
+            optionsContainer: document.getElementById('options-container'),
+            correctCount: document.getElementById('correct-count'),
+            attemptCount: document.getElementById('attempt-count'),
+            lives: document.getElementById('lives'),
+            progress: document.getElementById('progress'),
+            progressFill: document.getElementById('progress-fill'),
+            feedbackArea: document.getElementById('feedback-area'),
+            gameOverOverlay: document.getElementById('game-over-overlay'),
+            restartBtn: document.getElementById('restart-btn'),
+            restartFinalBtn: document.getElementById('restart-final-btn')
+        };
+        
+        // キャラクター選択画面の初期化
+        function initCharacterScreen() {
+            elements.charactersContainer.innerHTML = '';
+            
+            characters.forEach((character, index) => {
+                const card = document.createElement('div');
+                card.className = 'character-card';
+                card.dataset.index = index;
+                card.innerHTML = `
+                    <div class="character-avatar">${character.avatar}</div>
+                    <div class="character-name">${character.name}</div>
+                    <div class="character-question">${character.question}</div>
+                `;
+                
+                card.addEventListener('click', () => selectCharacter(index, card));
+                elements.charactersContainer.appendChild(card);
+            });
+            
+            elements.startGameBtn.disabled = true;
+        }
+        
+        // キャラクター選択
+        function selectCharacter(index, card) {
+            // すべてのカードから選択を解除
+            document.querySelectorAll('.character-card').forEach(c => {
+                c.classList.remove('selected');
+            });
+            
+            // 選択したカードを選択状態にする
+            card.classList.add('selected');
+            
+            // ゲーム状態を設定
+            gameState.currentCharacter = characters[index];
+            
+            // スタートボタンを有効化
+            elements.startGameBtn.disabled = false;
+        }
+        
+        // ゲームスタート
+        function startGame() {
+            if (!gameState.currentCharacter) return;
+            
+            // 画面の切り替え
+            elements.characterScreen.classList.remove('active');
+            elements.gameScreen.classList.add('active');
+            
+            // ゲーム状態のリセット
+            gameState.correctAnswers = 0;
+            gameState.attempts = 0;
+            gameState.lives = 3;
+            gameState.progress = 0;
+            gameState.gameOver = false;
+            gameState.gameComplete = false;
+            
+            // UIの更新
+            updateUI();
+            
+            // 最初の質問を表示
+            showQuestion();
+        }
+        
+        // 質問の表示
+        function showQuestion() {
+            if (gameState.gameOver || gameState.gameComplete) return;
+            
+            const character = gameState.currentCharacter;
+            
+            // キャラクターの表示を更新
+            elements.currentCharacter.innerHTML = character.avatar;
+            elements.characterName.textContent = character.name;
+            elements.characterQuestion.textContent = character.question;
+            
+            // 問題文を設定
+            elements.questionText.textContent = `「${character.name}」はどの地方の出身？`;
+            
+            // オプションの生成
+            generateOptions();
+        }
+        
+        // オプションの生成
+        function generateOptions() {
+            elements.optionsContainer.innerHTML = '';
+            elements.feedbackArea.classList.remove('show');
+            
+            // 正しい答えを含むオプションの配列を生成
+            const correctOption = {
+                text: gameState.currentCharacter.correctRegion,
+                isCorrect: true,
+                element: null
+            };
+            
+            // 他のオプションを生成
+            const otherRegions = regions.filter(r => r !== correctOption.text);
+            const shuffledOthers = shuffleArray(otherRegions).slice(0, 2);
+            
+            const allOptions = [correctOption, ...shuffledOthers.map(text => ({ text, isCorrect: false }))];
+            const shuffledOptions = shuffleArray(allOptions);
+            
+            // オプションのボタンを生成
+            shuffledOptions.forEach((option, index) => {
+                const optionBtn = document.createElement('button');
+                optionBtn.className = 'option-btn';
+                optionBtn.textContent = option.text;
+                optionBtn.dataset.correct = option.isCorrect;
+                
+                optionBtn.addEventListener('click', () => selectOption(optionBtn, option.isCorrect));
+                
+                elements.optionsContainer.appendChild(optionBtn);
+                
+                if (option.isCorrect) {
+                    option.element = optionBtn;
+                }
+            });
+        }
+        
+        // オプションの選択
+        function selectOption(selectedBtn, isCorrect) {
+            // すべてのオプションを無効化
+            document.querySelectorAll('.option-btn').forEach(btn => {
+                btn.disabled = true;
+            });
+            
+            gameState.attempts++;
+            
+            if (isCorrect) {
+                // 正解
+                selectedBtn.classList.add('correct');
+                gameState.correctAnswers++;
+                gameState.progress++;
+                
+                const feedbackText = '🎉 正解！素晴らしい！';
+                elements.feedbackArea.className = 'feedback-area show feedback-correct';
+                elements.feedbackArea.textContent = feedbackText;
+                
+                // 正しい答えをハイライト
+                if (selectedBtn.dataset.correct === 'true') {
+                    setTimeout(() => {
+                        showConfetti();
+                        checkGameStatus();
+                    }, 1000);
+                }
+            } else {
+                // 不正解
+                selectedBtn.classList.add('incorrect');
+                gameState.lives--;
+                
+                const feedbackText = '💥 不正解... 家康は東海地方出身だよ！';
+                elements.feedbackArea.className = 'feedback-area show feedback-incorrect';
+                elements.feedbackArea.textContent = feedbackText;
+                
+                setTimeout(() => {
+                    checkGameStatus();
+                }, 1500);
+            }
+            
+            updateUI();
+        }
+        
+        // ゲームステータスの確認
+        function checkGameStatus() {
+            if (gameState.lives <= 0) {
+                gameOver();
+            } else if (gameState.progress >= 10) {
+                gameComplete();
+            } else {
+                // 次の問題に進む
+                setTimeout(() => {
+                    showQuestion();
+                }, 2000);
+            }
+        }
+        
+        // ゲームオーバー
+        function gameOver() {
+            gameState.gameOver = true;
+            elements.gameOverOverlay.classList.add('show');
+        }
+        
+        // ゲームクリア
+        function gameComplete() {
+            gameState.gameComplete = true;
+            elements.gameScreen.classList.remove('active');
+            elements.resultScreen.classList.add('active');
+            
+            // ユーザーに通知
+            showNotification('ゲームクリア！10問すべて正解しました！', 'success');
+        }
+        
+        // UIの更新
+        function updateUI() {
+            elements.correctCount.textContent = gameState.correctAnswers;
+            elements.attemptCount.textContent = gameState.attempts;
+            elements.lives.textContent = gameState.lives;
+            elements.progress.textContent = `${gameState.progress}/10`;
+            elements.progressFill.style.width = `${(gameState.progress / 10) * 100}%`;
+        }
+        
+        // アレイのシャッフル
+        function shuffleArray(array) {
+            const shuffled = [...array];
+            for (let i = shuffled.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+            }
+            return shuffled;
+        }
+        
+        // お祝いの花火
+        function showConfetti() {
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => {
+                    const confetti = document.createElement('div');
+                    confetti.className = 'confetti';
+                    confetti.style.left = Math.random() * 800 + 'px';
+                    confetti.style.backgroundColor = ['#f1c40f', '#e74c3c', '#3498db', '#2ecc71'][Math.floor(Math.random() * 4)];
+                    confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                    confetti.style.animationDelay = Math.random() * 3 + 's';
+                    document.querySelector('.game-container').appendChild(confetti);
+                    
+                    setTimeout(() => confetti.remove(), 5000);
+                }, i * 100);
+            }
+        }
+        
+        // 通知の表示
+        function showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.style.position = 'fixed';
+            notification.style.top = '20px';
+            notification.style.left = '50%';
+            notification.style.transform = 'translateX(-50%)';
+            notification.style.padding = '15px 30px';
+            notification.style.background = type === 'success' ? '#2ecc71' : '#3498db';
+            notification.style.color = 'white';
+            notification.style.borderRadius = '10px';
+            notification.style.fontSize = '1.1em';
+            notification.style.fontWeight = 'bold';
+            notification.style.boxShadow = '0 5px 20px rgba(0,0,0,0.3)';
+            notification.style.zIndex = '2000';
+            notification.style.animation = 'slideDown 0.3s ease';
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.style.animation = 'slideUp 0.3s ease reverse';
+                setTimeout(() => notification.remove(), 500);
+            }, 3000);
+        }
+        
+        // リスタート
+        function restartGame() {
+            // オーバーレイを非表示化
+            elements.gameOverOverlay.classList.remove('show');
+            
+            // 画面の切り替え
+            elements.gameScreen.classList.remove('active');
+            elements.characterScreen.classList.add('active');
+            elements.resultScreen.classList.remove('active');
+            
+            // キャラクター選択画面を初期化
+            initCharacterScreen();
+            
+            // ゲーム状態をリセット
+            gameState.currentCharacter = null;
+        }
+        
+        // イベントリスナーの設定
+        elements.startGameBtn.addEventListener('click', startGame);
+        elements.restartBtn.addEventListener('click', restartGame);
+        elements.restartFinalBtn.addEventListener('click', restartGame);
+        
+        // アニメーション用のCSSを動的に追加
+        const style = document.createElement('style');
+        style.textContent = `
+            @keyframes slideDown {
+                from { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+                to { transform: translateX(-50%) translateY(0); opacity: 1; }
+            }
+            @keyframes slideUp {
+                from { transform: translateX(-50%) translateY(0); opacity: 1; }
+                to { transform: translateX(-50%) translateY(-100%); opacity: 0; }
+            }
+        `;
+        document.head.appendChild(style);
+        
+        // 初期化
+        initCharacterScreen();
+    </script>
+</body>
+</html>
