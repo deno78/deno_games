@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>白鳥の湖バレエ リズムゲーム - Swan Lake</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-user-select: none; }
+  body {
+    background: #0b0b12;
+    color: #f0eef5;
+    font-family: 'Hiragino Kaku Gothic ProN', Meiryo, sans-serif;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    gap: 12px;
+  }
+  h1 {
+    font-size: 1.5rem;
+    letter-spacing: 2px;
+    background: linear-gradient(90deg, #ffd7ee, #cfe0ff, #ffd7ee);
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  h1 small { display: block; font-size: 0.7rem; letter-spacing: 4px; color: #8a86a0; -webkit-text-fill-color: #8a86a0; }
+  canvas {
+    background: #10101a;
+    border: 2px solid #2a2a3a;
+    border-radius: 10px;
+    max-width: 100%;
+    height: auto;
+    image-rendering: pixelated;
+    box-shadow: 0 0 30px rgba(120, 120, 255, 0.15);
+  }
+  .btns {
+    display: flex;
+    gap: 16px;
+    width: 100%;
+    max-width: 560px;
+  }
+  button.pad {
+    flex: 1;
+    height: 64px;
+    border-radius: 16px;
+    border: 3px solid;
+    font-size: 1.4rem;
+    font-weight: 800;
+    letter-spacing: 2px;
+    color: #fff;
+    cursor: pointer;
+    transition: transform 0.06s, filter 0.06s;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.4);
+  }
+  button.pad.red { background: #d23b3b; border-color: #ff7a7a; }
+  button.pad.blue { background: #2e4bd2; border-color: #7aa2ff; }
+  button.pad:active { transform: translateY(3px); filter: brightness(1.2); }
+  button.pad.red.flash { background: #ff6a6a; }
+  button.pad.blue.flash { background: #6a8aff; }
+  .hint { color: #6e6a85; font-size: 0.8rem; }
+  .hint kbd {
+    background: #1c1c2a; border: 1px solid #3a3a50; border-bottom-width: 3px;
+    border-radius: 5px; padding: 1px 7px; font-family: inherit; color: #cfe0ff;
+  }
+  .overlay {
+    position: fixed; inset: 0;
+    background: rgba(8, 8, 14, 0.92);
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    gap: 18px; z-index: 10; text-align: center; padding: 20px;
+  }
+  .overlay h2 { font-size: 2rem; letter-spacing: 3px; color: #ffd7ee; }
+  .overlay p { color: #b9b5cf; line-height: 1.7; font-size: 0.95rem; }
+  .overlay p b { color: #ff8a8a; }
+  .overlay p b.blu { color: #8ab0ff; }
+  .start-btn {
+    font-size: 1.3rem; font-weight: 800; letter-spacing: 3px;
+    padding: 14px 40px; border-radius: 14px; cursor: pointer;
+    border: 3px solid #ffd7ee; background: #2a2040; color: #ffd7ee;
+    box-shadow: 0 0 20px rgba(255, 150, 220, 0.3);
+    transition: transform .1s, background .1s;
+  }
+  .start-btn:hover { background: #3a2e56; transform: scale(1.05); }
+  .grade { font-size: 3rem; letter-spacing: 8px; }
+  .grade.S { color: #ffd23b; text-shadow: 0 0 20px rgba(255,210,60,.6); }
+  .grade.A { color: #ff7ad0; }
+  .grade.B { color: #7ad0ff; }
+  .grade.C { color: #8aff8a; }
+  .grade.D { color: #ff8a8a; }
+</style>
+</head>
+<body>
+  <h1>白鳥の湖バレエ<small>SWAN LAKE RHYTHM</small></h1>
+  <canvas id="game" width="720" height="560"></canvas>
+  <div class="btns">
+    <button class="pad red" id="btnRed">● 赤  Z</button>
+    <button class="pad blue" id="btnBlue">● 青  X</button>
+  </div>
+  <div class="hint">タイミングよく <kbd>Z</kbd>（赤） / <kbd>X</kbd>（青） か ボタンを押して、バレリーナを踊らせよう！</div>
+
+  <div class="overlay" id="startOverlay">
+    <h2>白鳥の湖バレエ</h2>
+    <p>
+      「白鳥の湖」の旋律にあわせて、<br>
+      流れてくる音符を <b>赤(Z)</b> ・ <b class="blu">青(X)</b> のボタンで<br>
+      リズムよくタイミング良く叩いて踊ろう！
+    </p>
+    <p>
+      <b>● PERFECT</b> / GREAT / GOOD の順に高得点！<br>
+      リズムに乗って バレリーナがステップを踏むよ 🩰
+    </p>
+    <button class="start-btn" id="startBtn">▶ はじめる</button>
+  </div>
+
+  <div class="overlay" id="resultOverlay" style="display:none">
+    <h2>演奏おわり</h2>
+    <div class="grade" id="grade"></div>
+    <p id="resultStats"></p>
+    <button class="start-btn" id="retryBtn">↻ もう一度</button>
+  </div>
+
+<script>
+(() => {
+'use strict';
+
+// ---------- 定数 ----------
+const W = 720, H = 560;
+const BPM = 96, SPB = 60 / BPM;
+const LANE_Y = 300, HIT_Y = 498, SPAWN_Y = 288, APPROACH = 2.0;
+const LANES = { 0: { x: 190, color: '#ff5a5a', name: '赤' }, 1: { x: 530, color: '#5a9aff', name: '青' } };
+const JUDGE = { perfect: 0.06, great: 0.12, good: 0.20 };
+const SCORE = { perfect: 300, great: 150, good: 50, miss: 0 };
+
+// ---------- 8bit バレリーナ pixel art ----------
+const PX = {
+  H: '#6b4226', S: '#ffdcc0', E: '#26242c', R: '#ff8aa5',
+  W: '#ffffff', P: '#ffa7d0', X: '#3a2a4a'
+};
+// 基本ポーズ（アイドル / 立ち姿・5番ポジション）
+const P_IDLE = [
+"..............",
+"......HHHH....",
+"....HHHHHHHH..",
+"....HHSSSSHH..",
+"...SSSSSSSS...",
+"...SSESSSES...",
+"...SRSSSSRS...",
+"....HHSSSSHH..",
+".....HHHH.....",
+"......WWWW....",
+"...S.WWWW.S...",
+"....SWWWS.....",
+".....SWS......",
+"..PP.WWWW.PP..",
+"..PPPPWWPPPP..",
+"....PPWWPP....",
+".....WWWW.....",
+"....WSSSSW....",
+"....WSSSSW....",
+"....WSSSSW....",
+"....WSSSSW....",
+"....SSSSSSS...",
+"....S.....S...",
+"....W.....W...",
+];
+// プリエ（赤ボタン）
+const P_PLIE = [
+"..............",
+"......HHHH....",
+"....HHHHHHHH..",
+"....HHSSSSHH..",
+"...SSSSSSSS...",
+"...SSESSSES...",
+"...SRSSSSRS...",
+"....HHSSSSHH..",
+".....HHHH.....",
+"......WWWW....",
+"....W.SS.W....",
+"...WW.SS.WW...",
+"..WW..WW..WW..",
+"..PP.WWWW.PP..",
+"..PPPPWWPPPP..",
+"....PPWWPP....",
+".....WWWW.....",
+"....WSSSSW....",
+"....WSSSSW....",
+"...WWWWWWWW...",
+"...S......S...",
+"..SS......SS..",
+"..W........W..",
+"..............",
+];
+// ピルエット（青ボタン）
+const P_PIROUETTE = [
+"..............",
+"......HHHH....",
+"....HHHHHHHH..",
+"....HHSSSSHH..",
+"...SSSSSSSS...",
+"...SSESSSES...",
+"...SRSSSSRS...",
+"....HHSSSSHH..",
+".....HHHH.....",
+"......WWWW....",
+"...S.WWWW.S...",
+"....SWWWS.....",
+".....SWS......",
+"..PP.WWWW.PP..",
+"..PPPPWWPPPP..",
+"....PPWWPP....",
+".....WWWW.....",
+"....WSSSSW....",
+"....WSSSSW....",
+".....WWWW.....",
+".....S........",
+"....SSS.......",
+"....W..S......",
+"..............",
+];
+// アラベスク（祝いポーズ）
+const P_ARABESQUE = [
+"..............",
+"......HHHH....",
+"....HHHHHHHH..",
+"....HHSSSSHH..",
+"...SSSSSSSS...",
+"...SSESSSES...",
+"...SRSSSSRS...",
+"....HHSSSSHH..",
+".....HHHH.....",
+"......WWWW....",
+"..SS..WW..SS..",
+"..S...WW...S..",
+"......WW......",
+"..PP.WWWW.PP..",
+"..PPPPWWPPPP..",
+"....PPWWPP....",
+".....WWWW.....",
+"....WSSSSW....",
+"....WSSSSW....",
+".....WWWW.....",
+".....S..S.....",
+".....S..SS....",
+".....W...SS...",
+"..............",
+];
+// レベランス（おじぎ / リザルト時）
+const P_BOW = [
+"..............",
+"......HHHH....",
+"....HHHHHHHH..",
+"....HHSSSSHH..",
+"...SSSSSSSS...",
+"...SSESSSES...",
+"...SRSSSSRS...",
+"....HHSSSSHH..",
+".....HHHH.....",
+"....WWWWWW....",
+"...W.WW.W.....",
+"...W..WW......",
+"..PP.WWWW.....",
+"..PPPPWWPP....",
+"..PPWWWWPP....",
+"....PPWWPP....",
+".....WWWW.....",
+"....WSSSSW....",
+"....WSSSSW....",
+"...WWWWWWWW...",
+"...S......S...",
+"..SS......SS..",
+"..W........W..",
+"..............",
+];
+// よろめき（ミス）
+const P_STUMBLE = [
+"..............",
+"......HHHH....",
+"....HHHHHHHH..",
+"....HHSSSSHH..",
+"...SSSSSSSS...",
+"...SSESSSES...",
+"...SXSSSSXS...",
+"....HHSSSSHH..",
+".....HHHH.....",
+"......WWWW....",
+"...S.WWWW.S...",
+"....SWWWS.....",
+".....SWS......",
+"..PP.WWWW.PP..",
+"..PPPPWWPPPP..",
+"....PPWWPP....",
+".....WWWW.....",
+"....WSSSSW....",
+"....WSSSSW....",
+"....WSSSSW....",
+"....WSSSSW....",
+"....SSSSSSS...",
+"....S.....S...",
+"....W.....W...",
+];
+
+const poseMap = [P_IDLE, P_PLIE, P_PIROUETTE, P_ARABESQUE, P_BOW, P_STUMBLE];
+
+// ---------- 楽譜（白鳥の湖 テーマ, B minor） ----------
+const FREQ = {
+  B3:246.94, C4:277.18, D4:293.66, E4:329.63, F4:349.23, Fs4:369.99, G4:392.00, Gs4:415.30, A4:440.00,
+  B4:493.88, C5:554.37, D5:587.33, E5:659.26, Fs5:739.99, Gs5:830.61, A5:880.00, B5:987.77, C6:1108.73,
+  B2:123.47, Fs3:185.00, Gs3:207.65, A3:220.00, E3:164.81
+};
+// [beat, note, dur(beats)]
+const MELODY = [
+  [0,'B4',1],[1,'D5',1],[2,'C5',1],[3,'B4',1],
+  [4,'A4',1],[5,'B4',1],[6,'D5',1],[7,'Fs5',1],
+  [8,'A5',1],[9,'Gs5',1],[10,'Fs5',1],[11,'E5',1],
+  [12,'Fs5',1],[13,'D5',1],[14,'Fs5',1],[15,'B4',1],
+  [16,'B4',1],[17,'D5',1],[18,'C5',1],[19,'B4',1],
+  [20,'A4',1],[21,'B4',1],[22,'D5',1],[23,'Fs5',1],
+  [24,'A5',1],[25,'Gs5',1],[26,'Fs5',1],[27,'E5',1],
+  [28,'C5',1],[29,'D5',1],[30,'E5',1],[31,'Fs5',1],
+  [32,'Gs5',2],[34,'A5',2],[36,'B5',2],[38,'A5',1],[39,'Gs5',1],
+  [40,'Fs5',2],[42,'E5',2],[44,'D5',1],[45,'E5',1],[46,'Fs5',1],[47,'Gs5',1],
+  [48,'A5',4],[52,'Fs5',2],[54,'Gs5',2],[56,'B5',3],[59,'A5',1],[60,'B5',4],
+];
+const TOTAL_BEATS = 64;
+
+// ゲームのノーツ（1拍ごとに赤青交互）
+const NOTES = [];
+for (let b = 0; b < TOTAL_BEATS; b++) {
+  NOTES.push({ beat: b, lane: b % 2 === 0 ? 0 : 1, time: b * SPB, judged: false, result: null });
+}
+const TOTAL_NOTES = NOTES.length;
+
+// ---------- 状態 ----------
+const canvas = document.getElementById('game');
+const ctx = canvas.getContext('2d');
+const startOverlay = document.getElementById('startOverlay');
+const resultOverlay = document.getElementById('resultOverlay');
+
+let audioCtx = null, masterGain = null, musicGain = null, sfxGain = null;
+let songStart = 0, playing = false, finished = false, endScheduled = false;
+let score = 0, combo = 0, maxCombo = 0;
+let judgeText = '', judgeTime = 0, judgeColor = '#fff';
+let poseIdx = 0, poseUntil = 0, bob = 0;
+let particles = [];
+let stats = { perfect:0, great:0, good:0, miss:0 };
+let startWall = 0;
+
+// ---------- 音声 ----------
+function ensureAudio() {
+  if (audioCtx) return;
+  audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  masterGain = audioCtx.createGain(); masterGain.gain.value = 0.9;
+  masterGain.connect(audioCtx.destination);
+  musicGain = audioCtx.createGain(); musicGain.gain.value = 0.8;
+  musicGain.connect(masterGain);
+  sfxGain = audioCtx.createGain(); sfxGain.gain.value = 0.7;
+  sfxGain.connect(masterGain);
+}
+
+function tone(freq, dur, gain, type, when, dest, vibrato) {
+  if (!audioCtx) return;
+  const t = when;
+  const osc = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  osc.type = type;
+  osc.frequency.value = freq;
+  if (vibrato) {
+    const lfo = audioCtx.createOscillator();
+    const lg = audioCtx.createGain();
+    lfo.frequency.value = vibrato; lg.gain.value = freq * 0.006;
+    lfo.connect(lg); lg.connect(osc.frequency);
+    lfo.start(t); lfo.stop(t + dur);
+  }
+  g.gain.setValueAtTime(0.0001, t);
+  g.gain.exponentialRampToValueAtTime(gain, t + 0.015);
+  g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+  osc.connect(g); g.connect(dest);
+  osc.start(t); osc.stop(t + dur);
+}
+
+function scheduleMelody(ev, t0) {
+  // 旋律（オーボエ風・ピコピコ三角波）
+  tone(ev.f, ev.d, 0.22, 'triangle', t0, musicGain, 6);
+}
+function scheduleBass(ev, t0) {
+  // ベース（四角波）
+  if (ev.beat % 4 === 0) {
+    tone(FREQ.B3, ev.d, 0.20, 'square', t0, musicGain);
+  } else {
+    tone(FREQ.B2, ev.d, 0.16, 'square', t0, musicGain);
+  }
+}
+function schedulePizz(ev, t0) {
+  tone(ev.f * 2, 0.14, 0.05, 'sine', t0, musicGain);
+}
+
+function buildEvents() {
+  const events = [];
+  for (const m of MELODY) {
+    events.push({ at: m[0]*SPB, kind:'mel', f: FREQ[m[1]], d: m[2]*SPB });
+  }
+  for (let b = 0; b < TOTAL_BEATS; b++) {
+    events.push({ at: b*SPB, kind:'bass', beat:b, d: SPB*0.9 });
+  }
+  for (let b = 0; b < 60; b++) {
+    events.push({ at: (b+0.5)*SPB, kind:'pizz', f: FREQ[ 'B4' ] });
+  }
+  events.sort((a,b)=>a.at-b.at);
+  return events;
+}
+
+function startMusic() {
+  ensureAudio();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  const events = buildEvents();
+  songStart = audioCtx.currentTime + 0.15;
+  let i = 0;
+  const NEXT = 0.5;
+  function pump() {
+    if (!playing) return;
+    const ahead = audioCtx.currentTime + NEXT;
+    while (i < events.length && songStart + events[i].at < ahead) {
+      const ev = events[i], t0 = songStart + ev.at;
+      if (ev.kind === 'mel') scheduleMelody(ev, t0);
+      else if (ev.kind === 'bass') scheduleBass(ev, t0);
+      else schedulePizz(ev, t0);
+      i++;
+    }
+  }
+  pump();
+  setInterval(pump, 100);
+}
+
+function sfx(kind) {
+  if (!audioCtx) return;
+  const t = audioCtx.currentTime;
+  if (kind === 'perfect') tone(880, 0.12, 0.3, 'square', t, sfxGain);
+  if (kind === 'great')   tone(660, 0.10, 0.25, 'square', t, sfxGain);
+  if (kind === 'good')    tone(523, 0.10, 0.2, 'square', t, sfxGain);
+  if (kind === 'miss')    tone(180, 0.18, 0.2, 'sawtooth', t, sfxGain);
+  if (kind === 'fumble')  tone(140, 0.15, 0.22, 'sawtooth', t, sfxGain);
+  if (kind === 'start') {
+    tone(659, 0.12, 0.25, 'square', t, sfxGain);
+    tone(880, 0.14, 0.25, 'square', t + 0.12, sfxGain);
+  }
+  if (kind === 'finish') {
+    tone(659, 0.2, 0.25, 'square', t, sfxGain);
+    tone(880, 0.2, 0.25, 'square', t + 0.15, sfxGain);
+    tone(1174, 0.35, 0.25, 'square', t + 0.3, sfxGain);
+  }
+}
+
+// ---------- 判定 ----------
+function now() { return playing && audioCtx ? audioCtx.currentTime - songStart : 0; }
+
+function judgeLane(lane, t) {
+  if (t < startWall) return;
+  let best = null;
+  for (const n of NOTES) {
+    if (n.lane !== lane || n.judged) continue;
+    const dt = Math.abs(t - n.time);
+    if (dt <= JUDGE.good) {
+      if (!best || dt < Math.abs(t - best.time)) best = n;
+    }
+  }
+  if (best) {
+    const dt = Math.abs(t - best.time);
+    let r;
+    if (dt <= JUDGE.perfect) r = 'perfect';
+    else if (dt <= JUDGE.great) r = 'great';
+    else r = 'good';
+    best.judged = true; best.result = r;
+    score += SCORE[r]; combo++; maxCombo = Math.max(maxCombo, combo);
+    stats[r]++;
+    judgeText = r.toUpperCase(); judgeTime = t; judgeColor = r === 'perfect' ? '#ffd23b' : r === 'great' ? '#ff7ad0' : '#7ad0ff';
+    sfx(r);
+    // ダンサーを踊らせる
+    if (r === 'perfect') { poseIdx = 1; }          // プリエ
+    else { poseIdx = 2; }                          // ピルエット
+    poseUntil = t + 0.55;
+    burstParticles(lane, r === 'perfect');
+    flashButton(lane);
+  } else {
+    // 空振り（はずれ押し）
+    combo = 0; stats.miss++;
+    judgeText = 'FUMBLE'; judgeTime = t; judgeColor = '#ff8a8a';
+    sfx('fumble');
+    poseIdx = 5; poseUntil = t + 0.4;
+  }
+}
+
+function autoMiss() {
+  for (const n of NOTES) {
+    if (n.judged) continue;
+    if (now() > n.time + JUDGE.good) {
+      n.judged = true; n.result = 'miss';
+      combo = 0; stats.miss++;
+      judgeText = 'MISS'; judgeTime = n.time; judgeColor = '#ff8a8a';
+      sfx('miss');
+    }
+  }
+}
+
+// ---------- 演出 ----------
+function burstParticles(lane, perfect) {
+  const x = LANES[lane].x;
+  const count = perfect ? 14 : 8;
+  for (let i = 0; i < count; i++) {
+    particles.push({
+      x, y: HIT_Y,
+      vx: (Math.random() - 0.5) * (perfect ? 260 : 180),
+      vy: -Math.random() * 220 - 40,
+      life: 1, color: perfect ? '#ffd23b' : LANES[lane].color
+    });
+  }
+  // ダンサー周りの星
+  if (perfect) {
+    for (let i = 0; i < 8; i++) {
+      particles.push({
+        x: 360 + (Math.random()-0.5)*90, y: 200 + (Math.random()-0.5)*60,
+        vx: (Math.random()-0.5)*120, vy: -Math.random()*80 - 20,
+        life: 1, color: ['#fff','#ffd7ee','#cfe0ff'][i%3]
+      });
+    }
+  }
+}
+
+function flashButton(lane) {
+  const btn = lane === 0 ? document.getElementById('btnRed') : document.getElementById('btnBlue');
+  btn.classList.add('flash');
+  setTimeout(() => btn.classList.remove('flash'), 90);
+}
+
+// ---------- 描画 ----------
+function drawPixelMap(map, cx, cy, scale, jx) {
+  for (let r = 0; r < map.length; r++) {
+    const row = (map[r] || '').padEnd(14, '.').slice(0, 14);
+    for (let c = 0; c < 14; c++) {
+      const ch = row[c];
+      if (ch === '.' || !PX[ch]) continue;
+      ctx.fillStyle = PX[ch];
+      ctx.fillRect(cx - 7*scale + c*scale + jx, cy - 12*scale + r*scale, scale, scale);
+    }
+  }
+}
+
+function drawBackground() {
+  // ステージ背景
+  const g = ctx.createLinearGradient(0, 0, 0, LANE_Y);
+  g.addColorStop(0, '#1a1030'); g.addColorStop(0.7, '#241840'); g.addColorStop(1, '#160d28');
+  ctx.fillStyle = g; ctx.fillRect(0, 0, W, LANE_Y);
+  // スポットライト
+  ctx.fillStyle = 'rgba(255,220,240,0.08)';
+  ctx.beginPath();
+  ctx.moveTo(270, 0); ctx.lineTo(450, 0); ctx.lineTo(560, 300); ctx.lineTo(160, 300);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle = 'rgba(160,190,255,0.05)';
+  ctx.beginPath();
+  ctx.moveTo(300, 0); ctx.lineTo(420, 0); ctx.lineTo(620, 300); ctx.lineTo(100, 300);
+  ctx.closePath(); ctx.fill();
+  // カーテン
+  ctx.fillStyle = '#3d1230';
+  ctx.fillRect(0, 0, 48, LANE_Y); ctx.fillRect(W-48, 0, 48, LANE_Y);
+  ctx.fillStyle = '#571840';
+  for (let i = 0; i < 3; i++) { // スカラップ
+    ctx.beginPath(); ctx.arc(24, LANE_Y, 16, 0, Math.PI); ctx.fill();
+    ctx.beginPath(); ctx.arc(W-24, LANE_Y, 16, 0, Math.PI); ctx.fill();
+  }
+  // タイトル看板
+  ctx.font = '900 22px "Hiragino Kaku Gothic ProN", Meiryo, sans-serif';
+  ctx.fillStyle = '#ffd7ee';
+  ctx.textAlign = 'center';
+  ctx.shadowColor = '#ff9ed4'; ctx.shadowBlur = 12;
+  ctx.fillText('SWAN LAKE', 360, 42);
+  ctx.shadowBlur = 0;
+  // ステージフロア
+  ctx.fillStyle = '#1c1830';
+  ctx.fillRect(0, LANE_Y, W, H - LANE_Y);
+  for (let y = LANE_Y; y < H; y += 24) {
+    for (let x = 0; x < W; x += 24) {
+      if (((x/24)+(y/24)) % 2 === 0) {
+        ctx.fillStyle = 'rgba(255,255,255,0.02)';
+        ctx.fillRect(x, y, 24, 24);
+      }
+    }
+  }
+}
+
+function drawLanes() {
+  // 2レーン
+  const laneW = W / 2;
+  const lg = ctx.createLinearGradient(0, LANE_Y, 0, H);
+  lg.addColorStop(0, 'rgba(255,90,90,0.10)'); lg.addColorStop(1, 'rgba(255,90,90,0.02)');
+  ctx.fillStyle = lg; ctx.fillRect(0, LANE_Y, laneW, H - LANE_Y);
+  const lg2 = ctx.createLinearGradient(0, LANE_Y, 0, H);
+  lg2.addColorStop(0, 'rgba(90,154,255,0.10)'); lg2.addColorStop(1, 'rgba(90,154,255,0.02)');
+  ctx.fillStyle = lg2; ctx.fillRect(laneW, LANE_Y, laneW, H - LANE_Y);
+  ctx.strokeStyle = '#2a2a3a'; ctx.lineWidth = 2;
+  ctx.strokeRect(0, LANE_Y, W, H - LANE_Y);
+  ctx.beginPath(); ctx.moveTo(W/2, LANE_Y); ctx.lineTo(W/2, H); ctx.stroke();
+  // 判定ライン
+  ctx.fillStyle = 'rgba(255,255,255,0.9)';
+  ctx.fillRect(8, HIT_Y, W - 16, 4);
+  ctx.font = '12px monospace';
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.textAlign = 'left';
+  ctx.fillText('判定ライン', 12, HIT_Y - 6);
+  // レーンラベル
+  ctx.font = '900 15px sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillStyle = '#ff8a8a'; ctx.fillText('◀ 赤 Z', 180, LANE_Y + 22);
+  ctx.fillStyle = '#8ab0ff'; ctx.fillText('青 X ▶', 540, LANE_Y + 22);
+}
+
+function drawNotes(t) {
+  for (const n of NOTES) {
+    if (n.judged) continue;
+    const dt = n.time - t;
+    if (dt > APPROACH || dt < -0.3) continue;
+    const p = 1 - dt / APPROACH;
+    const y = SPAWN_Y + p * (HIT_Y - SPAWN_Y);
+    const x = LANES[n.lane].x;
+    const color = LANES[n.lane].color;
+    const size = 30 + Math.sin(t * 6 + n.time * 3) * 2;
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, Math.max(0, (dt + 0.3) / 0.3));
+    ctx.shadowColor = color; ctx.shadowBlur = 14;
+    ctx.fillStyle = color;
+    ctx.fillRect(x - size/2, y - size/2, size, size);
+    ctx.shadowBlur = 0;
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 2;
+    ctx.strokeRect(x - size/2, y - size/2, size, size);
+    // 8bit 音符
+    ctx.fillStyle = '#10101a';
+    ctx.beginPath();
+    ctx.arc(x, y - 2, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.fillRect(x + 4, y - 8, 3, 12);
+    ctx.restore();
+  }
+}
+
+function drawDancer(t) {
+  const bobY = Math.sin(t * 5) * 2;
+  const active = t < poseUntil;
+  let map = poseMap[poseIdx];
+  if (!active) map = poseMap[0];
+  let jx = 0, cy = 200;
+  if (poseIdx === 5) { jx = Math.round((Math.random() - 0.5) * 6); } // よろめき
+  cy += bobY;
+  if (active && poseIdx !== 5) {
+    // ポップアップ演出
+    const k = 1 + 0.12 * Math.max(0, (poseUntil - t) / 0.55);
+    ctx.save();
+    ctx.translate(360, cy);
+    ctx.scale(k, k);
+    ctx.translate(-360, -cy);
+    drawPixelMap(map, 360, cy, 4, jx);
+    ctx.restore();
+  } else {
+    drawPixelMap(map, 360, cy, 4, jx);
+  }
+}
+
+function drawParticles(dt) {
+  for (let i = particles.length - 1; i >= 0; i--) {
+    const p = particles[i];
+    p.x += p.vx * dt; p.y += p.vy * dt; p.vy += 300 * dt; p.life -= dt * 2.2;
+    if (p.life <= 0) { particles.splice(i, 1); continue; }
+    ctx.globalAlpha = Math.max(0, p.life);
+    ctx.fillStyle = p.color;
+    ctx.fillRect(p.x - 3, p.y - 3, 6, 6);
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawHUD(t) {
+  ctx.textAlign = 'left';
+  ctx.font = '900 18px monospace';
+  ctx.fillStyle = '#fff';
+  ctx.fillText('SCORE', 20, 34);
+  ctx.fillText(String(score).padStart(7, '0'), 20, 58);
+  ctx.textAlign = 'right';
+  ctx.font = '900 18px monospace';
+  ctx.fillStyle = combo > 0 ? '#ffd23b' : '#888';
+  ctx.fillText(`COMBO x${combo}`, W - 20, 34);
+  ctx.fillText(`MAX ${maxCombo}`, W - 20, 58);
+  // 判定ポップ
+  if (t - judgeTime < 0.6) {
+    const k = 1 + 0.4 * (0.6 - (t - judgeTime));
+    ctx.save();
+    ctx.translate(360, HIT_Y + 30);
+    ctx.scale(k, k);
+    ctx.textAlign = 'center';
+    ctx.font = '900 22px sans-serif';
+    ctx.fillStyle = judgeColor;
+    ctx.shadowColor = judgeColor; ctx.shadowBlur = 14;
+    ctx.fillText(judgeText, 0, 0);
+    ctx.restore();
+  }
+}
+
+function checkFinish(t) {
+  if (endScheduled || t < TOTAL_BEATS * SPB + 0.2) return;
+  const all = NOTES.every(n => n.judged);
+  if (all) {
+    endScheduled = true;
+    poseIdx = 4; // レベランス
+    setTimeout(showResult, 900);
+  }
+}
+
+function showResult() {
+  playing = false; finished = true;
+  if (audioCtx) { try { audioCtx.suspend(); } catch(e){} }
+  sfx('finish');
+  const max = TOTAL_NOTES * SCORE.perfect;
+  const acc = score / max;
+  const grade = acc >= 0.95 ? 'S' : acc >= 0.90 ? 'A' : acc >= 0.75 ? 'B' : acc >= 0.55 ? 'C' : 'D';
+  document.getElementById('grade').textContent = grade;
+  document.getElementById('grade').className = 'grade ' + grade;
+  document.getElementById('resultStats').innerHTML =
+    `SCORE: <b>${score}</b> / ${max}<br>` +
+    `PERFECT: ${stats.perfect}  GREAT: ${stats.great}  GOOD: ${stats.good}  MISS: ${stats.miss}<br>` +
+    `MAX COMBO: ${maxCombo}`;
+  resultOverlay.style.display = 'flex';
+}
+
+// ---------- 入力 ----------
+function bindButtons() {
+  document.getElementById('btnRed').addEventListener('pointerdown', e => { e.preventDefault(); judgeLane(0, now()); });
+  document.getElementById('btnBlue').addEventListener('pointerdown', e => { e.preventDefault(); judgeLane(1, now()); });
+  window.addEventListener('keydown', e => {
+    if (e.repeat) return;
+    const k = e.key.toLowerCase();
+    if (k === 'z') judgeLane(0, now());
+    if (k === 'x') judgeLane(1, now());
+  });
+}
+
+// ---------- 開始 / リトライ ----------
+function startGame() {
+  ensureAudio();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+  score = 0; combo = 0; maxCombo = 0; judgeText = ''; judgeTime = -9;
+  stats = { perfect:0, great:0, good:0, miss:0 };
+  particles = [];
+  for (const n of NOTES) { n.judged = false; n.result = null; }
+  playing = true; finished = false; endScheduled = false;
+  startWall = 0.5; // 開始直後の誤入力ガード
+  poseIdx = 0; poseUntil = 0;
+  resultOverlay.style.display = 'none';
+  startOverlay.style.display = 'none';
+  sfx('start');
+  startMusic();
+}
+
+document.getElementById('startBtn').addEventListener('click', startGame);
+document.getElementById('retryBtn').addEventListener('click', () => {
+  if (audioCtx) { audioCtx.resume(); }
+  startGame();
+});
+
+// ---------- メインループ ----------
+let last = performance.now();
+function loop(ts) {
+  const dt = Math.min(0.05, (ts - last) / 1000);
+  last = ts;
+  const t = playing ? now() : 0;
+
+  ctx.clearRect(0, 0, W, H);
+  drawBackground();
+  drawLanes();
+  if (playing) {
+    drawNotes(t);
+    autoMiss();
+  }
+  drawDancer(t);
+  drawParticles(dt);
+  if (playing) {
+    drawHUD(t);
+    checkFinish(t);
+  }
+  requestAnimationFrame(loop);
+}
+
+bindButtons();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

@@ -16,3 +16,4 @@ Deno/Web games collection.
 - [10. 手乗り怪獣はじまりの3匹 10連戦 (Tenoori Kaiju Quick Battle)](./10/index.html)
 - [11. 勇者王チャレンジ (Yuusha Oh Challenge)](./11/index.html)
 - [12. 白って256種類あるんやで (White Color Finding Game)](./12/index.html)
+- [13. 白鳥の湖バレエ リズムゲーム (Swan Lake Rhythm Game)](./13/index.html)
