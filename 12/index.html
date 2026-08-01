@@ -356,31 +356,55 @@
     }
 
     function startGame() {
-      // #ffffff is 255, #dddddd is 221 (range: 221 to 255)
-      const MIN_VAL = 221;
+      // Range: #bbbbbb (187) to #ffffff (255)
+      const MIN_VAL = 187;
       const MAX_VAL = 255;
+      const totalPanels = 18;
 
-      const baseVal = Math.floor(Math.random() * (MAX_VAL - MIN_VAL + 1)) + MIN_VAL;
-      let targetVal = baseVal;
-      while (targetVal === baseVal) {
-        // Vary target color slightly (within range 221-255)
-        targetVal = Math.floor(Math.random() * (MAX_VAL - MIN_VAL + 1)) + MIN_VAL;
-      }
-
-      baseColorHex = createColor(baseVal);
-      targetColorHex = createColor(targetVal);
-
+      // Select target grid and index
       targetGrid = Math.random() < 0.5 ? 'left' : 'right';
       targetIndex = Math.floor(Math.random() * 9);
 
-      // Render colors
+      // Generate 18 UNIQUE color values so no two panels share the same color.
+      // To make 1 panel "different" (the target), 17 panels are placed in a close cluster,
+      // and 1 panel (target) is placed significantly outside that cluster.
+      
+      // Cluster center between 187 + 15 and 255 - 15 (202 to 240)
+      const clusterCenter = Math.floor(Math.random() * (240 - 202 + 1)) + 202;
+      
+      // Target offset (+15 to +25 or -15 to -25)
+      let offset = Math.floor(Math.random() * 11) + 15; // 15..25
+      if (clusterCenter + offset > MAX_VAL || (clusterCenter - offset >= MIN_VAL && Math.random() < 0.5)) {
+        offset = -offset;
+      }
+      const targetVal = Math.min(MAX_VAL, Math.max(MIN_VAL, clusterCenter + offset));
+
+      // 17 unique values around clusterCenter, excluding targetVal
+      const availableClusterVals = [];
+      for (let v = Math.max(MIN_VAL, clusterCenter - 12); v <= Math.min(MAX_VAL, clusterCenter + 12); v++) {
+        if (v !== targetVal) {
+          availableClusterVals.push(v);
+        }
+      }
+
+      // Shuffle available cluster values
+      for (let i = availableClusterVals.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [availableClusterVals[i], availableClusterVals[j]] = [availableClusterVals[j], availableClusterVals[i]];
+      }
+
+      const clusterVals = availableClusterVals.slice(0, 17);
+
+      // Assign colors to all 18 panels
+      let clusterIdx = 0;
       const leftPanels = leftGrid.querySelectorAll('.panel');
       const rightPanels = rightGrid.querySelectorAll('.panel');
 
       leftPanels.forEach((panel, idx) => {
         panel.className = 'panel';
         const isTarget = (targetGrid === 'left' && targetIndex === idx);
-        const color = isTarget ? targetColorHex : baseColorHex;
+        const val = isTarget ? targetVal : clusterVals[clusterIdx++];
+        const color = createColor(val);
         panel.style.backgroundColor = color;
         panel.querySelector('.color-code').textContent = color;
       });
@@ -388,7 +412,8 @@
       rightPanels.forEach((panel, idx) => {
         panel.className = 'panel';
         const isTarget = (targetGrid === 'right' && targetIndex === idx);
-        const color = isTarget ? targetColorHex : baseColorHex;
+        const val = isTarget ? targetVal : clusterVals[clusterIdx++];
+        const color = createColor(val);
         panel.style.backgroundColor = color;
         panel.querySelector('.color-code').textContent = color;
       });
