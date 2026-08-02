@@ -268,6 +268,7 @@
             grid-template-columns: repeat(3, 1fr);
             gap: 15px;
             margin-bottom: 25px;
+            transition: all 0.3s ease;
         }
 
         .option-btn {
@@ -456,11 +457,16 @@
                 <ul class="rule-list">
                     <li>あなたは戦国乱世を生き抜く小大名。信長・秀吉・家康が次々と現れ、<strong>「三重県が何地方か」</strong>について問い詰めます。</li>
                     <li>英傑たちの主張に逆らわずに答えよ：
-                        <br>&nbsp;&nbsp;&bull; <strong>家康</strong>が現れたら ⇒ <strong>【東海】</strong>
-                        <br>&nbsp;&nbsp;&bull; <strong>秀吉</strong>が現れたら ⇒ <strong>【関西】</strong>
-                        <br>&nbsp;&nbsp;&bull; <strong>信長</strong>が現れたら ⇒ <strong>【近畿】</strong>
+                        <br>&nbsp;&nbsp;&bull; <strong>家康</strong> 現る ⇒ 三重は<strong>【東海】</strong>
+                        <br>&nbsp;&nbsp;&bull; <strong>秀吉</strong> 現る ⇒ 三重は<strong>【関西】</strong>
+                        <br>&nbsp;&nbsp;&bull; <strong>信長</strong> 現る ⇒ 三重は<strong>【近畿】</strong>
                     </li>
-                    <li><strong>一度の誤答も許されません。</strong>間違えた瞬間、激怒した武将に即座に<strong>切り捨てられ（ゲームオーバー）</strong>となります。</li>
+                    <li style="color: #ff9f0a;"><strong>【注意】否定形（トリック質問）が導入されます：</strong>
+                        <br>例：「三重は○○地方じゃないよな？」と聞かれたら、英傑の信念と合致するかどうかで<strong>【はい / いいえ】</strong>の2択で答えます。
+                        <br>例：家康（信念＝東海）が<strong>「三重は近畿じゃないよな？」</strong>と聞いたら、家康自身そう思っているので正解は<strong>【はい】</strong>。
+                        <br>例：家康が<strong>「三重は東海じゃないよな？」</strong>と聞いたら、彼の信念に反するので正解は<strong>【いいえ】</strong>（違う！東海だ！の意）。
+                    </li>
+                    <li><strong>一度の誤答も許されません。</strong>間違えた瞬間、即座に<strong>切り捨てられ（ゲームオーバー）</strong>となります。</li>
                     <li>見事<strong>10年間（10問）</strong>生き延びれば、野望達成（ゲームクリア）となります。</li>
                 </ul>
             </div>
@@ -491,10 +497,9 @@
                 </div>
             </div>
 
-            <div class="options-grid">
-                <button class="option-btn" data-region="東海">東海</button>
-                <button class="option-btn" data-region="近畿">近畿</button>
-                <button class="option-btn" data-region="関西">関西</button>
+            <!-- Options grid generated dynamically (can be 2-column or 3-column) -->
+            <div class="options-grid" id="options-area">
+                <!-- Buttons injected by JavaScript -->
             </div>
 
             <div class="feedback-banner" id="feedback-txt">
@@ -518,7 +523,7 @@
     </div>
 
     <script>
-        // Synthesizer Sounds with Web Audio API (Fully self-contained, no external assets needed!)
+        // Synthesizer Sounds with Web Audio API
         const AudioEffects = {
             ctx: null,
             init() {
@@ -663,14 +668,13 @@
             }
         };
 
-        // Character details and their corresponding target correct answer (Mie categorization)
+        // Warlord details & baseline correct answer mapping (Beliefs)
         const characters = [
             {
                 id: 'nobunaga',
                 name: '織田信長',
                 title: '第六天魔王',
                 avatar: '👿',
-                speech: '「三重は東海？近畿？関西？どれか言ってみよ！ 余の納得する答えを用意せよ。」',
                 correct: '近畿',
                 quote: '「問答無用！鳴かぬなら切り捨てよう、不如帰！」'
             },
@@ -679,7 +683,6 @@
                 name: '豊臣秀吉',
                 title: '天下人',
                 avatar: '🐒',
-                speech: '「のう、三重というのは東海か、近畿か、関西か？ 早く答えて安心させておくれ！」',
                 correct: '関西',
                 quote: '「遅すぎるわ！鳴かぬなら切り捨てよう、不如帰！」'
             },
@@ -688,19 +691,18 @@
                 name: '徳川家康',
                 title: '大御所',
                 avatar: '🐢',
-                speech: '「三重は一体どの地域にあたるのか。東海か、近畿か、関西か。お主の見解を述べよ。」',
                 correct: '東海',
                 quote: '「覚悟なしか！鳴かぬなら切り捨てよう、不如帰！」'
             }
         ];
 
-        // Game State Variables
+        // Game state variables
         let currentYear = 1;
         const goalYears = 10;
         let activeChar = null;
         let lockInput = false;
 
-        // View Transition Helper
+        // View Transition
         function showView(viewId) {
             document.querySelectorAll('.view').forEach(view => {
                 view.classList.remove('active');
@@ -708,7 +710,7 @@
             document.getElementById(viewId).classList.add('active');
         }
 
-        // Apply dynamic warlord specific borders & indicators
+        // Apply dynamic container themes (Warlordオーラカラー)
         function updateContainerTheme(charId) {
             const root = document.getElementById('container-root');
             root.className = 'game-container'; // reset
@@ -717,12 +719,7 @@
             }
         }
 
-        // Shuffle arrays for dynamic choices or presentation
-        function shuffleArray(arr) {
-            return arr.sort(() => Math.random() - 0.5);
-        }
-
-        // Setup a round with a random warlord
+        // Main game-loop setup
         function nextRound() {
             if (currentYear > goalYears) {
                 triggerVictory();
@@ -733,86 +730,136 @@
             document.getElementById('current-year').textContent = currentYear;
             document.getElementById('game-progress').style.width = `${((currentYear - 1) / goalYears) * 100}%`;
 
-            // Reset buttons UI
-            document.querySelectorAll('.option-btn').forEach(btn => {
-                btn.className = 'option-btn';
-                btn.disabled = false;
-            });
-
-            // Hide feedback
+            // Reset banner
             const feedback = document.getElementById('feedback-txt');
             feedback.className = 'feedback-banner';
 
             // Pick a random warlord
             activeChar = characters[Math.floor(Math.random() * characters.length)];
-            
-            // Update container design theme
             updateContainerTheme(activeChar.id);
 
-            // Display character metadata
+            // Display warlord information
             document.getElementById('char-avatar').textContent = activeChar.avatar;
             document.getElementById('char-title').textContent = activeChar.title;
             document.getElementById('char-name').textContent = activeChar.name;
-            document.getElementById('char-speech').textContent = activeChar.speech;
+
+            // Decide on Question Type (50% Affirmative, 50% Negative)
+            const isNegative = Math.random() < 0.5;
+            const optionsArea = document.getElementById('options-area');
+            optionsArea.innerHTML = ''; // clear old options
+
+            if (!isNegative) {
+                // Affirmative Question (3 Options: 東海 / 近畿 / 関西)
+                let speechText = '';
+                if (activeChar.id === 'nobunaga') {
+                    speechText = '「三重は東海、近畿、関西、いずれぞ？ 近う寄って答えよ。」';
+                } else if (activeChar.id === 'hideyoshi') {
+                    speechText = '「のう、三重というのは東海か、近畿か、関西か？ 早く答えて安心させておくれ！」';
+                } else {
+                    speechText = '「三重は一体どの地域にあたるのか。東海か、近畿か、関西か。お主の見解を述べよ。」';
+                }
+                document.getElementById('char-speech').textContent = speechText;
+
+                // Configure grid columns
+                optionsArea.style.gridTemplateColumns = 'repeat(3, 1fr)';
+
+                const regions = ['東海', '近畿', '関西'];
+                regions.forEach(region => {
+                    const btn = document.createElement('button');
+                    btn.className = 'option-btn';
+                    btn.textContent = region;
+                    btn.dataset.region = region;
+                    btn.addEventListener('click', () => {
+                        handleSelection(btn, region, activeChar.correct, isNegative, region);
+                    });
+                    optionsArea.appendChild(btn);
+                });
+            } else {
+                // Negative Question (2 Options: はい / いいえ)
+                const regions = ['東海', '近畿', '関西'];
+                const randomRegion = regions[Math.floor(Math.random() * regions.length)];
+                
+                let speechText = '';
+                if (activeChar.id === 'nobunaga') {
+                    speechText = `「三重は${randomRegion}ではないよな？相違ないか？」`;
+                } else if (activeChar.id === 'hideyoshi') {
+                    speechText = `「のう、三重は${randomRegion}じゃないよな？合っておるか？」`;
+                } else {
+                    speechText = `「三重は${randomRegion}ではござらぬな？間違いなきか？」`;
+                }
+                document.getElementById('char-speech').textContent = speechText;
+
+                // Configure grid columns (2-column layout for yes/no)
+                optionsArea.style.gridTemplateColumns = 'repeat(2, 1fr)';
+
+                // Compute logical correct answer
+                // If randomRegion is the warlord's core belief, saying "it is not" is FALSE, so player must select "いいえ" (No, it is!).
+                // If randomRegion is NOT the warlord's core belief, saying "it is not" is TRUE, so player must select "はい" (Yes, it's not!).
+                const correctOption = (randomRegion === activeChar.correct) ? 'いいえ' : 'はい';
+
+                const choices = ['はい', 'いいえ'];
+                choices.forEach(choice => {
+                    const btn = document.createElement('button');
+                    btn.className = 'option-btn';
+                    btn.textContent = choice;
+                    btn.dataset.region = choice;
+                    btn.addEventListener('click', () => {
+                        handleSelection(btn, choice, correctOption, isNegative, randomRegion);
+                    });
+                    optionsArea.appendChild(btn);
+                });
+            }
         }
 
-        // Player answer choice evaluation
-        function handleSelection(selectedBtn, chosenRegion) {
+        // Selection Response Processor
+        function handleSelection(selectedBtn, chosenVal, correctVal, isNegative, subjectRegion) {
             if (lockInput) return;
             lockInput = true;
 
+            // Lock all active option buttons
             document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = true);
             
-            const correctRegion = activeChar.correct;
-            const isCorrect = (chosenRegion === correctRegion);
-
+            const isCorrect = (chosenVal === correctVal);
             const feedback = document.getElementById('feedback-txt');
 
             if (isCorrect) {
-                // Correct path
+                // Correct Path
                 AudioEffects.playCorrect();
                 selectedBtn.classList.add('btn-correct');
-                
-                // Show celebration phrase
-                const goodPhrases = ['天晴れ！見事な洞察よ！', '流石である、生き残った！', 'うむ、話がわかるやつめ。', 'お主、見どころがあるな！'];
+
+                const goodPhrases = ['天晴れ！見事な機転よ！', '流石である、よくぞ見破った！', 'うむ、話がわかるやつめ！', 'お主、真の切れ者だな！'];
                 feedback.textContent = `◎ ${goodPhrases[Math.floor(Math.random() * goodPhrases.length)]}`;
                 feedback.className = 'feedback-banner show correct';
 
                 currentYear++;
-                
-                // Trigger next year round after feedback pause
-                setTimeout(() => {
-                    nextRound();
-                }, 1500);
+                setTimeout(nextRound, 1500);
 
             } else {
-                // Wrong path (Execution)
+                // Incorrect Path (Execution)
                 AudioEffects.playWrong();
                 selectedBtn.classList.add('btn-incorrect');
-                
-                // Highlight the correct answer button
+
+                // Highlight correct button
                 document.querySelectorAll('.option-btn').forEach(btn => {
-                    if (btn.dataset.region === correctRegion) {
+                    if (btn.dataset.region === correctVal) {
                         btn.classList.add('btn-correct');
                     }
                 });
 
-                feedback.textContent = '💀 激怒させてしまった……！';
+                feedback.textContent = '💀 逆鱗に触れてしまった……！';
                 feedback.className = 'feedback-banner show';
 
-                // Proceed to failure screen
                 setTimeout(() => {
-                    triggerDefeat(chosenRegion);
+                    triggerDefeat(chosenVal, correctVal, isNegative, subjectRegion);
                 }, 1800);
             }
         }
 
-        // Victory State Trigger
+        // Unification Victory State
         function triggerVictory() {
             updateContainerTheme(null);
             showView('result-view');
             
-            // Play conch horns
             AudioEffects.playClear();
             startConfettiEffect();
 
@@ -820,18 +867,18 @@
             document.getElementById('result-title').textContent = '乱世統一・野望達成！';
             
             const rootBtn = document.getElementById('retry-btn');
-            rootBtn.textContent = '再び天下を目指す';
+            rootBtn.textContent = '再び乱世の頂点を目指す';
             rootBtn.className = 'action-btn';
 
             document.getElementById('result-message').innerHTML = `
                 お見事なり！信長、秀吉、家康の恐るべき追及を躱し、<br>
                 <strong>見事10年間を生き延びました！</strong><br><br>
-                三重県に対する臨機応変な「東海・近畿・関西」としての多面的アプローチにより、すべての英傑を満足させ、あなたは見事に天下統一を成し遂げました！
+                否定形を交えた極めて複雑な地域区分試験にパーフェクトに回答したお主こそ、真の知将。三重県の統治権を完全に掌握し、見事に日本統一を成し遂げました！
             `;
         }
 
-        // Defeat State Trigger
-        function triggerDefeat(chosenRegion) {
+        // Execution Defeat State
+        function triggerDefeat(chosenVal, correctVal, isNegative, subjectRegion) {
             updateContainerTheme(null);
             showView('result-view');
 
@@ -842,7 +889,23 @@
             rootBtn.textContent = 'もう一度転生する (再挑戦)';
             rootBtn.className = 'action-btn btn-red';
 
-            const correctRegion = activeChar.correct;
+            let explanation = '';
+            if (!isNegative) {
+                explanation = `
+                    ${activeChar.name}の問い「三重はどの地域だ？」に対し、<br>
+                    お主は「${chosenVal}」と答え、彼を激怒させました。<br>
+                    （${activeChar.name}が望む正しき三重の定義は <strong>【${correctVal}】</strong> です）
+                `;
+            } else {
+                explanation = `
+                    ${activeChar.name}の問い「三重は${subjectRegion}じゃないよな？」に対し、<br>
+                    お主は「${chosenVal}」と答えてしまいました。<br><br>
+                    <strong>【解説】</strong><br>
+                    ${activeChar.name}は「三重は<strong>【${activeChar.correct}】</strong>」と盲信しています。<br>
+                    そのため、三重は「${subjectRegion}じゃないよな？」という問いに対する彼の同意肢は、正しくは<strong>【${correctVal}】</strong>となります。<br>
+                    （お主の「${chosenVal}」回答は、彼の信念を否定したと見なされ処刑されました）
+                `;
+            }
 
             document.getElementById('result-message').innerHTML = `
                 生存期間: <strong>${currentYear}年目</strong>にて露と消える…<br><br>
@@ -850,12 +913,11 @@
                 <span style="font-size: 1.2em; color: #ff3b30; font-weight: bold; display: block; margin: 10px 0;">
                     ${activeChar.quote}
                 </span>
-                ${activeChar.name}の問いに「${chosenRegion}」と答えたため激怒を買いました。<br>
-                ${activeChar.name}が望む正しき三重の定義は<strong>【${correctRegion}】</strong>です。
+                ${explanation}
             `;
         }
 
-        // Celebration Confetti effect
+        // Paper showers on game clear
         function startConfettiEffect() {
             const container = document.getElementById('container-root');
             for (let i = 0; i < 50; i++) {
@@ -869,8 +931,6 @@
                 confetti.style.animation = `confettiFall ${Math.random() * 2 + 1.5}s linear forwards`;
                 
                 container.appendChild(confetti);
-                
-                // Cleanup confetti
                 setTimeout(() => confetti.remove(), 4000);
             }
         }
@@ -885,12 +945,6 @@
         document.getElementById('retry-btn').addEventListener('click', () => {
             showView('title-view');
             updateContainerTheme(null);
-        });
-
-        document.querySelectorAll('.option-btn').forEach(btn => {
-            btn.addEventListener('click', () => {
-                handleSelection(btn, btn.dataset.region);
-            });
         });
     </script>
 </body>
