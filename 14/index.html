@@ -4,589 +4,894 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>三重長の野望</title>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@600;900&family=Sawarabi+Mincho&display=swap" rel="stylesheet">
     <style>
+        /* Base Styling */
         body {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            font-family: 'Noto Sans JP', 'Hiragino Sans', sans-serif;
+            background-color: #0f0f12;
+            background-image: 
+                radial-gradient(circle at 10% 20%, rgba(130, 20, 20, 0.15) 0%, transparent 50%),
+                radial-gradient(circle at 90% 80%, rgba(212, 175, 55, 0.1) 0%, transparent 50%);
+            color: #f5f5f7;
+            font-family: 'Sawarabi Mincho', 'Noto Serif JP', serif;
             margin: 0;
             padding: 0;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
-            overflow: hidden;
+            overflow-x: hidden;
         }
         
         .game-container {
-            background: rgba(255, 255, 255, 0.95);
-            border-radius: 20px;
-            padding: 30px;
-            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            background: rgba(22, 22, 28, 0.95);
+            border: 2px solid #3a3a4a;
+            border-radius: 12px;
+            padding: 35px;
+            box-shadow: 0 25px 50px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(255, 255, 255, 0.05);
             text-align: center;
-            max-width: 800px;
+            max-width: 650px;
             width: 90%;
             position: relative;
             overflow: hidden;
+            transition: border-color 0.5s ease;
         }
         
+        /* Dynamic Theme Indicators */
         .game-container::before {
             content: '';
             position: absolute;
             top: 0;
             left: 0;
             right: 0;
-            height: 5px;
-            background: linear-gradient(90deg, #ff6b6b, #4ecdc4, #45b7d1);
-            border-radius: 20px 20px 0 0;
+            height: 4px;
+            background: #d4af37;
+            transition: background 0.5s ease;
+        }
+        
+        .theme-nobunaga::before {
+            background: linear-gradient(90deg, #d90429, #ef233c, #d90429);
+        }
+        .theme-hideyoshi::before {
+            background: linear-gradient(90deg, #d4af37, #2ecc71, #d4af37);
+        }
+        .theme-ieyasu::before {
+            background: linear-gradient(90deg, #3a0ca3, #4361ee, #3a0ca3);
+        }
+
+        .theme-nobunaga {
+            border-color: #ef233c;
+        }
+        .theme-hideyoshi {
+            border-color: #d4af37;
+        }
+        .theme-ieyasu {
+            border-color: #4361ee;
         }
         
         h1 {
-            color: #2c3e50;
-            font-size: 2.5em;
-            margin: 0 0 10px 0;
-            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            color: #d4af37;
+            font-size: 2.3em;
+            margin: 0 0 5px 0;
+            letter-spacing: 4px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.8);
+            font-weight: 900;
         }
         
         .subtitle {
-            color: #7f8c8d;
-            font-size: 1.1em;
-            margin-bottom: 30px;
+            color: #8e8e93;
+            font-size: 1em;
+            margin-bottom: 25px;
+            letter-spacing: 2px;
         }
-        
-        .status-area {
-            display: flex;
-            justify-content: space-around;
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 10px;
-            margin-bottom: 20px;
-            flex-wrap: wrap;
-            gap: 10px;
+
+        /* Views (Title / Game / Result) */
+        .view {
+            display: none;
+            animation: fadeIn 0.5s ease forwards;
         }
-        
-        .status-item {
-            text-align: center;
-            min-width: 80px;
+
+        .view.active {
+            display: block;
         }
-        
-        .status-label {
-            font-size: 0.9em;
-            color: #7f8c8d;
-            margin-bottom: 5px;
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: scale(0.98); }
+            to { opacity: 1; transform: scale(1); }
         }
-        
-        .status-value {
-            font-size: 1.3em;
-            font-weight: bold;
-            color: #2c3e50;
-        }
-        
-        .question-area {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
+
+        /* Title Screen Specifics */
+        .rule-card {
+            background: rgba(15, 15, 18, 0.8);
+            border: 1px solid #333;
+            border-radius: 8px;
             padding: 20px;
-            border-radius: 15px;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
+            text-align: left;
+            font-size: 0.95em;
+            line-height: 1.8;
+            color: #dcdcdc;
         }
-        
-        .character-display {
+
+        .rule-card h3 {
+            color: #d4af37;
+            margin-top: 0;
+            border-bottom: 1px solid #444;
+            padding-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .rule-list {
+            list-style-type: none;
+            padding-left: 0;
+            margin: 0;
+        }
+
+        .rule-list li {
+            margin-bottom: 10px;
+            position: relative;
+            padding-left: 20px;
+        }
+
+        .rule-list li::before {
+            content: "◆";
+            color: #d4af37;
+            position: absolute;
+            left: 0;
+        }
+
+        /* Year Progression Meter */
+        .year-display {
+            display: inline-block;
+            background: #1c1c24;
+            border: 1px solid #444;
+            padding: 8px 25px;
+            border-radius: 30px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.4);
+        }
+
+        .year-display span {
+            font-size: 0.9em;
+            color: #aaa;
+            letter-spacing: 1px;
+        }
+
+        .year-display .year-num {
+            font-size: 1.8em;
+            font-weight: 900;
+            color: #ff3b30;
+            margin: 0 5px;
+            text-shadow: 0 0 10px rgba(255, 59, 48, 0.3);
+        }
+
+        .progress-container {
+            width: 100%;
+            height: 8px;
+            background: #111;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 30px;
+            border: 1px solid #2d2d35;
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #d4af37, #f39c12);
+            box-shadow: 0 0 10px rgba(212, 175, 55, 0.5);
+            transition: width 0.4s cubic-bezier(0.1, 0.8, 0.3, 1);
+        }
+
+        /* Question and Character Area */
+        .question-box {
+            background: rgba(18, 18, 24, 0.9);
+            border-radius: 12px;
+            padding: 25px;
+            margin-bottom: 25px;
+            border: 1px solid #2d2d3a;
+            position: relative;
+            transition: border-color 0.5s ease;
+        }
+
+        .character-portrait-box {
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
         }
-        
-        .character-portrait {
+
+        .avatar-circle {
             width: 80px;
             height: 80px;
             border-radius: 50%;
-            background: white;
-            margin: 0 20px;
+            background: #252530;
+            border: 2px solid #d4af37;
+            font-size: 3em;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 2.5em;
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            margin-right: 20px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.5);
+            transition: all 0.5s ease;
         }
-        
-        .character-info h2 {
-            margin: 0;
-            font-size: 1.8em;
-            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+
+        .char-info {
+            text-align: left;
         }
-        
-        .character-info p {
-            margin: 5px 0 0 0;
-            opacity: 0.9;
-            font-size: 1.1em;
+
+        .char-title {
+            font-size: 0.8em;
+            color: #8a8a93;
+            letter-spacing: 2px;
+            text-transform: uppercase;
         }
-        
-        .question-text {
-            font-size: 1.3em;
-            font-weight: bold;
-            margin-bottom: 10px;
+
+        .char-name {
+            font-size: 1.6em;
+            color: #fff;
+            margin: 3px 0 0 0;
+            font-weight: 900;
+            letter-spacing: 1px;
         }
-        
-        .year-display {
-            text-align: center;
-            margin-bottom: 15px;
-        }
-        
-        .year-display .year-label {
-            font-size: 0.9em;
-            color: #7f8c8d;
-        }
-        
-        .year-display .year-number {
-            font-size: 1.8em;
-            font-weight: bold;
-            color: #e74c3c;
-        }
-        
-        .options-container {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-            margin-bottom: 30px;
-        }
-        
-        .option-btn {
-            background: white;
-            border: 2px solid #3498db;
-            border-radius: 10px;
-            padding: 15px;
-            font-size: 1.1em;
-            font-weight: bold;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            color: #2c3e50;
+
+        .speech-bubble {
+            background: #fdfaf2;
+            color: #1a1a24;
+            padding: 18px 22px;
+            border-radius: 8px;
             position: relative;
-            overflow: hidden;
+            font-size: 1.15em;
+            font-weight: bold;
+            line-height: 1.6;
+            margin-top: 15px;
+            border-left: 5px solid #d4af37;
+            text-align: left;
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
         }
-        
+
+        .speech-bubble::before {
+            content: '';
+            position: absolute;
+            top: -12px;
+            left: 37px;
+            border-width: 0 12px 12px;
+            border-style: solid;
+            border-color: transparent transparent #fdfaf2;
+            display: block;
+            width: 0;
+        }
+
+        /* Options layout */
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+
+        .option-btn {
+            background: linear-gradient(135deg, #1f1f2a 0%, #151520 100%);
+            border: 2px solid #3d3d52;
+            color: #fff;
+            padding: 18px 10px;
+            font-size: 1.2em;
+            font-family: 'Noto Serif JP', serif;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+        }
+
         .option-btn:hover:not(:disabled) {
-            background: #3498db;
-            color: white;
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(52, 152, 219, 0.4);
+            transform: translateY(-3px);
+            border-color: #d4af37;
+            box-shadow: 0 8px 20px rgba(212, 175, 55, 0.3);
+            background: linear-gradient(135deg, #2b2b3a 0%, #1a1a29 100%);
         }
-        
-        .option-btn.selected {
-            background: #3498db;
-            color: white;
-            border-color: #2980b9;
+
+        .option-btn:active:not(:disabled) {
+            transform: translateY(-1px);
         }
-        
-        .option-btn.correct {
-            background: #2ecc71;
-            border-color: #27ae60;
-            color: white;
-            animation: pulse 0.5s ease;
+
+        .option-btn.btn-correct {
+            background: #27ae60 !important;
+            border-color: #2ecc71 !important;
+            color: white !important;
+            animation: pulseCorrect 0.4s ease;
         }
-        
-        .option-btn.incorrect {
-            background: #e74c3c;
-            border-color: #c0392b;
-            color: white;
-            animation: shake 0.3s ease;
+
+        .option-btn.btn-incorrect {
+            background: #c0392b !important;
+            border-color: #e74c3c !important;
+            color: white !important;
+            animation: shakeIncorrect 0.4s ease;
         }
-        
+
         .option-btn:disabled {
+            opacity: 0.6;
             cursor: not-allowed;
-            opacity: 0.7;
         }
-        
-        @keyframes pulse {
+
+        @keyframes pulseCorrect {
             0% { transform: scale(1); }
             50% { transform: scale(1.05); }
             100% { transform: scale(1); }
         }
-        
-        @keyframes shake {
+
+        @keyframes shakeIncorrect {
             0%, 100% { transform: translateX(0); }
-            25% { transform: translateX(-5px); }
-            75% { transform: translateX(5px); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
         }
-        
-        .feedback-area {
-            min-height: 60px;
-            margin: 20px 0;
-            padding: 15px;
-            border-radius: 10px;
+
+        /* Feedback text */
+        .feedback-banner {
+            min-height: 40px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             font-size: 1.1em;
             font-weight: bold;
+            border-radius: 6px;
             opacity: 0;
             transition: opacity 0.3s ease;
+            letter-spacing: 1px;
+            margin-bottom: 10px;
         }
-        
-        .feedback-area.show {
+
+        .feedback-banner.show {
             opacity: 1;
         }
-        
-        .feedback-correct {
-            background: #d5f4e6;
-            color: #27ae60;
-            border: 2px solid #2ecc71;
+
+        .feedback-banner.correct {
+            color: #2ecc71;
+            text-shadow: 0 0 8px rgba(46, 204, 113, 0.3);
         }
-        
-        .feedback-incorrect {
-            background: #fadbd8;
-            color: #c0392b;
-            border: 2px solid #e74c3c;
+
+        /* Result View Styling */
+        .result-screen-box {
+            padding: 20px 0;
         }
-        
-        .btn {
-            background: linear-gradient(135deg, #667eea, #764ba2);
-            color: white;
-            border: none;
-            padding: 15px 30px;
-            font-size: 1.1em;
-            font-weight: bold;
-            border-radius: 10px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin: 0 10px;
+
+        .result-graphic {
+            font-size: 4em;
+            margin-bottom: 15px;
+            animation: popUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
         }
-        
-        .btn:hover {
-            transform: translateY(-3px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+
+        @keyframes popUp {
+            0% { transform: scale(0.3); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
         }
-        
-        .btn.restart {
-            background: linear-gradient(135deg, #f093fb, #f5576c);
-        }
-        
-        .result-screen {
-            display: none;
-            text-align: center;
-            padding: 40px 20px;
-        }
-        
-        .result-screen.active {
-            display: block;
-            animation: fadeIn 0.5s ease;
-        }
-        
-        .result-title {
+
+        .result-status-title {
             font-size: 2em;
+            font-weight: 900;
+            color: #d4af37;
             margin-bottom: 20px;
-            color: #2c3e50;
+            letter-spacing: 2px;
         }
-        
-        .result-message {
-            font-size: 1.3em;
+
+        .result-msg-body {
+            background: rgba(15, 15, 20, 0.8);
+            border: 1px solid #2d2d3a;
+            border-radius: 8px;
+            padding: 25px;
+            font-size: 1.1em;
+            line-height: 1.8;
+            color: #e0e0e0;
             margin-bottom: 30px;
-            padding: 20px;
-            border-radius: 10px;
-            background: #e8f4f8;
-            border-left: 5px solid #3498db;
         }
-        
-        .confetti {
+
+        .result-msg-body strong {
+            color: #ff3b30;
+            font-size: 1.2em;
+        }
+
+        /* Action Buttons */
+        .action-btn {
+            background: linear-gradient(135deg, #d4af37 0%, #b8921e 100%);
+            border: none;
+            color: #1a1a24;
+            font-size: 1.2em;
+            font-family: 'Noto Serif JP', serif;
+            font-weight: 900;
+            padding: 16px 35px;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(212, 175, 55, 0.4);
+            transition: all 0.3s ease;
+            letter-spacing: 2px;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(212, 175, 55, 0.6);
+            filter: brightness(1.1);
+        }
+
+        .action-btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-red {
+            background: linear-gradient(135deg, #e63946 0%, #b80d19 100%) !important;
+            color: white !important;
+            box-shadow: 0 6px 20px rgba(230, 57, 70, 0.4) !important;
+        }
+
+        .btn-red:hover {
+            box-shadow: 0 10px 25px rgba(230, 57, 70, 0.6) !important;
+        }
+
+        /* Decorative Confetti Rain */
+        .confetti-piece {
             position: absolute;
-            width: 10px;
-            height: 10px;
-            background: #f1c40f;
-            border-radius: 50%;
-            animation: confettiRain 3s infinite linear;
+            width: 8px;
+            height: 12px;
+            background: #d4af37;
+            border-radius: 1px;
             opacity: 0;
+            pointer-events: none;
         }
-        
-        @keyframes confettiRain {
-            0% { transform: translateY(-100vh) rotate(0deg); opacity: 1; }
+
+        @keyframes confettiFall {
+            0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
             100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
-        }
-        
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
         }
     </style>
 </head>
 <body>
-    <div class="game-container">
-        <!-- ゲーム画面 -->
-        <div id="game-screen">
+    <div class="game-container" id="container-root">
+        <!-- Title & Rules Screen -->
+        <div id="title-view" class="view active">
             <h1>三重長の野望</h1>
-            <p class="subtitle">10年間生き延びろ！</p>
+            <p class="subtitle">〜戦国三英傑と三重県地域区分論争〜</p>
             
+            <div class="rule-card">
+                <h3>天下統一への生存ルール</h3>
+                <ul class="rule-list">
+                    <li>あなたは戦国乱世を生き抜く小大名。信長・秀吉・家康が次々と現れ、<strong>「三重県が何地方か」</strong>について問い詰めます。</li>
+                    <li>英傑たちの主張に逆らわずに答えよ：
+                        <br>&nbsp;&nbsp;&bull; <strong>家康</strong>が現れたら ⇒ <strong>【東海】</strong>
+                        <br>&nbsp;&nbsp;&bull; <strong>秀吉</strong>が現れたら ⇒ <strong>【関西】</strong>
+                        <br>&nbsp;&nbsp;&bull; <strong>信長</strong>が現れたら ⇒ <strong>【近畿】</strong>
+                    </li>
+                    <li><strong>一度の誤答も許されません。</strong>間違えた瞬間、激怒した武将に即座に<strong>切り捨てられ（ゲームオーバー）</strong>となります。</li>
+                    <li>見事<strong>10年間（10問）</strong>生き延びれば、野望達成（ゲームクリア）となります。</li>
+                </ul>
+            </div>
+            <button class="action-btn" id="start-btn">いざ、出陣！</button>
+        </div>
+
+        <!-- Main Quiz Screen -->
+        <div id="game-view" class="view">
+            <h1>生存試験</h1>
             <div class="year-display">
-                <div class="year-label">年</div>
-                <div class="year-number" id="year-display">1</div>
+                <span>生存期間:</span> <strong class="year-num" id="current-year">1</strong><span>年目</span>
             </div>
             
-            <div class="status-area">
-                <div class="status-item">
-                    <div class="status-label">正解数</div>
-                    <div class="status-value" id="correct-count">0</div>
-                </div>
-                <div class="status-item">
-                    <div class="status-label">挑戦回数</div>
-                    <div class="status-value" id="attempt-count">0</div>
-                </div>
-                <div class="status-item">
-                    <div class="status-label">残機</div>
-                    <div class="status-value" id="lives">3</div>
-                </div>
+            <div class="progress-container">
+                <div class="progress-bar" id="game-progress"></div>
             </div>
-            
-            <div class="question-area">
-                <div class="character-display">
-                    <div class="character-portrait" id="current-character">
-                        <!-- キャラクター画像 -->
-                    </div>
-                    <div class="character-info">
-                        <h2 id="character-name">-</h2>
-                        <p id="character-question">-</p>
+
+            <div class="question-box">
+                <div class="character-portrait-box">
+                    <div class="avatar-circle" id="char-avatar">👹</div>
+                    <div class="char-info">
+                        <div class="char-title" id="char-title">第六天魔王</div>
+                        <h2 class="char-name" id="char-name">織田信長</h2>
                     </div>
                 </div>
-                <div class="question-text" id="question-text">-</div>
+                <div class="speech-bubble" id="char-speech">
+                    三重は東海？近畿？関西？どれか言ってみよ！
+                </div>
             </div>
-            
-            <div class="options-container" id="options-container">
-                <!-- オプション -->
+
+            <div class="options-grid">
+                <button class="option-btn" data-region="東海">東海</button>
+                <button class="option-btn" data-region="近畿">近畿</button>
+                <button class="option-btn" data-region="関西">関西</button>
             </div>
-            
-            <div class="feedback-area" id="feedback-area">
-                <!-- フィードバック -->
+
+            <div class="feedback-banner" id="feedback-txt">
+                天晴れ、正解ぞ！
             </div>
         </div>
-        
-        <!-- 結果画面 -->
-        <div id="result-screen" class="result-screen">
-            <div class="result-title">ゲームクリア！</div>
-            <div class="result-message" id="result-message">
-                おめでとうございます！<br>
-                10年間生き延びました！
-            </div>
-            <button class="btn restart" id="restart-btn">もう一度挑戦</button>
-        </div>
-        
-        <!-- ゲームオーバー）
-        <div class="game-over-overlay" id="game-over-overlay">
-            <div class="game-over-content">
-                <div class="game-over-title">切り捨てよう、不如帰！</div>
-                <p>残念でした... もう一度挑戦して運命を変えましょう！</p>
-                <button class="btn restart" id="restart-btn">再挑戦</button>
+
+        <!-- Result Screen -->
+        <div id="result-view" class="view">
+            <div class="result-screen-box">
+                <div class="result-graphic" id="result-emoji">🏆</div>
+                <div class="result-status-title" id="result-title">天下統一達成！</div>
+                
+                <div class="result-msg-body" id="result-message">
+                    おめでとうございます！見事に生き延びました。
+                </div>
+                
+                <button class="action-btn" id="retry-btn">もう一度、乱世に挑む</button>
             </div>
         </div>
     </div>
-    
+
     <script>
+        // Synthesizer Sounds with Web Audio API (Fully self-contained, no external assets needed!)
+        const AudioEffects = {
+            ctx: null,
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+            playCorrect() {
+                this.init();
+                const ctx = this.ctx;
+                const now = ctx.currentTime;
+                
+                // 1. Tsuzumi drum pitch drop
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(380, now);
+                osc.frequency.exponentialRampToValueAtTime(70, now + 0.25);
+                
+                gain.gain.setValueAtTime(0.5, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.25);
+                
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start(now);
+                osc.stop(now + 0.25);
+
+                // 2. Sword swing noise
+                const bufferSize = ctx.sampleRate * 0.12;
+                const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const noise = ctx.createBufferSource();
+                noise.buffer = buffer;
+                
+                const filter = ctx.createBiquadFilter();
+                filter.type = 'bandpass';
+                filter.frequency.setValueAtTime(1200, now);
+                filter.frequency.exponentialRampToValueAtTime(2800, now + 0.12);
+                
+                const noiseGain = ctx.createGain();
+                noiseGain.gain.setValueAtTime(0.15, now);
+                noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.12);
+                
+                noise.connect(filter);
+                filter.connect(noiseGain);
+                noiseGain.connect(ctx.destination);
+                noise.start(now);
+            },
+            playWrong() {
+                this.init();
+                const ctx = this.ctx;
+                const now = ctx.currentTime;
+                
+                // 1. Harsh, dissonant brass tone (Execution slash)
+                const osc1 = ctx.createOscillator();
+                const osc2 = ctx.createOscillator();
+                const gain = ctx.createGain();
+                
+                osc1.type = 'sawtooth';
+                osc1.frequency.setValueAtTime(120, now);
+                osc1.frequency.linearRampToValueAtTime(45, now + 0.75);
+                
+                osc2.type = 'sawtooth';
+                osc2.frequency.setValueAtTime(124, now);
+                osc2.frequency.linearRampToValueAtTime(47, now + 0.75);
+                
+                gain.gain.setValueAtTime(0.4, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.75);
+                
+                osc1.connect(gain);
+                osc2.connect(gain);
+                gain.connect(ctx.destination);
+                
+                osc1.start(now);
+                osc2.start(now);
+                osc1.stop(now + 0.75);
+                osc2.stop(now + 0.75);
+
+                // 2. Heavy explosion noise
+                const bufferSize = ctx.sampleRate * 0.75;
+                const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const noise = ctx.createBufferSource();
+                noise.buffer = buffer;
+                
+                const filter = ctx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(700, now);
+                filter.frequency.exponentialRampToValueAtTime(30, now + 0.7);
+                
+                const noiseGain = ctx.createGain();
+                noiseGain.gain.setValueAtTime(0.5, now);
+                noiseGain.gain.exponentialRampToValueAtTime(0.001, now + 0.75);
+                
+                noise.connect(filter);
+                filter.connect(noiseGain);
+                noiseGain.connect(ctx.destination);
+                noise.start(now);
+            },
+            playClear() {
+                this.init();
+                const ctx = this.ctx;
+                const now = ctx.currentTime;
+                
+                // Horagai (Traditional Battle Conch Horn) Dual Blow
+                const blowHorn = (startTime, duration, pitch) => {
+                    const osc = ctx.createOscillator();
+                    const filter = ctx.createBiquadFilter();
+                    const gain = ctx.createGain();
+                    
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(pitch, startTime);
+                    osc.frequency.linearRampToValueAtTime(pitch * 1.04, startTime + duration * 0.4);
+                    osc.frequency.linearRampToValueAtTime(pitch * 0.94, startTime + duration);
+                    
+                    filter.type = 'bandpass';
+                    filter.frequency.setValueAtTime(pitch * 2, startTime);
+                    filter.Q.setValueAtTime(4, startTime);
+                    
+                    gain.gain.setValueAtTime(0.001, startTime);
+                    gain.gain.linearRampToValueAtTime(0.35, startTime + 0.3); // swell
+                    gain.gain.linearRampToValueAtTime(0.35, startTime + duration - 0.3);
+                    gain.gain.exponentialRampToValueAtTime(0.001, startTime + duration);
+                    
+                    osc.connect(filter);
+                    filter.connect(gain);
+                    gain.connect(ctx.destination);
+                    
+                    osc.start(startTime);
+                    osc.stop(startTime + duration);
+                };
+                
+                // Dual horn calls representing victory
+                blowHorn(now, 1.4, 175);
+                blowHorn(now + 1.2, 2.2, 220);
+            }
+        };
+
+        // Character details and their corresponding target correct answer (Mie categorization)
         const characters = [
             {
-                name: '家康',
-                avatar: '🔴',
-                speech: '三重は東海地方だろう？'
+                id: 'nobunaga',
+                name: '織田信長',
+                title: '第六天魔王',
+                avatar: '👿',
+                speech: '「三重は東海？近畿？関西？どれか言ってみよ！ 余の納得する答えを用意せよ。」',
+                correct: '近畿',
+                quote: '「問答無用！鳴かぬなら切り捨てよう、不如帰！」'
             },
             {
-                name: '秀吉',
-                avatar: '🟢',
-                speech: '三重は関西地方だろう？'
+                id: 'hideyoshi',
+                name: '豊臣秀吉',
+                title: '天下人',
+                avatar: '🐒',
+                speech: '「のう、三重というのは東海か、近畿か、関西か？ 早く答えて安心させておくれ！」',
+                correct: '関西',
+                quote: '「遅すぎるわ！鳴かぬなら切り捨てよう、不如帰！」'
             },
             {
-                name: '信長',
-                avatar: '🔵',
-                speech: '三重は近畿地方だろう？'
+                id: 'ieyasu',
+                name: '徳川家康',
+                title: '大御所',
+                avatar: '🐢',
+                speech: '「三重は一体どの地域にあたるのか。東海か、近畿か、関西か。お主の見解を述べよ。」',
+                correct: '東海',
+                quote: '「覚悟なしか！鳴かぬなら切り捨てよう、不如帰！」'
             }
         ];
-        
-        const correctRegions = {
-            '家康': '東海地方',
-            '秀吉': '関西地方', 
-            '信長': '近畿地方'
-        };
-        
-        const allRegions = ['東海地方', '近畿地方', '関西地方', '関東地方', '九州地方', '中国地方'];
-        
-        let gameState = {
-            year: 1,
-            correctAnswers: 0,
-            attempts: 0,
-            lives: 3,
-            gameOver: false,
-            gameComplete: false
-        };
-        
-        let currentCharacter = null;
-        
-        const elements = {
-            gameScreen: document.getElementById('game-screen'),
-            resultScreen: document.getElementById('result-screen'),
-            currentCharacter: document.getElementById('current-character'),
-            characterName: document.getElementById('character-name'),
-            characterQuestion: document.getElementById('character-question'),
-            questionText: document.getElementById('question-text'),
-            optionsContainer: document.getElementById('options-container'),
-            correctCount: document.getElementById('correct-count'),
-            attemptCount: document.getElementById('attempt-count'),
-            lives: document.getElementById('lives'),
-            yearDisplay: document.getElementById('year-display'),
-            feedbackArea: document.getElementById('feedback-area'),
-            resultMessage: document.getElementById('result-message'),
-            restartBtn: document.getElementById('restart-btn')
-        };
-        
-        function startGame() {
-            elements.gameScreen.classList.add('active');
-            elements.resultScreen.classList.remove('active');
-            
-            gameState.year = 1;
-            gameState.correctAnswers = 0;
-            gameState.attempts = 0;
-            gameState.lives = 3;
-            gameState.gameOver = false;
-            gameState.gameComplete = false;
-            
-            updateUI();
-            showQuestion();
-        }
-        
-        function showQuestion() {
-            if (gameState.gameOver || gameState.gameComplete) return;
-            
-            currentCharacter = characters[Math.floor(Math.random() * characters.length)];
-            
-            elements.currentCharacter.textContent = currentCharacter.avatar;
-            elements.characterName.textContent = currentCharacter.name;
-            elements.characterQuestion.textContent = currentCharacter.speech;
-            elements.questionText.textContent = `「${currentCharacter.name}」の主張、正しいのはどこ？`;
-            
-            generateOptions();
-        }
-        
-        function generateOptions() {
-            elements.optionsContainer.innerHTML = '';
-            elements.feedbackArea.classList.remove('show');
-            
-            const correctRegion = correctRegions[currentCharacter.name];
-            const otherRegions = allRegions.filter(r => r !== correctRegion);
-            const shuffledOthers = shuffleArray(otherRegions).slice(0, 2);
-            
-            const allOptions = [
-                { text: correctRegion, isCorrect: true },
-                ...shuffledOthers.map(text => ({ text, isCorrect: false }))
-            ];
-            
-            const shuffledOptions = shuffleArray(allOptions);
-            
-            shuffledOptions.forEach(option => {
-                const btn = document.createElement('button');
-                btn.className = 'option-btn';
-                btn.textContent = option.text;
-                btn.dataset.correct = option.isCorrect;
-                btn.addEventListener('click', () => selectOption(btn, option.isCorrect));
-                elements.optionsContainer.appendChild(btn);
+
+        // Game State Variables
+        let currentYear = 1;
+        const goalYears = 10;
+        let activeChar = null;
+        let lockInput = false;
+
+        // View Transition Helper
+        function showView(viewId) {
+            document.querySelectorAll('.view').forEach(view => {
+                view.classList.remove('active');
             });
+            document.getElementById(viewId).classList.add('active');
         }
-        
-        function selectOption(selectedBtn, isCorrect) {
+
+        // Apply dynamic warlord specific borders & indicators
+        function updateContainerTheme(charId) {
+            const root = document.getElementById('container-root');
+            root.className = 'game-container'; // reset
+            if (charId) {
+                root.classList.add(`theme-${charId}`);
+            }
+        }
+
+        // Shuffle arrays for dynamic choices or presentation
+        function shuffleArray(arr) {
+            return arr.sort(() => Math.random() - 0.5);
+        }
+
+        // Setup a round with a random warlord
+        function nextRound() {
+            if (currentYear > goalYears) {
+                triggerVictory();
+                return;
+            }
+
+            lockInput = false;
+            document.getElementById('current-year').textContent = currentYear;
+            document.getElementById('game-progress').style.width = `${((currentYear - 1) / goalYears) * 100}%`;
+
+            // Reset buttons UI
             document.querySelectorAll('.option-btn').forEach(btn => {
-                btn.disabled = true;
+                btn.className = 'option-btn';
+                btn.disabled = false;
             });
+
+            // Hide feedback
+            const feedback = document.getElementById('feedback-txt');
+            feedback.className = 'feedback-banner';
+
+            // Pick a random warlord
+            activeChar = characters[Math.floor(Math.random() * characters.length)];
             
-            gameState.attempts++;
+            // Update container design theme
+            updateContainerTheme(activeChar.id);
+
+            // Display character metadata
+            document.getElementById('char-avatar').textContent = activeChar.avatar;
+            document.getElementById('char-title').textContent = activeChar.title;
+            document.getElementById('char-name').textContent = activeChar.name;
+            document.getElementById('char-speech').textContent = activeChar.speech;
+        }
+
+        // Player answer choice evaluation
+        function handleSelection(selectedBtn, chosenRegion) {
+            if (lockInput) return;
+            lockInput = true;
+
+            document.querySelectorAll('.option-btn').forEach(btn => btn.disabled = true);
             
+            const correctRegion = activeChar.correct;
+            const isCorrect = (chosenRegion === correctRegion);
+
+            const feedback = document.getElementById('feedback-txt');
+
             if (isCorrect) {
-                selectedBtn.classList.add('correct');
-                gameState.correctAnswers++;
-                gameState.year++;
+                // Correct path
+                AudioEffects.playCorrect();
+                selectedBtn.classList.add('btn-correct');
                 
-                const chars = ['🎉', '✅', '👍', '👌', '👑', '🎊', '🎯', '🏆'];
-                const messages = [
-                    '正解！生き残ります！',
-                    '◎ 絶対正解！次へ進もう！',
-                    '👍 君は有能だ！',
-                    '👌 まさに天命！'
-                ];
-                elements.feedbackArea.textContent = chars[Math.floor(Math.random() * chars.length)] + ' ' + messages[Math.floor(Math.random() * messages.length)];
-                elements.feedbackArea.className = 'feedback-area show feedback-correct';
+                // Show celebration phrase
+                const goodPhrases = ['天晴れ！見事な洞察よ！', '流石である、生き残った！', 'うむ、話がわかるやつめ。', 'お主、見どころがあるな！'];
+                feedback.textContent = `◎ ${goodPhrases[Math.floor(Math.random() * goodPhrases.length)]}`;
+                feedback.className = 'feedback-banner show correct';
+
+                currentYear++;
                 
-                setTimeout(checkGameStatus, 1500);
-            } else {
-                selectedBtn.classList.add('incorrect');
-                gameState.lives--;
-                
-                elements.feedbackArea.textContent = '💀 不正解... 切り捨てよう、不如帰！';
-                elements.feedbackArea.className = 'feedback-area show feedback-incorrect';
-                
-                setTimeout(gameOver, 1500);
-            }
-            
-            updateUI();
-        }
-        
-        function checkGameStatus() {
-            if (gameState.year > 10) {
-                gameComplete();
-            } else {
-                elements.yearDisplay.textContent = gameState.year;
-                showQuestion();
-            }
-        }
-        
-        function gameOver() {
-            gameState.gameOver = true;
-            elements.gameScreen.classList.remove('active');
-            elements.resultScreen.classList.add('active');
-            
-            const chars = ['💀', '⚰️', '🕷️', '🐍'];
-            const messages = [
-                '切り捨てよう、不如帰！',
-                'やめろよ、この世は俺のものだ...',
-                'また来よう、運命は変わらない...'
-            ];
-            
-            elements.resultMessage.innerHTML = 
-                chars[Math.floor(Math.random() * chars.length)] + '<br>' +
-                messages[Math.floor(Math.random() * messages.length)] + '<br><br>' +
-                `最終年数: ${gameState.year}<br>正解数: ${gameState.correctAnswers}`;
-        }
-        
-        function gameComplete() {
-            gameState.gameComplete = true;
-            
-            showConfetti();
-            
-            elements.resultMessage.innerHTML = 
-                '🎉<br>おめでとうございます！<br>10年間生き延びました！<br><br>三重の野望をかか了達！<br>' +
-                `<span style="font-size: 1.2em; color: #e74c3c;">勝利への道、あなたは歩んだ！</span>`;
-        }
-        
-        function updateUI() {
-            elements.correctCount.textContent = gameState.correctAnswers;
-            elements.attemptCount.textContent = gameState.attempts;
-            elements.lives.textContent = gameState.lives;
-        }
-        
-        function shuffleArray(array) {
-            const shuffled = [...array];
-            for (let i = shuffled.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
-            }
-            return shuffled;
-        }
-        
-        function showConfetti() {
-            for (let i = 0; i <30; i++) {
+                // Trigger next year round after feedback pause
                 setTimeout(() => {
-                    const confetti = document.createElement('div');
-                    confetti.className = 'confetti';
-                    confetti.style.left = Math.random() * 800 + 'px';
-                    confetti.style.backgroundColor = ['#f1c40f', '#e74c3c', '#3498db', '#2ecc71', '#9b59b6'][Math.floor(Math.random() * 5)];
-                    confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
-                    confetti.style.animationDelay = Math.random() * 3 + 's';
-                    document.querySelector('.game-container').appendChild(confetti);
-                    setTimeout(() => confetti.remove(), 5000);
-                }, i * 80);
+                    nextRound();
+                }, 1500);
+
+            } else {
+                // Wrong path (Execution)
+                AudioEffects.playWrong();
+                selectedBtn.classList.add('btn-incorrect');
+                
+                // Highlight the correct answer button
+                document.querySelectorAll('.option-btn').forEach(btn => {
+                    if (btn.dataset.region === correctRegion) {
+                        btn.classList.add('btn-correct');
+                    }
+                });
+
+                feedback.textContent = '💀 激怒させてしまった……！';
+                feedback.className = 'feedback-banner show';
+
+                // Proceed to failure screen
+                setTimeout(() => {
+                    triggerDefeat(chosenRegion);
+                }, 1800);
             }
         }
-        
-        elements.restartBtn.addEventListener('click', startGame);
-        
-        startGame();
+
+        // Victory State Trigger
+        function triggerVictory() {
+            updateContainerTheme(null);
+            showView('result-view');
+            
+            // Play conch horns
+            AudioEffects.playClear();
+            startConfettiEffect();
+
+            document.getElementById('result-emoji').textContent = '👑';
+            document.getElementById('result-title').textContent = '乱世統一・野望達成！';
+            
+            const rootBtn = document.getElementById('retry-btn');
+            rootBtn.textContent = '再び天下を目指す';
+            rootBtn.className = 'action-btn';
+
+            document.getElementById('result-message').innerHTML = `
+                お見事なり！信長、秀吉、家康の恐るべき追及を躱し、<br>
+                <strong>見事10年間を生き延びました！</strong><br><br>
+                三重県に対する臨機応変な「東海・近畿・関西」としての多面的アプローチにより、すべての英傑を満足させ、あなたは見事に天下統一を成し遂げました！
+            `;
+        }
+
+        // Defeat State Trigger
+        function triggerDefeat(chosenRegion) {
+            updateContainerTheme(null);
+            showView('result-view');
+
+            document.getElementById('result-emoji').textContent = '💀';
+            document.getElementById('result-title').textContent = '切り捨て御免！';
+            
+            const rootBtn = document.getElementById('retry-btn');
+            rootBtn.textContent = 'もう一度転生する (再挑戦)';
+            rootBtn.className = 'action-btn btn-red';
+
+            const correctRegion = activeChar.correct;
+
+            document.getElementById('result-message').innerHTML = `
+                生存期間: <strong>${currentYear}年目</strong>にて露と消える…<br><br>
+                ${activeChar.name}の怒声：<br>
+                <span style="font-size: 1.2em; color: #ff3b30; font-weight: bold; display: block; margin: 10px 0;">
+                    ${activeChar.quote}
+                </span>
+                ${activeChar.name}の問いに「${chosenRegion}」と答えたため激怒を買いました。<br>
+                ${activeChar.name}が望む正しき三重の定義は<strong>【${correctRegion}】</strong>です。
+            `;
+        }
+
+        // Celebration Confetti effect
+        function startConfettiEffect() {
+            const container = document.getElementById('container-root');
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.className = 'confetti-piece';
+                confetti.style.left = `${Math.random() * 100}%`;
+                confetti.style.backgroundColor = ['#d4af37', '#f39c12', '#f1c40f', '#e67e22', '#ffffff'][Math.floor(Math.random() * 5)];
+                confetti.style.width = `${Math.random() * 8 + 4}px`;
+                confetti.style.height = `${Math.random() * 12 + 6}px`;
+                confetti.style.top = `-20px`;
+                confetti.style.animation = `confettiFall ${Math.random() * 2 + 1.5}s linear forwards`;
+                
+                container.appendChild(confetti);
+                
+                // Cleanup confetti
+                setTimeout(() => confetti.remove(), 4000);
+            }
+        }
+
+        // Set up event listeners
+        document.getElementById('start-btn').addEventListener('click', () => {
+            showView('game-view');
+            currentYear = 1;
+            nextRound();
+        });
+
+        document.getElementById('retry-btn').addEventListener('click', () => {
+            showView('title-view');
+            updateContainerTheme(null);
+        });
+
+        document.querySelectorAll('.option-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                handleSelection(btn, btn.dataset.region);
+            });
+        });
     </script>
 </body>
 </html>
