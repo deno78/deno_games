@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>民明ゼミ進化論 - モバイル版 -</title>
+    <link href="https://fonts.googleapis.com/css2?family=DotGothic16&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            image-rendering: pixelated;
+            user-select: none;
+        }
+        body {
+            background-color: #0b0b0f;
+            color: #fff;
+            font-family: 'DotGothic16', sans-serif;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        h1 {
+            font-size: 1.4rem;
+            text-shadow: 2px 2px #000;
+            color: #ffcc00;
+            margin: 5px 0;
+            text-align: center;
+        }
+        .subtitle {
+            font-size: 0.8rem;
+            color: #aaa;
+            margin-bottom: 8px;
+            text-align: center;
+        }
+        .phone-frame {
+            width: 100%;
+            max-width: 380px;
+            background: #181820;
+            border: 4px solid #fff;
+            border-radius: 16px;
+            padding: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            position: relative;
+        }
+        canvas {
+            background-color: #2e8b57;
+            border: 2px solid #fff;
+            width: 100%;
+            height: auto;
+            aspect-ratio: 1 / 1;
+            display: block;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 4px;
+            background: #111;
+            padding: 6px;
+            border: 2px solid #444;
+            text-align: center;
+        }
+        .stat-item {
+            font-size: 0.65rem;
+            color: #aaa;
+        }
+        .stat-value {
+            color: #0ff;
+            font-size: 0.8rem;
+            font-weight: bold;
+            display: block;
+            margin-top: 2px;
+        }
+        .event-log {
+            background: #000;
+            border: 2px solid #444;
+            padding: 6px;
+            height: 70px;
+            overflow-y: auto;
+            font-size: 0.75rem;
+            line-height: 1.3;
+            color: #3f3;
+        }
+        .control-area {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .btn {
+            background: #333;
+            color: #fff;
+            border: 2px solid #fff;
+            padding: 10px;
+            font-family: 'DotGothic16', sans-serif;
+            font-size: 0.95rem;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 3px 3px 0 #000;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0 #000;
+        }
+        .btn-primary {
+            background: #a00;
+            color: #ff0;
+        }
+        .btn-primary:hover {
+            background: #d00;
+        }
+        /* モーダルオーバーレイ（寿命選択用） */
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            padding: 20px;
+            text-align: center;
+            border-radius: 12px;
+        }
+        .modal-overlay h2 {
+            color: #ffcc00;
+            font-size: 1.2rem;
+            margin-bottom: 10px;
+        }
+        .modal-overlay p {
+            font-size: 0.85rem;
+            color: #ddd;
+            margin-bottom: 15px;
+            line-height: 1.4;
+        }
+        .cycle-select {
+            width: 100%;
+            background: #000;
+            color: #0ff;
+            border: 2px solid #ffcc00;
+            padding: 10px;
+            font-family: 'DotGothic16', sans-serif;
+            font-size: 1rem;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>民明ゼミ進化論</h1>
+    <div class="subtitle">〜 スマホ最適化・50年シミュレーション 〜</div>
+
+    <div class="phone-frame" id="phoneFrame">
+        <!-- キャンバス -->
+        <canvas id="gameCanvas" width="360" height="360"></canvas>
+
+        <!-- ステータス表示 -->
+        <div class="stats-grid">
+            <div class="stat-item">経過年<span id="stat-years" class="stat-value">0 / 50</span></div>
+            <div class="stat-item">現在の蝉<span id="stat-current-cicadas" class="stat-value">0匹</span></div>
+            <div class="stat-item">総子孫数<span id="stat-total-cicadas" class="stat-value">0匹</span></div>
+            <div class="stat-item">最高同時<span id="stat-max-score" class="stat-value">0匹</span></div>
+        </div>
+
+        <!-- ログ -->
+        <div id="log" class="event-log">【ゲーム説明】<br>最初はゲームスタートを押してください。10年経過時にミンメイ蝉の羽化年数を強制選択します。合計50年で決着！</div>
+
+        <!-- コントロールボタン -->
+        <div class="control-area">
+            <button id="btn-start" class="btn btn-primary">ゲームスタート (最初の10年)</button>
+            <button id="btn-reset" class="btn" style="background: #500; display: none;">最初からやり直す</button>
+        </div>
+
+        <!-- 10年目の強制選択モーダル -->
+        <div id="modal-choice" class="modal-overlay">
+            <h2>【重大な進化の選択】</h2>
+            <p>10年が経過し、ミンメイゼミの一族が最初の羽化期を迎えます。これより<strong>生涯に一度だけ</strong>、ミンメイゼミの羽化周期を強制変更できます！</p>
+            <select id="cycle-select" class="cycle-select">
+                <option value="2">2年周期 (超ハイペース)</option>
+                <option value="3">3年周期</option>
+                <option value="4">4年周期</option>
+                <option value="5">5年周期</option>
+                <option value="6">6年周期</option>
+                <option value="7" selected>7年周期 (素数・おすすめ)</option>
+                <option value="8">8年周期</option>
+                <option value="9">9年周期</option>
+                <option value="10">10年周期</option>
+                <option value="11">11年周期 (素数)</option>
+                <option value="12">12年周期</option>
+                <option value="13">13年周期 (素数)</option>
+            </select>
+            <button id="btn-confirm-cycle" class="btn btn-primary" style="width: 100%;">進化を確定して後半40年を開始</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // 音声
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(freq, type, duration) {
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e) {}
+        }
+
+        // ゲーム状態
+        let currentYear = 0;
+        const totalSimYears = 50;
+        const phase1EndYear = 10;
+        let scoreMax = 0;
+        let totalCicadasBorn = 0;
+        let gameState = 'IDLE'; // 'IDLE', 'PHASE1_RUNNING', 'WAITING_CHOICE', 'PHASE2_RUNNING', 'FINISHED'
+        let autoTimer = null;
+
+        let minmeiCycle = 7;
+        let minmeiHasChanged = false;
+        let nextBirdYear = 2;
+
+        let undergroundCicadas = [];
+        let onTreeCicadas = [];
+        let flyingBirds = [];
+        let particles = [];
+        let uniqueIdCounter = 0;
+
+        const treeX = 180;
+        const treeY = 280;
+
+        const logEl = document.getElementById('log');
+        function addLog(text, color = '#3f3') {
+            const p = document.createElement('div');
+            p.style.color = color;
+            p.innerHTML = `[${currentYear}年] ${text}`;
+            logEl.appendChild(p);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function getRandomBirdInterval() {
+            return Math.floor(Math.random() * 3) + 2; // 2〜4年
+        }
+
+        function initGame() {
+            currentYear = 0;
+            undergroundCicadas = [];
+            onTreeCicadas = [];
+            flyingBirds = [];
+            particles = [];
+            uniqueIdCounter = 0;
+            minmeiHasChanged = false;
+            nextBirdYear = getRandomBirdInterval();
+            totalCicadasBorn = 0;
+            scoreMax = 0;
+            gameState = 'IDLE';
+
+            if (autoTimer) clearInterval(autoTimer);
+
+            // 初期地下蝉群 (約80匹)
+            minmeiCycle = Math.floor(Math.random() * 6) + 3; // 初期はランダム
+            for (let i = 0; i < 80; i++) {
+                const isMinmei = Math.random() < 0.25;
+                const cycle = isMinmei ? minmeiCycle : (Math.floor(Math.random() * 12) + 2);
+                undergroundCicadas.push({
+                    id: uniqueIdCounter++,
+                    type: isMinmei ? 'minmei' : 'normal',
+                    cycle: cycle,
+                    yearsLeft: Math.floor(Math.random() * cycle) + 1
+                });
+            }
+
+            logEl.innerHTML = '【ゲーム説明】<br>「ゲームスタート」を押すと最初の10年が自動で展開します。';
+            document.getElementById('btn-start').style.display = 'block';
+            document.getElementById('btn-start').textContent = "ゲームスタート (最初の10年)";
+            document.getElementById('btn-reset').style.display = 'none';
+            document.getElementById('modal-choice').style.display = 'none';
+
+            updateUI();
+            draw();
+        }
+
+        // 描画関数
+        function drawPixelBird(ctx, x, y, wingUp) {
+            ctx.fillStyle = '#ff3333';
+            ctx.fillRect(x - 5, y, 10, 3);
+            ctx.fillRect(x - 2, y - 3, 4, 3);
+            ctx.fillStyle = '#ffaa00';
+            ctx.fillRect(x + 2, y - 2, 2, 2);
+            ctx.fillStyle = '#cc1111';
+            if (wingUp) {
+                ctx.fillRect(x - 6, y - 5, 3, 5);
+                ctx.fillRect(x + 3, y - 5, 3, 5);
+            } else {
+                ctx.fillRect(x - 8, y + 2, 3, 3);
+                ctx.fillRect(x + 5, y + 2, 3, 3);
+            }
+        }
+
+        function drawPixelCicada(ctx, x, y, type, isDead = false) {
+            ctx.fillStyle = isDead ? '#666' : (type === 'minmei' ? '#0ff' : '#fa0');
+            ctx.fillRect(x - 3, y + 2, 2, 6);
+            ctx.fillRect(x + 1, y + 2, 2, 6);
+            ctx.fillStyle = isDead ? '#444' : (type === 'minmei' ? '#08c' : '#a50');
+            ctx.fillRect(x - 2, y, 4, 5);
+            ctx.fillStyle = isDead ? '#555' : '#f00';
+            ctx.fillRect(x - 2, y - 1, 1, 1);
+            ctx.fillRect(x + 1, y - 1, 1, 1);
+        }
+
+        function drawBackground() {
+            // 背景空グラデーション
+            const grad = ctx.createLinearGradient(0, 0, 0, 360);
+            grad.addColorStop(0, '#001122');
+            grad.addColorStop(0.6, '#1a3a2a');
+            grad.addColorStop(1, '#1e6f42');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 360, 360);
+
+            // 月
+            ctx.fillStyle = '#fffaaa';
+            ctx.beginPath();
+            ctx.arc(60, 50, 20, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 地面と草
+            ctx.fillStyle = '#145230';
+            ctx.fillRect(0, 290, 360, 70);
+
+            // 木の幹
+            ctx.fillStyle = '#4a2c11';
+            ctx.fillRect(treeX - 16, treeY - 140, 32, 150);
+
+            // 葉
+            ctx.fillStyle = '#0f5c2e';
+            ctx.beginPath();
+            ctx.arc(treeX, treeY - 140, 55, 0, Math.PI * 2);
+            ctx.arc(treeX - 35, treeY - 120, 40, 0, Math.PI * 2);
+            ctx.arc(treeX + 35, treeY - 120, 40, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, 360, 360);
+            drawBackground();
+
+            // 蝉
+            onTreeCicadas.forEach(c => {
+                drawPixelCicada(ctx, c.x, c.y, c.type, c.isDead);
+            });
+
+            // 鳥
+            flyingBirds.forEach(b => {
+                const wingUp = Math.floor(Date.now() / 150) % 2 === 0;
+                drawPixelBird(ctx, b.x, b.y, wingUp);
+            });
+
+            // パーティクル
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+            });
+        }
+
+        function triggerParticles(x, y, color, count = 4) {
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: x, y: y,
+                    vx: (Math.random() - 0.5) * 3,
+                    vy: (Math.random() - 0.5) * 3 - 1,
+                    size: Math.random() * 2 + 1,
+                    color: color,
+                    alpha: 1
+                });
+            }
+        }
+
+        function updateEntitiesAndDraw() {
+            flyingBirds.forEach(b => b.x += b.vx);
+            flyingBirds = flyingBirds.filter(b => b.x < 400);
+
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.1;
+            });
+            particles = particles.filter(p => p.alpha > 0);
+
+            draw();
+            if (flyingBirds.length > 0 || particles.length > 0) {
+                requestAnimationFrame(updateEntitiesAndDraw);
+            }
+        }
+
+        // 1年進行処理
+        function stepYear() {
+            if (currentYear >= totalSimYears) return;
+
+            currentYear++;
+            nextBirdYear--;
+            const isBirdAttack = nextBirdYear <= 0;
+
+            undergroundCicadas.forEach(c => c.yearsLeft--);
+            const emerging = undergroundCicadas.filter(c => c.yearsLeft <= 0);
+            undergroundCicadas = undergroundCicadas.filter(c => c.yearsLeft > 0);
+
+            onTreeCicadas = [];
+            let minmeiE = 0, normalE = 0;
+
+            emerging.forEach((c, idx) => {
+                let x = treeX + (Math.random() - 0.5) * 24;
+                let y = treeY - 40 - Math.random() * 90;
+                if (c.type === 'minmei') minmeiE++; else normalE++;
+                onTreeCicadas.push({ id: c.id, type: c.type, cycle: c.cycle, x: x, y: y, isDead: false });
+            });
+
+            const totalE = emerging.length;
+            if (totalE > 0) {
+                addLog(`羽化: ${totalE}匹 (M:${minmeiE}/普:${normalE})`);
+            }
+
+            // 過密死 (5匹超え)
+            onTreeCicadas.forEach((c, idx) => {
+                if (idx >= 5) {
+                    c.isDead = true;
+                    triggerParticles(c.x, c.y, '#666', 2);
+                }
+            });
+            if (totalE > 5) {
+                addLog(`過密淘汰: ${totalE - 5}匹が死亡`, '#fa0');
+                playTone(150, 'sawtooth', 0.2);
+            }
+
+            // 鳥襲撃
+            if (isBirdAttack && totalE > 0) {
+                flyingBirds = [{ x: -20, y: 80, vx: 4 }, { x: -40, y: 110, vx: 3.5 }];
+                const survivors = onTreeCicadas.filter(c => !c.isDead);
+                const toEat = Math.floor(survivors.length / 2);
+                survivors.sort(() => Math.random() - 0.5).slice(0, toEat).forEach(c => {
+                    c.isDead = true;
+                    triggerParticles(c.x, c.y, '#f33', 5);
+                });
+                addLog(`鳥襲撃！半数が食べられた`, '#f55');
+                playTone(400, 'sine', 0.3);
+                nextBirdYear = getRandomBirdInterval();
+            }
+
+            // 繁殖
+            const alive = onTreeCicadas.filter(c => !c.isDead);
+            let bornM = 0, bornN = 0;
+            alive.forEach(p => {
+                const count = Math.floor(Math.random() * 3) + 2;
+                for (let i = 0; i < count; i++) {
+                    if (p.type === 'minmei') {
+                        bornM++;
+                        undergroundCicadas.push({ id: uniqueIdCounter++, type: 'minmei', cycle: minmeiCycle, yearsLeft: minmeiCycle });
+                    } else {
+                        bornN++;
+                        undergroundCicadas.push({ id: uniqueIdCounter++, type: 'normal', cycle: p.cycle, yearsLeft: p.cycle });
+                    }
+                }
+                triggerParticles(p.x, p.y, p.type === 'minmei' ? '#0ff' : '#fa0', 3);
+            });
+
+            if (alive.length > 0) {
+                totalCicadasBorn += (bornM + bornN);
+                playTone(600, 'triangle', 0.15);
+            }
+
+            if (undergroundCicadas.length > scoreMax) {
+                scoreMax = undergroundCicadas.length;
+            }
+
+            updateUI();
+            updateEntitiesAndDraw();
+        }
+
+        function updateUI() {
+            document.getElementById('stat-years').textContent = `${currentYear} / ${totalSimYears}`;
+            document.getElementById('stat-current-cicadas').textContent = `${undergroundCicadas.length}匹`;
+            document.getElementById('stat-total-cicadas').textContent = `${totalCicadasBorn}匹`;
+            document.getElementById('stat-max-score').textContent = `${scoreMax}匹`;
+        }
+
+        // 自動ループ制御
+        function startPhase1() {
+            gameState = 'PHASE1_RUNNING';
+            document.getElementById('btn-start').style.display = 'none';
+            addLog("最初の10年シミュレーション開始...", "#ffcc00");
+
+            autoTimer = setInterval(() => {
+                if (currentYear < phase1EndYear) {
+                    stepYear();
+                } else {
+                    clearInterval(autoTimer);
+                    // 10年経過完了 -> 選択モーダルを表示
+                    gameState = 'WAITING_CHOICE';
+                    addLog("10年経過！ミンメイゼミの進化先を選択してください。", "#0ff");
+                    document.getElementById('modal-choice').style.display = 'flex';
+                }
+            }, 600);
+        }
+
+        function startPhase2(selectedCycle) {
+            minmeiCycle = selectedCycle;
+            minmeiHasChanged = true;
+
+            // 既存のミンメイゼミの周期を更新
+            undergroundCicadas.forEach(c => {
+                if (c.type === 'minmei') {
+                    c.cycle = selectedCycle;
+                    c.yearsLeft = Math.min(c.yearsLeft, selectedCycle);
+                }
+            });
+
+            document.getElementById('modal-choice').style.display = 'none';
+            gameState = 'PHASE2_RUNNING';
+            addLog(`進化完了！ミンメイゼミは【${selectedCycle}年周期】に進化しました。後半40年スタート！`, "#0ff");
+            playTone(880, 'sine', 0.4);
+
+            autoTimer = setInterval(() => {
+                if (currentYear < totalSimYears) {
+                    stepYear();
+                } else {
+                    clearInterval(autoTimer);
+                    gameState = 'FINISHED';
+                    addLog("【50年シミュレーション終了】お疲れ様でした！", "#ffcc00");
+                    document.getElementById('btn-reset').style.display = 'block';
+                    alert(`シミュレーション終了！\n総子孫数: ${totalCicadasBorn}匹\n最高同時地下数: ${scoreMax}匹`);
+                }
+            }, 600);
+        }
+
+        // イベントリスナー
+        document.getElementById('btn-start').addEventListener('click', () => {
+            if (gameState === 'IDLE') {
+                startPhase1();
+            }
+        });
+
+        document.getElementById('btn-confirm-cycle').addEventListener('click', () => {
+            const select = document.getElementById('cycle-select');
+            const cycle = parseInt(select.value);
+            startPhase2(cycle);
+        });
+
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            initGame();
+        });
+
+        // 初期描画
+        initGame();
+    </script>
+</body>
+</html>
