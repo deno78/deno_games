@@ -1,0 +1,751 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>迷惑メール仕分け係長 - 20件の試練</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: #1e1e2f;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+            color: #f0f0f5;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        header {
+            width: 100%;
+            background: #2b2b40;
+            padding: 12px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            z-index: 10;
+        }
+        .title-area h1 {
+            margin: 0;
+            font-size: 16px;
+            color: #7986cb;
+        }
+        .title-area p {
+            margin: 2px 0 0 0;
+            font-size: 11px;
+            color: #aaa;
+        }
+        .stats-area {
+            display: flex;
+            gap: 12px;
+            font-size: 13px;
+        }
+        .stat-box {
+            background: #1a1a26;
+            padding: 4px 8px;
+            border-radius: 4px;
+            border: 1px solid #3f3f5f;
+        }
+        .stat-value {
+            font-weight: bold;
+            color: #4db6ac;
+        }
+
+        /* Main Game Container */
+        .game-container {
+            flex: 1;
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            padding: 10px;
+            overflow: hidden;
+        }
+
+        /* Status & Feedback alert */
+        .banner {
+            background: #3949ab;
+            color: #fff;
+            padding: 8px;
+            text-align: center;
+            font-size: 13px;
+            border-radius: 6px;
+            margin-bottom: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: background 0.3s;
+        }
+        .banner.spam { background: #e53935; }
+        .banner.work { background: #00897b; }
+
+        /* Mail List View (Center) */
+        .mail-list-viewport {
+            flex: 1;
+            background: #252538;
+            border-radius: 8px;
+            border: 2px solid #3d3d5c;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.4);
+        }
+
+        .list-header {
+            background: #2f2f45;
+            padding: 8px 12px;
+            font-size: 12px;
+            color: #9fa8da;
+            border-bottom: 1px solid #3d3d5c;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .mails-stack {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end; /* Bottom stack */
+            padding: 10px;
+        }
+
+        /* Mail Card */
+        .mail-card {
+            background: #2e2e48;
+            border: 1px solid #4a4a70;
+            border-radius: 8px;
+            padding: 14px;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+            position: absolute;
+            left: 10px;
+            right: 10px;
+            bottom: 10px;
+            cursor: grab;
+            transition: transform 0.1s ease, background 0.2s;
+            touch-action: none;
+            z-index: 5;
+        }
+        .mail-card.top-card {
+            z-index: 10;
+        }
+        .mail-card:active {
+            cursor: grabbing;
+        }
+
+        .mail-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 11px;
+            color: #9e9e9e;
+            margin-bottom: 6px;
+        }
+        .mail-sender {
+            font-weight: bold;
+            color: #ffb74d;
+        }
+        .mail-subject {
+            font-size: 15px;
+            font-weight: bold;
+            color: #ffffff;
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
+        .mail-snippet {
+            font-size: 12px;
+            color: #b0bec5;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        /* Swipe visual hints */
+        .swipe-hint {
+            position: absolute;
+            top: 20px;
+            padding: 6px 12px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 4px;
+            opacity: 0;
+            transition: opacity 0.2s;
+            pointer-events: none;
+            z-index: 15;
+        }
+        .hint-work {
+            left: 20px;
+            background: rgba(0, 150, 136, 0.9);
+            color: white;
+            transform: rotate(-10deg);
+        }
+        .hint-spam {
+            right: 20px;
+            background: rgba(229, 57, 53, 0.9);
+            color: white;
+            transform: rotate(10deg);
+        }
+
+        /* Controls Area */
+        .controls {
+            display: flex;
+            gap: 12px;
+            padding: 12px 0 4px 0;
+        }
+        .btn {
+            flex: 1;
+            padding: 14px;
+            font-size: 15px;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: transform 0.1s, filter 0.2s;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 2px;
+        }
+        .btn span {
+            font-size: 10px;
+            font-weight: normal;
+            opacity: 0.8;
+        }
+        .btn:active {
+            transform: scale(0.96);
+        }
+        .btn-work {
+            background: #00897b;
+            color: white;
+        }
+        .btn-spam {
+            background: #e53935;
+            color: white;
+        }
+
+        /* Overlay Screens */
+        .overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(15, 15, 25, 0.92);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 24px;
+            text-align: center;
+            z-index: 100;
+        }
+        .overlay h2 {
+            font-size: 22px;
+            margin-bottom: 10px;
+            color: #7986cb;
+        }
+        .overlay p {
+            font-size: 13px;
+            line-height: 1.5;
+            color: #cfd8dc;
+            margin-bottom: 20px;
+        }
+        .overlay .highlight {
+            color: #ffb74d;
+            font-weight: bold;
+        }
+        .primary-btn {
+            background: #3f51b5;
+            color: white;
+            border: none;
+            padding: 12px 32px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+        }
+        .primary-btn:active {
+            transform: scale(0.95);
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* Result details */
+        .result-stats {
+            background: #252538;
+            padding: 12px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            width: 100%;
+            max-width: 300px;
+            text-align: left;
+            font-size: 13px;
+        }
+        .result-stats div {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="title-area">
+            <h1>迷惑メール仕分け係長</h1>
+            <p>役職: 係長 (社畜Lv.2)</p>
+        </div>
+        <div class="stats-area">
+            <div class="stat-box">残り: <span id="count-left" class="stat-value">20</span>/20</div>
+            <div class="stat-box">正解率: <span id="accuracy" class="stat-value">100</span>%</div>
+        </div>
+    </header>
+
+    <div class="game-container">
+        <!-- Banner message -->
+        <div id="banner" class="banner">本日のメール仕分け業務を開始してください。</div>
+
+        <!-- Mail List View -->
+        <div class="mail-list-viewport">
+            <div class="list-header">
+                <span>受信トレイ (最下段の新着メール)</span>
+                <span id="unread-badge">未読: 20件</span>
+            </div>
+            <div class="mails-stack" id="mails-stack">
+                <!-- Mail cards injected dynamically -->
+            </div>
+        </div>
+
+        <!-- Controls -->
+        <div class="controls">
+            <button class="btn btn-work" id="btn-work">
+                📁 仕事用フォルダ
+                <span>[左スワイプ / OK]</span>
+            </button>
+            <button class="btn btn-spam" id="btn-spam">
+                🗑️ 迷惑メール
+                <span>[右スワイプ / 迷惑]</span>
+            </button>
+        </div>
+
+        <!-- Start Overlay -->
+        <div id="start-overlay" class="overlay">
+            <h2>社内メール仕分けシステムの起動</h2>
+            <p>あなたは某IT企業の係長。<br>今日も容赦なく大量のメールが届きます。<br><br>
+            <span class="highlight">左スワイプ（または仕事用ボタン）</span>で仕事用へ、<br>
+            <span class="highlight">右スワイプ（または迷惑ボタン）</span>で迷惑メールへ仕分けてください。<br><br>
+            ノルマは<span class="highlight">20件</span>。<br>正解率が<span class="highlight">80%未満</span>になると、<br>「AIに任せたほうがいいな」と解雇されます！</p>
+            <button class="primary-btn" id="start-btn">業務開始</button>
+        </div>
+
+        <!-- Game Over Overlay -->
+        <div id="gameover-overlay" class="overlay hidden">
+            <h2 id="gameover-title" style="color: #e53935;">解雇通知</h2>
+            <p id="gameover-desc">正解率が80%を割り込みました。<br>「君の仕事、AIで十分だね。明日から来なくていいよ。」</p>
+            <div class="result-stats">
+                <div><span>処理件数:</span> <span id="res-total">20</span></div>
+                <div><span>正解数:</span> <span id="res-correct">12</span></div>
+                <div><span>正解率:</span> <span id="res-accuracy">60%</span></div>
+            </div>
+            <button class="primary-btn" id="retry-btn">再雇用試験を受ける</button>
+        </div>
+    </div>
+
+    <script>
+        // メールデータベース (ビジネスメール vs 巧妙/露骨な誤字・怪しい迷惑メール)
+        const mailTemplates = [
+            // 仕事メール (Work: true)
+            {
+                sender: "佐藤部長 (営業一部)",
+                subject: "部長より、急いで返信せよ",
+                snippet: "お疲れ様です。至急、昨日のクライアント向け提案書の数値を確認し、修正版を返信してください。お前の本気を見せてくれ。",
+                isSpam: false
+            },
+            {
+                sender: "田中 太郎 (総務課)",
+                subject: "【重要】来期のオフィス備品購入アンケートについて",
+                snippet: "総務課の田中です。来期導入するゲーミングチェアおよびコーヒーメーカーに関するアンケートに回答をお願いします。",
+                isSpam: false
+            },
+            {
+                sender: "鈴木 花子 (人事部)",
+                subject: "【要確認】年末調整の提出期限について",
+                snippet: "お疲れ様です。今年度の年末調整申告書の提出期限が今週末に迫っております。必ずポータルサイトよりご提出ください。",
+                isSpam: false
+            },
+            {
+                sender: "システム管理部",
+                subject: "社内VPNパスワード定期変更のお知らせ",
+                snippet: "平素より社内システムをご利用いただきありがとうございます。セキュリティポリシーに基づき、パスワードの変更をお願いします。",
+                isSpam: false
+            },
+            {
+                sender: "高橋 課長 (開発二課)",
+                subject: "次期プロジェクトのキックオフ日程調整",
+                snippet: "お疲れ様です高橋です。来週月曜日から始まる新プロジェクトのキックオフミーティングの出欠席について調整をお願いします。",
+                isSpam: false
+            },
+            {
+                sender: "経理部 (内線342)",
+                subject: "先月の交通費精算の不備について",
+                snippet: "お疲れ様です経理です。ご提出いただいた交通費精算ですが、領収書の日付が抜けている箇所があります。至急再提出してください。",
+                isSpam: false
+            },
+            {
+                sender: "佐藤部長 (営業一部)",
+                subject: "【至急】クライアントへの謝罪対応について",
+                snippet: "先ほど先方からクレームの連絡がありました。大至急、現状の不具合調査結果と今後の対策案をまとめて私までメールしてください。",
+                isSpam: false
+            },
+            {
+                sender: "渡辺 (法務コンプライアンス室)",
+                subject: "新規取引先チェックシートの提出依頼",
+                snippet: "お疲れ様です。新しく提案いただいたベンダーに関するコンプライアンスチェックシートが未提出となっております。本日中にお願いします。",
+                isSpam: false
+            },
+            {
+                sender: "伊藤 恵子 (広報)",
+                subject: "社内ニースレター10月号の原稿確認",
+                snippet: "いつもお世話になっております。今月公開予定の社内ニュースレターに掲載する係長インタビューの原稿をご確認ください。",
+                isSpam: false
+            },
+            {
+                sender: "秘書室",
+                subject: "役員会議室の予約確認と資料印刷について",
+                snippet: "お疲れ様です。明日14時からの役員会議で使用する資料20部を事前に印刷し、会議室までご用意おねがいします。",
+                isSpam: false
+            },
+
+            // 迷惑メール / 誤字・怪しいメール (Spam: true)
+            {
+                sender: "A市役所 入札推進課 <info@city-a-bid-fake.jp>",
+                subject: "公告/広告　A市入札結果のお知らせ",
+                snippet: "平素は市政にご協力いただき感謝します。市内公共工事の落札業者決定に伴う詳細資料を添付しましたのでご確認くだサイ。",
+                isSpam: true
+            },
+            {
+                sender: "アマソ・ン カスタマーサポート <support@amaz-on-security-update.cn>",
+                subject: "請求書/訴求書をお送りします：アカウント停止の予告",
+                snippet: "お客様のプライマリーアカウントに不審なアクティビティが検出されました。直ちに以下のリンクより認証を行ってください。",
+                isSpam: true
+            },
+            {
+                sender: "国税庁・未払い税金センター <notice@nta-tax-jp.com>",
+                subject: "【最終警告】差押え直前のお知らせと変身手続き",
+                snippet: "税金の未納金が確認されました。今すぐお支払いがない場合、財産の差し押さえを行います。リンクから直ちにログインして変身してください。",
+                isSpam: true
+            },
+            {
+                sender: "億万長者クラブ <present@billion-chance.xyz>",
+                subject: "当選金3億円のお受け取り手続きについて（要返信）",
+                snippet: "おめでとうございます！宝くじの当選金3億円があなたに授与されます。手数料として1,000円分のギフトカードを用意してください。",
+                isSpam: true
+            },
+            {
+                sender: "暗号資産ホルダーズ <crypto-rich@mull-mail.ru>",
+                subject: "ビットコインの爆発的上昇に便乗するチャンス",
+                snippet: "誰でも毎日5万円稼げる自動トレードシステムを今だけ無料でプレゼント！初期投資金なしで今すぐ億り人になりましょう。",
+                isSpam: true
+            },
+            {
+                sender: "人事評価システム <hr-notice@internal-system-fake.cc>",
+                subject: "【警告】あなたの評価点が大幅に下がりました",
+                snippet: "今期の評価で著しい不調が検知されました。詳細を確認するには、こちらの社外ログインページに社用IDとパスワードを入力してください。",
+                isSpam: true
+            },
+            {
+                sender: "セキュリテイ センター <alert@windows-update-support.info>",
+                subject: "お使いのコンピュータはウイルスに感染しています",
+                snippet: "警告：システムがトロイの木馬ウイルスに汚染されました。データの消失を防ぐため、今すぐこちらの無料診断ツールをダウンロードしてください。",
+                isSpam: true
+            },
+            {
+                sender: "取締役会会長 秘書 <ceo-direct@free-webmail.tk>",
+                subject: "【極秘依頼】社長からの緊急買収資金の送金について",
+                snippet: "今すぐ極秘の企業買収を行うため、指定された口座に当座の資金を至急振り込んでください。他言無用でお願いします。",
+                isSpam: true
+            },
+            {
+                sender: "フリー素材お姉さん <girls-photo@free-download-site.net>",
+                subject: "お疲れ様です！私とすぐにお茶しませんか？",
+                snippet: "いつもメルマガ読んでくれてありがとうございます。実はあなたに一目惚れしちゃいました。こちらのプロフを見てね♪",
+                isSpam: true
+            },
+            {
+                sender: "銀行協会 不正利用検知係 <bank-security@phishing-alert.biz>",
+                subject: "口座の臨時凍結解除のお願い（要暗証番号）",
+                snippet: "お客様の銀行口座で不正な出金が試みられたため、一時的に口座を凍結しました。解除には暗証番号の再登録が必要です。",
+                isSpam: true
+            }
+        ];
+
+        let gameMails = [];
+        let currentIndex = 0;
+        let scoreCorrect = 0;
+        let totalCount = 20;
+
+        const startOverlay = document.getElementById('start-overlay');
+        const gameoverOverlay = document.getElementById('gameover-overlay');
+        const startBtn = document.getElementById('start-btn');
+        const retryBtn = document.getElementById('retry-btn');
+        const countLeftEl = document.getElementById('count-left');
+        const accuracyEl = document.getElementById('accuracy');
+        const unreadBadge = document.getElementById('unread-badge');
+        const mailsStack = document.getElementById('mails-stack');
+        const banner = document.getElementById('banner');
+        const btnWork = document.getElementById('btn-work');
+        const btnSpam = document.getElementById('btn-spam');
+
+        startBtn.addEventListener('click', startGame);
+        retryBtn.addEventListener('click', startGame);
+
+        btnWork.addEventListener('click', () => handleChoice(false));
+        btnSpam.addEventListener('click', () => handleChoice(true));
+
+        function startGame() {
+            startOverlay.classList.add('hidden');
+            gameoverOverlay.classList.add('hidden');
+            currentIndex = 0;
+            scoreCorrect = 0;
+
+            // ランダムに20件作成（テンプレートをシャッフルまたはランダム選択）
+            gameMails = [];
+            for (let i = 0; i < totalCount; i++) {
+                const randomTemplate = mailTemplates[Math.floor(Math.random() * mailTemplates.length)];
+                // クローンしてわずかにバリエーションを持たせる
+                gameMails.push({ ...randomTemplate });
+            }
+
+            updateUI();
+            renderCard();
+        }
+
+        function updateUI() {
+            const remaining = totalCount - currentIndex;
+            countLeftEl.textContent = remaining;
+            unreadBadge.textContent = `未読: ${Math.max(0, remaining)}件`;
+            const answered = currentIndex;
+            const acc = answered === 0 ? 100 : Math.round((scoreCorrect / answered) * 100);
+            accuracyEl.textContent = acc;
+        }
+
+        function renderCard() {
+            mailsStack.innerHTML = '';
+            if (currentIndex >= totalCount) {
+                endGame();
+                return;
+            }
+
+            // 次のカード（下からせり上がる）と、その下の背景用スタックカードを描画
+            // スタック効果として数枚後ろを表示
+            for (let i = Math.min(currentIndex + 2, totalCount - 1); i >= currentIndex; i--) {
+                const mail = gameMails[i];
+                const card = document.createElement('div');
+                card.className = 'mail-card';
+                if (i === currentIndex) {
+                    card.classList.add('top-card');
+                    card.id = 'top-card-element';
+                    
+                    // インタラクティブなスワイプ対応
+                    initSwipe(card);
+                } else {
+                    // 奥のカードの見た目調整
+                    const offset = i - currentIndex;
+                    card.style.transform = `translateY(${offset * 6}px) scale(${1 - offset * 0.04})`;
+                    card.style.opacity = `${1 - offset * 0.3}`;
+                    card.style.pointerEvents = 'none';
+                }
+
+                card.innerHTML = `
+                    <div class="swipe-hint hint-work" id="hint-work">📁 仕事用</div>
+                    <div class="swipe-hint hint-spam" id="hint-spam">🗑️ 迷惑</div>
+                    <div class="mail-meta">
+                        <span class="mail-sender">${escapeHtml(mail.sender)}</span>
+                        <span>${i + 1} / ${totalCount}</span>
+                    </div>
+                    <div class="mail-subject">${escapeHtml(mail.subject)}</div>
+                    <div class="mail-snippet">${escapeHtml(mail.snippet)}</div>
+                `;
+                mailsStack.appendChild(card);
+            }
+            updateUI();
+        }
+
+        let isSwiping = false;
+        let startX = 0;
+        let currentX = 0;
+        let cardElement = null;
+
+        function initSwipe(card) {
+            cardElement = card;
+            
+            // タッチイベント
+            card.addEventListener('touchstart', onTouchStart, { passive: true });
+            card.addEventListener('touchmove', onTouchMove, { passive: false });
+            card.addEventListener('touchend', onTouchEnd);
+
+            // マウスイベント
+            card.addEventListener('mousedown', onMouseDown);
+        }
+
+        function onTouchStart(e) {
+            isSwiping = true;
+            startX = e.touches[0].clientX;
+            currentX = startX;
+        }
+
+        function onTouchMove(e) {
+            if (!isSwiping) return;
+            currentX = e.touches[0].clientX;
+            updateCardTransform();
+        }
+
+        function onTouchEnd(e) {
+            if (!isSwiping) return;
+            isSwiping = false;
+            evaluateSwipe();
+        }
+
+        function onMouseDown(e) {
+            isSwiping = true;
+            startX = e.clientX;
+            currentX = startX;
+
+            const onMouseMove = (ev) => {
+                if (!isSwiping) return;
+                currentX = ev.clientX;
+                updateCardTransform();
+            };
+
+            const onMouseUp = (ev) => {
+                if (!isSwiping) return;
+                isSwiping = false;
+                window.removeEventListener('mousemove', onMouseMove);
+                window.removeEventListener('mouseup', onMouseUp);
+                evaluateSwipe();
+            };
+
+            window.addEventListener('mousemove', onMouseMove);
+            window.addEventListener('mouseup', onMouseUp);
+        }
+
+        function updateCardTransform() {
+            if (!cardElement) return;
+            const diffX = currentX - startX;
+            const rotation = diffX * 0.08;
+            cardElement.style.transform = `translateX(${diffX}px) rotate(${rotation}deg)`;
+
+            const hintWork = cardElement.querySelector('#hint-work');
+            const hintSpam = cardElement.querySelector('#hint-spam');
+
+            if (diffX < -30) {
+                hintWork.style.opacity = Math.min(1, Math.abs(diffX) / 100);
+                hintSpam.style.opacity = 0;
+            } else if (diffX > 30) {
+                hintSpam.style.opacity = Math.min(1, Math.abs(diffX) / 100);
+                hintWork.style.opacity = 0;
+            } else {
+                hintWork.style.opacity = 0;
+                hintSpam.style.opacity = 0;
+            }
+        }
+
+        function evaluateSwipe() {
+            if (!cardElement) return;
+            const diffX = currentX - startX;
+            const threshold = 80;
+
+            if (diffX < -threshold) {
+                // 左スワイプ -> 仕事用 (isSpam = false)
+                animateOut('left', () => handleChoice(false));
+            } else if (diffX > threshold) {
+                // 右スワイプ -> 迷惑メール (isSpam = true)
+                animateOut('right', () => handleChoice(true));
+            } else {
+                // 元に戻す
+                cardElement.style.transform = 'translateX(0px) rotate(0deg)';
+                const hintWork = cardElement.querySelector('#hint-work');
+                const hintSpam = cardElement.querySelector('#hint-spam');
+                if (hintWork) hintWork.style.opacity = 0;
+                if (hintSpam) hintSpam.style.opacity = 0;
+            }
+        }
+
+        function animateOut(direction, callback) {
+            if (!cardElement) return;
+            const xVal = direction === 'left' ? -500 : 500;
+            const rotVal = direction === 'left' ? -30 : 30;
+            cardElement.style.transition = 'transform 0.3s ease, opacity 0.3s ease';
+            cardElement.style.transform = `translateX(${xVal}px) rotate(${rotVal}deg)`;
+            cardElement.style.opacity = '0';
+            setTimeout(callback, 250);
+        }
+
+        function handleChoice(chosenIsSpam) {
+            const mail = gameMails[currentIndex];
+            const isCorrect = (mail.isSpam === chosenIsSpam);
+
+            if (isCorrect) {
+                scoreCorrect++;
+                showBanner(chosenIsSpam ? "正解：よく見抜いた！迷惑メールだ。" : "正解：重要なお仕事メールだ。", chosenIsSpam ? "spam" : "work");
+            } else {
+                showBanner(chosenIsSpam ? "誤答：これは大切な仕事メールだった！" : "誤答：うわっ、罠の迷惑メールを踏んだ！", "banner");
+            }
+
+            currentIndex++;
+            renderCard();
+        }
+
+        function showBanner(text, type) {
+            banner.textContent = text;
+            banner.className = `banner ${type}`;
+            setTimeout(() => {
+                banner.className = 'banner';
+                banner.textContent = '次のメールを確認してください。';
+            }, 1500);
+        }
+
+        function endGame() {
+            const accuracy = Math.round((scoreCorrect / totalCount) * 100);
+            gameoverOverlay.classList.remove('hidden');
+
+            const title = document.getElementById('gameover-title');
+            const desc = document.getElementById('gameover-desc');
+            const resTotal = document.getElementById('res-total');
+            const resCorrect = document.getElementById('res-correct');
+            const resAccuracy = document.getElementById('res-accuracy');
+
+            resTotal.textContent = totalCount;
+            resCorrect.textContent = scoreCorrect;
+            resAccuracy.textContent = accuracy + '%';
+
+            if (accuracy >= 80) {
+                title.textContent = "業務完了・雇用継続！";
+                title.style.color = "#4db6ac";
+                desc.innerHTML = `正解率 <span class="highlight">${accuracy}%</span> を達成しました！<br>部長「お前、なかなかやるな。AIより人間味があるぞ。係長継続だ！」`;
+            } else {
+                title.textContent = "解雇通知 (AI導入完了)";
+                title.style.color = "#e53935";
+                desc.innerHTML = `正解率 <span class="highlight">${accuracy}%</span> （80%未満）<br>部長「AIに任せたほうがいいな。明日から来なくていいよ。」`;
+            }
+        }
+
+        function escapeHtml(str) {
+            return str.replace(/&/g, "&amp;")
+                      .replace(/</g, "&lt;")
+                      .replace(/>/g, "&gt;")
+                      .replace(/"/g, "&quot;")
+                      .replace(/'/g, "&#039;");
+        }
+    </script>
+</body>
+</html>
