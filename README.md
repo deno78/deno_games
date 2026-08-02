@@ -18,3 +18,4 @@ Deno/Web games collection.
 - [12. 白って256種類あるんやで (White Color Finding Game)](./12/index.html)
 - [13. 白鳥の湖バレエ リズムゲーム (Swan Lake Rhythm Game)](./13/index.html)
 - [14. 三重長の野望 (Mitsukane no Yabou) - Survival Quiz Game](./14/index.html)
+- [15. 民明ゼミ進化論 (Minmei Cicada Evolution)](./15/index.html)

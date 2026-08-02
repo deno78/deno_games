@@ -1,0 +1,859 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>民明ゼミ進化論 - 民明書房刊より -</title>
+    <!-- 8ビット風ドットフォントの読み込み -->
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DotGothic16&display=swap" rel="stylesheet">
+    <style>
+        * {
+            box-sizing: border-box;
+            image-rendering: pixelated;
+        }
+        body {
+            background-color: #111;
+            color: #fff;
+            font-family: 'DotGothic16', sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        h1 {
+            font-family: 'DotGothic16', sans-serif;
+            font-size: 2rem;
+            text-shadow: 3px 3px 0px #000, -1px -1px 0px #888;
+            color: #ffcc00;
+            margin: 0 0 10px 0;
+            text-align: center;
+        }
+        .subtitle {
+            font-size: 1rem;
+            color: #aaa;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .game-wrapper {
+            display: flex;
+            flex-direction: row;
+            gap: 20px;
+            max-width: 1100px;
+            width: 100%;
+        }
+        @media (max-width: 900px) {
+            .game-wrapper {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+        .canvas-area {
+            position: relative;
+        }
+        canvas {
+            background-color: #2e8b57;
+            border: 4px solid #fff;
+            box-shadow: 0 0 20px rgba(0,0,0,0.7);
+            display: block;
+        }
+        .panel {
+            flex: 1;
+            background: #222;
+            border: 4px solid #fff;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 0 20px rgba(0,0,0,0.7);
+            max-height: 512px;
+            overflow-y: auto;
+        }
+        .panel h2 {
+            margin-top: 0;
+            color: #ffcc00;
+            border-bottom: 2px dashed #fff;
+            padding-bottom: 5px;
+            font-size: 1.2rem;
+        }
+        .btn {
+            background: #444;
+            color: #fff;
+            border: 2px solid #fff;
+            padding: 8px 16px;
+            font-family: 'DotGothic16', sans-serif;
+            font-size: 1rem;
+            cursor: pointer;
+            image-rendering: pixelated;
+            margin: 5px 0;
+            box-shadow: 3px 3px 0 #000;
+            transition: all 0.1s;
+        }
+        .btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 1px 1px 0 #000;
+        }
+        .btn:hover {
+            background: #555;
+            color: #ffcc00;
+        }
+        .btn:disabled {
+            background: #222;
+            color: #666;
+            border-color: #666;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+        .btn-primary {
+            background: #a00;
+        }
+        .btn-primary:hover {
+            background: #d00;
+            color: #fff;
+        }
+        .stats-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 15px;
+            background: #111;
+            padding: 10px;
+            border: 2px solid #555;
+        }
+        .stat-item {
+            font-size: 0.9rem;
+        }
+        .stat-value {
+            color: #0ff;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 0.8rem;
+        }
+        .event-log {
+            flex: 1;
+            background: #000;
+            border: 2px solid #555;
+            padding: 8px;
+            overflow-y: auto;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            color: #3f3;
+            height: 150px;
+            font-family: 'DotGothic16', sans-serif;
+        }
+        .setting-panel {
+            background: #1e1e1e;
+            border: 2px solid #fff;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+        .setting-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin: 8px 0;
+        }
+        .setting-row select, .setting-row input {
+            background: #000;
+            color: #fff;
+            border: 2px solid #fff;
+            padding: 4px;
+            font-family: 'DotGothic16', sans-serif;
+            font-size: 0.9rem;
+        }
+        .setting-row select:focus, .setting-row input:focus {
+            outline: none;
+            border-color: #ffcc00;
+        }
+        .help-text {
+            font-size: 0.8rem;
+            color: #ccc;
+            line-height: 1.4;
+            margin-top: auto;
+            border-top: 1px solid #444;
+            padding-top: 10px;
+        }
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            background: #111;
+            padding: 8px;
+            border: 2px solid #555;
+            margin-top: 10px;
+            font-size: 0.8rem;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .legend-color {
+            width: 12px;
+            height: 12px;
+            border: 1px solid #fff;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>民明ゼミ進化論</h1>
+    <div class="subtitle">〜 一度だけ羽化周期を変えられる神秘の蝉 〜</div>
+
+    <div class="game-wrapper">
+        <!-- キャンバスエリア -->
+        <div class="canvas-area">
+            <canvas id="gameCanvas" width="512" height="512"></canvas>
+        </div>
+
+        <!-- コントロールパネル -->
+        <div class="panel">
+            <h2>シミュレーター管理</h2>
+            
+            <div class="stats-grid">
+                <div class="stat-item">経過年数:<br><span id="stat-years" class="stat-value">1 / 110 年</span></div>
+                <div class="stat-item">最高子孫数:<br><span id="stat-max-score" class="stat-value">0匹</span></div>
+                <div class="stat-item">現在の蝉:<br><span id="stat-current-cicadas" class="stat-value">0匹</span></div>
+                <div class="stat-item">今までの総子孫数:<br><span id="stat-total-cicadas" class="stat-value">0匹</span></div>
+            </div>
+
+            <div class="setting-panel">
+                <div class="setting-row">
+                    <span>ミンメイゼミ設定周期:</span>
+                    <span id="current-minmei-cycle" style="color: #ffcc00; font-weight: bold;">未設定</span>
+                </div>
+                
+                <!-- 11年目以降に有効化されるコントロール -->
+                <div id="minmei-control" style="opacity: 0.5; pointer-events: none;">
+                    <div class="setting-row">
+                        <label for="cycle-select">変更後の周期 (年):</label>
+                        <select id="cycle-select">
+                            <option value="2">2年周期</option>
+                            <option value="3">3年周期</option>
+                            <option value="4">4年周期</option>
+                            <option value="5">5年周期</option>
+                            <option value="6">6年周期</option>
+                            <option value="7">7年周期 (素数)</option>
+                            <option value="8">8年周期</option>
+                            <option value="9">9年周期</option>
+                            <option value="10">10年周期</option>
+                            <option value="11">11年周期 (素数)</option>
+                            <option value="12">12年周期</option>
+                            <option value="13">13年周期 (素数)</option>
+                        </select>
+                    </div>
+                    <button id="btn-change-cycle" class="btn btn-primary" style="width: 100%;">ミンメイゼミの羽化周期を一度だけ変更する</button>
+                </div>
+            </div>
+
+            <div style="display: flex; gap: 10px;">
+                <button id="btn-next-year" class="btn" style="flex: 1;">1年進める</button>
+                <button id="btn-auto-play" class="btn" style="flex: 1;">自動（1秒毎）</button>
+            </div>
+            <button id="btn-reset" class="btn" style="background-color: #500;">最初からやり直す</button>
+
+            <h2>ログ記録</h2>
+            <div id="log" class="event-log"></div>
+
+            <div class="legend">
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #ffaa00;"></div>
+                    <span>一般ゼミ</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #00ffff;"></div>
+                    <span>ミンメイゼミ</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #ff3333;"></div>
+                    <span>鳥 (捕食者)</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #888888;"></div>
+                    <span>死骸 / 淘汰</span>
+                </div>
+            </div>
+
+            <div class="help-text">
+                <strong>【民明書房刊『世界奇虫大図鑑』より抜粋】</strong><br>
+                ミンメイゼミ（学名: Magicicada minmeisis）は、生涯に一度だけ、自らの体内時計を狂わせて羽化する周期年数を書き換えることができるという稀有な蝉である。羽化数が樹の許容（5匹以上）を超えると過密死（6匹目以降は死亡）を招き、2〜4年毎の鳥の大量発生は彼らの命を半分奪い去る。最初の10年は通常の蝉として静かに生きるが、11年目からあなたの手による「進化の介入」が可能となる。110年（介入から100年）の終わりに見る、大樹に栄える一族の姿や如何に。
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // 音声・視覚効果用
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playTone(freq, type, duration) {
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + duration);
+            } catch(e) {}
+        }
+
+        // 定数・ステート
+        let currentYear = 1;
+        const startYearOfIntervention = 11;
+        const totalSimYears = 110; // 最初の10年 + 100年シミュレーション
+        let scoreMax = 0; // 最大同時生存、または総累積
+        let totalCicadasBorn = 0;
+        let isAutoPlaying = false;
+        let autoPlayTimer = null;
+
+        // 鳥の大量発生予測
+        let nextBirdYear = getRandomBirdInterval();
+
+        // 蝉の定義
+        // 2から13年までの周期
+        // 蝉の数：最初は各年数周期のポピュレーションをランダム・均等に設定。
+        // 一般蝉は、それぞれ独自の固定周期(2〜13)を持つ。
+        // ミンメイゼミは、元々はランダムな特定周期（例：7年）に所属するが、プレイヤーが介入することで、全ミンメイゼミの周期を固定した新しい周期に変更できる（一度だけ）。
+        let minmeiCycle = null; // まだ設定されていない（あるいは初期設定値がまだ決定される前）
+        let minmeiHasChanged = false;
+
+        // 世代ごとの「地中待機組」
+        // 各周期（2〜13）ごとに、次の羽化までにあと何年待機しているかのリスト
+        // [ { type: 'normal', cycle: C, yearsLeft: Y, id: ID }, { type: 'minmei', cycle: C, yearsLeft: Y, id: ID } ]
+        let undergroundCicadas = [];
+        let uniqueIdCounter = 0;
+
+        // 木の上のアニメーションオブジェクト
+        let onTreeCicadas = [];
+        let flyingBirds = [];
+        let particles = [];
+
+        // ドット絵風の木・背景を描画するための座標群
+        const treeX = 256;
+        const treeY = 400;
+
+        // ログ
+        const logEl = document.getElementById('log');
+        function addLog(text, color = '#3f3') {
+            const p = document.createElement('div');
+            p.style.color = color;
+            p.textContent = `[${currentYear}年目] ${text}`;
+            logEl.appendChild(p);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function getRandomBirdInterval() {
+            // 2〜4年おき
+            return Math.floor(Math.random() * 3) + 2;
+        }
+
+        // 初期化
+        function initGame() {
+            currentYear = 1;
+            undergroundCicadas = [];
+            onTreeCicadas = [];
+            flyingBirds = [];
+            particles = [];
+            uniqueIdCounter = 0;
+            minmeiHasChanged = false;
+            nextBirdYear = getRandomBirdInterval();
+            totalCicadasBorn = 0;
+
+            // ミンメイゼミの初期周期をランダムに決定
+            minmeiCycle = Math.floor(Math.random() * 12) + 2; 
+            document.getElementById('current-minmei-cycle').textContent = `${minmeiCycle}年 (初期)`;
+            document.getElementById('current-minmei-cycle').style.color = '#0ff';
+
+            // 初期地下蝉群の作成
+            // 樹の下に合計80匹程度の蝉が様々な周期で眠っている
+            // 2〜13年
+            for (let i = 0; i < 150; i++) {
+                const isMinmei = Math.random() < 0.25; // 25%はミンメイゼミの一族
+                let cycle;
+                if (isMinmei) {
+                    cycle = minmeiCycle;
+                } else {
+                    cycle = Math.floor(Math.random() * 12) + 2; // 2〜13
+                }
+                const yearsLeft = Math.floor(Math.random() * cycle) + 1;
+                undergroundCicadas.push({
+                    id: uniqueIdCounter++,
+                    type: isMinmei ? 'minmei' : 'normal',
+                    cycle: cycle,
+                    yearsLeft: yearsLeft
+                });
+            }
+
+            logEl.innerHTML = '';
+            addLog("ゲームを開始しました！最初の10年は通常の羽化サイクルを見守ります。", "#ffcc00");
+            addLog(`鳥の大量発生は ${nextBirdYear} 年後に予定されています。`, "#ff5555");
+
+            updateUI();
+            draw();
+        }
+
+        // 鳥の描画
+        function drawPixelBird(ctx, x, y, wingUp) {
+            ctx.fillStyle = '#ff3333';
+            // ドットサイズの鳥
+            ctx.fillRect(x - 6, y, 12, 4); // 胴体
+            ctx.fillRect(x - 2, y - 4, 4, 4); // 頭
+            ctx.fillStyle = '#ffaa00';
+            ctx.fillRect(x + 2, y - 2, 2, 2); // クチバシ
+            ctx.fillStyle = '#cc1111';
+            if (wingUp) {
+                ctx.fillRect(x - 8, y - 6, 4, 6); // 左翼上
+                ctx.fillRect(x + 4, y - 6, 4, 6); // 右翼上
+            } else {
+                ctx.fillRect(x - 10, y + 2, 4, 4); // 左翼下
+                ctx.fillRect(x + 6, y + 2, 4, 4); // 右翼下
+            }
+        }
+
+        // 蝉の描画
+        function drawPixelCicada(ctx, x, y, type, isDead = false) {
+            ctx.fillStyle = isDead ? '#666666' : (type === 'minmei' ? '#00ffff' : '#ffaa00');
+            // 羽
+            ctx.fillRect(x - 4, y + 2, 3, 8);
+            ctx.fillRect(x + 1, y + 2, 3, 8);
+            // 体
+            ctx.fillStyle = isDead ? '#444444' : (type === 'minmei' ? '#0088cc' : '#aa5500');
+            ctx.fillRect(x - 2, y, 4, 7);
+            // 頭と目
+            ctx.fillRect(x - 3, y - 2, 6, 2);
+            ctx.fillStyle = isDead ? '#555555' : '#ff0000';
+            ctx.fillRect(x - 3, y - 2, 1, 1);
+            ctx.fillRect(x + 2, y - 2, 1, 1);
+        }
+
+        // 星・草・空などのピクセル要素の描画
+        function drawPixelBackground() {
+            // 空
+            const gradient = ctx.createLinearGradient(0, 0, 0, 512);
+            gradient.addColorStop(0, '#001122');
+            gradient.addColorStop(0.5, '#002244');
+            gradient.addColorStop(0.8, '#2e8b57');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, 512, 512);
+
+            // 満月 (レトロな黄色い円)
+            ctx.fillStyle = '#ffffaa';
+            ctx.beginPath();
+            ctx.arc(80, 80, 30, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 満月のクレーター
+            ctx.fillStyle = '#eedd99';
+            ctx.fillRect(65, 65, 8, 8);
+            ctx.fillRect(85, 75, 12, 6);
+            ctx.fillRect(70, 90, 6, 6);
+
+            // 星々
+            ctx.fillStyle = '#ffffff';
+            const starCoords = [[200, 40], [300, 80], [450, 50], [150, 120], [380, 150], [20, 200]];
+            starCoords.forEach(([sx, sy]) => {
+                ctx.fillRect(sx, sy, 2, 2);
+            });
+
+            // 地面（野原）
+            ctx.fillStyle = '#1e6f42';
+            ctx.fillRect(0, 400, 512, 112);
+
+            // 草ドット
+            ctx.fillStyle = '#145230';
+            for (let gx = 10; gx < 512; gx += 40) {
+                const offset = (gx % 3) * 5;
+                ctx.fillRect(gx, 410 + offset, 4, 8);
+                ctx.fillRect(gx - 4, 414 + offset, 4, 4);
+                ctx.fillRect(gx + 4, 412 + offset, 4, 6);
+            }
+
+            // 大樹
+            // 幹
+            ctx.fillStyle = '#4a2c11';
+            ctx.fillRect(treeX - 24, treeY - 180, 48, 180);
+            // 幹のハイライト・テクスチャ
+            ctx.fillStyle = '#301c0b';
+            ctx.fillRect(treeX - 24, treeY - 180, 6, 180);
+            ctx.fillRect(treeX + 10, treeY - 140, 4, 60);
+
+            // 枝
+            ctx.fillStyle = '#4a2c11';
+            ctx.fillRect(treeX - 60, treeY - 130, 40, 10); // 左枝
+            ctx.fillRect(treeX + 20, treeY - 110, 50, 12); // 右枝
+
+            // 葉（こんもりとした8ビットの木の冠）
+            ctx.fillStyle = '#0f5c2e';
+            ctx.beginPath();
+            ctx.arc(treeX, treeY - 190, 80, 0, Math.PI * 2);
+            ctx.arc(treeX - 50, treeY - 170, 60, 0, Math.PI * 2);
+            ctx.arc(treeX + 50, treeY - 170, 65, 0, Math.PI * 2);
+            ctx.arc(treeX - 30, treeY - 220, 70, 0, Math.PI * 2);
+            ctx.arc(treeX + 30, treeY - 220, 70, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 葉のハイライト
+            ctx.fillStyle = '#1c7d43';
+            ctx.beginPath();
+            ctx.arc(treeX, treeY - 210, 50, 0, Math.PI * 2);
+            ctx.arc(treeX - 40, treeY - 190, 40, 0, Math.PI * 2);
+            ctx.arc(treeX + 40, treeY - 190, 45, 0, Math.PI * 2);
+            ctx.fill();
+
+            // 根
+            ctx.fillStyle = '#301c0b';
+            ctx.fillRect(treeX - 36, treeY - 10, 12, 10);
+            ctx.fillRect(treeX + 24, treeY - 10, 12, 10);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, 512, 512);
+
+            // 背景と樹木を描画
+            drawPixelBackground();
+
+            // 雲か看板的なテキストの表示
+            ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
+            ctx.fillRect(10, 10, 200, 32);
+            ctx.strokeStyle = '#fff';
+            ctx.strokeRect(10, 10, 200, 32);
+            ctx.fillStyle = '#ffcc00';
+            ctx.font = '12px "DotGothic16"';
+            ctx.fillText(`年数: ${currentYear} / ${totalSimYears} 年`, 20, 30);
+
+            // 蝉の描画
+            onTreeCicadas.forEach(cicada => {
+                drawPixelCicada(ctx, cicada.x, cicada.y, cicada.type, cicada.isDead);
+            });
+
+            // 鳥の描画
+            flyingBirds.forEach(bird => {
+                // はばたきアニメーション
+                const wingUp = Math.floor(Date.now() / 150) % 2 === 0;
+                drawPixelBird(ctx, bird.x, bird.y, wingUp);
+            });
+
+            // パーティクルの描画
+            particles.forEach(p => {
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+            });
+        }
+
+        // アニメーションアップデートループ（鳥の移動やエフェクト用）
+        function updateEntities() {
+            // 鳥の移動
+            flyingBirds.forEach(bird => {
+                // ターゲット（木）に向かって、または通過して飛ぶ
+                bird.x += bird.vx;
+                bird.y += bird.vy;
+            });
+            // 範囲外の鳥を削除
+            flyingBirds = flyingBirds.filter(bird => bird.x > -50 && bird.x < 562);
+
+            // パーティクル移動
+            particles.forEach(p => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.1; // 重力
+                p.alpha -= 0.02;
+            });
+            particles = particles.filter(p => p.alpha > 0);
+
+            draw();
+
+            if (flyingBirds.length > 0 || particles.length > 0) {
+                requestAnimationFrame(updateEntities);
+            }
+        }
+
+        function triggerParticles(x, y, color, count = 5) {
+            for (let i = 0; i < count; i++) {
+                particles.push({
+                    x: x,
+                    y: y,
+                    vx: (Math.random() - 0.5) * 4,
+                    vy: (Math.random() - 0.5) * 4 - 2,
+                    size: Math.random() * 3 + 2,
+                    color: color,
+                    alpha: 1
+                });
+            }
+        }
+
+        // シミュレーションを1年進めるメインロジック
+        function advanceYear() {
+            if (currentYear > totalSimYears) {
+                addLog("シミュレーションはすでに110年に到達し終了しています。リセットしてください。", "#ff3333");
+                return;
+            }
+
+            // 鳥のインターバル・カウントを減少
+            nextBirdYear--;
+            const isBirdAttackYear = nextBirdYear <= 0;
+
+            // 地中蝉の待機年数を1減らす
+            undergroundCicadas.forEach(c => c.yearsLeft--);
+
+            // 今年羽化する蝉を抽出
+            const emerging = undergroundCicadas.filter(c => c.yearsLeft <= 0);
+            // 羽化しない残りの蝉
+            undergroundCicadas = undergroundCicadas.filter(c => c.yearsLeft > 0);
+
+            // 羽化蝉のポジショニング
+            onTreeCicadas = [];
+            let minmeiEmerged = 0;
+            let normalEmerged = 0;
+
+            emerging.forEach((c, index) => {
+                // 木の上のランダムな座標に配置
+                let x, y;
+                if (index < 5) {
+                    // 生存範囲（幹の周りや大きな枝の上）
+                    x = treeX + (Math.random() - 0.5) * 36;
+                    y = treeY - 30 - Math.random() * 120;
+                } else {
+                    // 5匹を超えた蝉（過密死。地面の近くなど）
+                    x = treeX + (Math.random() - 0.5) * 80;
+                    y = treeY - 5 - Math.random() * 10;
+                }
+
+                if (c.type === 'minmei') minmeiEmerged++;
+                else normalEmerged++;
+
+                onTreeCicadas.push({
+                    id: c.id,
+                    type: c.type,
+                    cycle: c.cycle,
+                    x: x,
+                    y: y,
+                    isDead: false,
+                    isEaten: false
+                });
+            });
+
+            const totalEmerged = emerging.length;
+            addLog(`総羽化数: ${totalEmerged} 匹 (ミンメイゼミ: ${minmeiEmerged} / 一般: ${normalEmerged})`, "#fff");
+
+            // 過密死の処理（5匹を超えた場合、6匹目以降は死亡）
+            let survivorCountBeforeBirds = 0;
+            onTreeCicadas.forEach((cicada, idx) => {
+                if (idx >= 5) {
+                    cicada.isDead = true;
+                    triggerParticles(cicada.x, cicada.y, '#888888', 3);
+                } else {
+                    survivorCountBeforeBirds++;
+                }
+            });
+
+            if (totalEmerged > 5) {
+                const overDeadCount = totalEmerged - 5;
+                addLog(`警告：樹上の過密制限(5匹)を超えたため ${overDeadCount} 匹が淘汰されました。`, "#ffaa00");
+                playTone(150, 'sawtooth', 0.3);
+            }
+
+            // 鳥の大量発生の処理
+            let eatenCount = 0;
+            if (isBirdAttackYear) {
+                // 鳥のアニメーション追加
+                const birdCount = 6;
+                flyingBirds = [];
+                for (let i = 0; i < birdCount; i++) {
+                    flyingBirds.push({
+                        x: -10 * i - 30,
+                        y: 100 + Math.random() * 150,
+                        vx: 3 + Math.random() * 2,
+                        vy: (Math.random() - 0.5) * 1
+                    });
+                }
+
+                // 生き残っている蝉の半数をランダムに捕食
+                const survivors = onTreeCicadas.filter(c => !c.isDead);
+                const toEatCount = Math.floor(survivors.length / 2);
+                
+                // シャッフルして半数を選択
+                const shuffled = survivors.sort(() => Math.random() - 0.5);
+                for (let i = 0; i < toEatCount; i++) {
+                    shuffled[i].isEaten = true;
+                    shuffled[i].isDead = true;
+                    eatenCount++;
+                    triggerParticles(shuffled[i].x, shuffled[i].y, '#ff3333', 6);
+                }
+
+                addLog(`鳥の大量発生！羽化していた蝉の半分 (${eatenCount} 匹) が食べられました。`, "#ff5555");
+                playTone(440, 'sine', 0.4);
+
+                // 次回の発生周期を設定
+                nextBirdYear = getRandomBirdInterval();
+                addLog(`次回の鳥大量発生は ${nextBirdYear} 年後と予想されます。`, "#ff8888");
+            }
+
+            // 生き残った蝉が交尾・産卵し、子孫を地中に残す
+            const survivorsToReproduce = onTreeCicadas.filter(c => !c.isDead);
+            let minmeiChildren = 0;
+            let normalChildren = 0;
+
+            survivorsToReproduce.forEach(parent => {
+                // 1匹の親につき、複数の子供（例：2〜4匹）が地中に戻る
+                const childCount = Math.floor(Math.random() * 3) + 2; // 2〜4匹
+                for (let i = 0; i < childCount; i++) {
+                    if (parent.type === 'minmei') {
+                        minmeiChildren++;
+                        undergroundCicadas.push({
+                            id: uniqueIdCounter++,
+                            type: 'minmei',
+                            cycle: minmeiCycle,
+                            yearsLeft: minmeiCycle
+                        });
+                    } else {
+                        normalChildren++;
+                        undergroundCicadas.push({
+                            id: uniqueIdCounter++,
+                            type: 'normal',
+                            cycle: parent.cycle,
+                            yearsLeft: parent.cycle
+                        });
+                    }
+                }
+                triggerParticles(parent.x, parent.y, parent.type === 'minmei' ? '#00ffff' : '#ffcc00', 4);
+            });
+
+            if (survivorsToReproduce.length > 0) {
+                totalCicadasBorn += (minmeiChildren + normalChildren);
+                addLog(`繁殖に成功！地中へ新世代が旅立ちました。(ミンメイ: +${minmeiChildren} / 一般: +${normalChildren})`, "#aeffae");
+                playTone(600, 'triangle', 0.25);
+            } else if (totalEmerged > 0) {
+                addLog(`全滅... 子孫を残せませんでした。`, "#ff3333");
+                playTone(100, 'sawtooth', 0.5);
+            }
+
+            // 統計更新
+            const currentTotalUnderground = undergroundCicadas.length;
+            if (currentTotalUnderground > scoreMax) {
+                scoreMax = currentTotalUnderground;
+            }
+
+            // ミンメイゼミの変更可能ボタンや設定パネルを11年目の開始時点でアクティブにする
+            currentYear++;
+            updateUI();
+            requestAnimationFrame(updateEntities);
+
+            // 終了判定
+            if (currentYear > totalSimYears) {
+                if (isAutoPlaying) {
+                    toggleAutoPlay();
+                }
+                setTimeout(() => {
+                    alert(`シミュレーション終了！\n最終累積子孫数: ${totalCicadasBorn}匹\n最高同時地中蝉数: ${scoreMax}匹\nミンメイゼミの一族を繁栄させられましたか？`);
+                }, 500);
+                addLog(`ーーー シミュレーション終了 ーーー`, "#ffcc00");
+                addLog(`最終実績 - 最高地中生存数: ${scoreMax}匹、今までの総子孫数: ${totalCicadasBorn}匹`, "#ffcc00");
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('stat-years').textContent = `${Math.min(currentYear, totalSimYears)} / ${totalSimYears} 年`;
+            document.getElementById('stat-max-score').textContent = `${scoreMax}匹`;
+            document.getElementById('stat-current-cicadas').textContent = `${undergroundCicadas.length}匹`;
+            document.getElementById('stat-total-cicadas').textContent = `${totalCicadasBorn}匹`;
+
+            const controlPanel = document.getElementById('minmei-control');
+            const changeBtn = document.getElementById('btn-change-cycle');
+
+            // 11年目以降、かつ一度もミンメイゼミ周期を変更していない場合
+            if (currentYear >= startYearOfIntervention && !minmeiHasChanged && currentYear <= totalSimYears) {
+                controlPanel.style.opacity = "1";
+                controlPanel.style.pointerEvents = "auto";
+                changeBtn.disabled = false;
+            } else {
+                controlPanel.style.opacity = "0.5";
+                controlPanel.style.pointerEvents = "none";
+                changeBtn.disabled = true;
+            }
+
+            if (currentYear > totalSimYears) {
+                document.getElementById('btn-next-year').disabled = true;
+                document.getElementById('btn-auto-play').disabled = true;
+            } else {
+                document.getElementById('btn-next-year').disabled = false;
+                document.getElementById('btn-auto-play').disabled = false;
+            }
+        }
+
+        // ミンメイゼミの周期変更アクション
+        document.getElementById('btn-change-cycle').addEventListener('click', () => {
+            if (minmeiHasChanged || currentYear < startYearOfIntervention) return;
+
+            const select = document.getElementById('cycle-select');
+            const newCycle = parseInt(select.value);
+
+            // 全てのミンメイゼミの周期・残り待機時間を書き換える
+            minmeiCycle = newCycle;
+            minmeiHasChanged = true;
+
+            undergroundCicadas.forEach(c => {
+                if (c.type === 'minmei') {
+                    c.cycle = newCycle;
+                    // 新しい周期の範囲内で残り年数を再調整（あるいは新周期をそのままセット）
+                    c.yearsLeft = Math.min(c.yearsLeft, newCycle);
+                }
+            });
+
+            document.getElementById('current-minmei-cycle').textContent = `${newCycle}年周期`;
+            document.getElementById('current-minmei-cycle').style.color = '#0ff';
+            
+            addLog(`進化の介入が実行されました！ミンメイゼミは ${newCycle} 年周期に進化しました。`, "#0ff");
+            playTone(880, 'sine', 0.5);
+
+            updateUI();
+            draw();
+        });
+
+        // 1年進めるボタン
+        document.getElementById('btn-next-year').addEventListener('click', () => {
+            advanceYear();
+        });
+
+        // 自動再生のトグル
+        function toggleAutoPlay() {
+            if (isAutoPlaying) {
+                clearInterval(autoPlayTimer);
+                isAutoPlaying = false;
+                document.getElementById('btn-auto-play').textContent = "自動（1秒毎）";
+                document.getElementById('btn-auto-play').style.backgroundColor = "#444";
+            } else {
+                isAutoPlaying = true;
+                document.getElementById('btn-auto-play').textContent = "一時停止";
+                document.getElementById('btn-auto-play').style.backgroundColor = "#2a2";
+                autoPlayTimer = setInterval(() => {
+                    if (currentYear <= totalSimYears) {
+                        advanceYear();
+                    } else {
+                        toggleAutoPlay();
+                    }
+                }, 1000);
+            }
+        }
+
+        document.getElementById('btn-auto-play').addEventListener('click', toggleAutoPlay);
+
+        // リセットボタン
+        document.getElementById('btn-reset').addEventListener('click', () => {
+            if (isAutoPlaying) {
+                toggleAutoPlay();
+            }
+            initGame();
+        });
+
+        // 初期ゲーム開始
+        initGame();
+    </script>
+</body>
+</html>
