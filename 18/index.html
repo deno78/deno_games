@@ -46,10 +46,10 @@
             position: relative;
             transform: scale(0.88);
             transform-origin: top center;
-            margin-bottom: -80px; /* スケールによる余白調整 */
+            margin-bottom: -80px;
         }
 
-        /* 画面上部30%: アニメーション・ビジュアルエリア (高精細ドット絵) */
+        /* 画面上部30%: 高精細ドットアニメーションエリア */
         #view-area {
             width: 100%;
             height: 32%;
@@ -101,43 +101,19 @@
         #event-area {
             background-color: #ff5964;
             color: #fff;
-            padding: 6px 10px;
-            min-height: 50px;
+            padding: 8px 12px;
+            min-height: 48px;
             display: flex;
             align-items: center;
-            justify-content: space-between;
+            justify-content: center;
             border-bottom: 3px solid #2d3142;
             display: none;
         }
 
         #event-info {
             font-size: 11px;
-            line-height: 1.2;
-        }
-
-        .pixel-btn {
-            background-color: #ffe74c;
-            color: #111;
-            border: 2px solid #fff;
-            padding: 5px 10px;
-            font-family: 'DotGothic16', monospace;
-            font-weight: bold;
-            font-size: 11px;
-            cursor: pointer;
-            box-shadow: 0 3px 0 #b39f1e;
-        }
-
-        .pixel-btn:active {
-            transform: translateY(2px);
-            box-shadow: 0 1px 0 #b39f1e;
-        }
-
-        .pixel-btn:disabled {
-            background-color: #888;
-            color: #ccc;
-            border-color: #555;
-            box-shadow: none;
-            cursor: not-allowed;
+            line-height: 1.3;
+            text-align: center;
         }
 
         /* ログエリア */
@@ -194,14 +170,6 @@
             box-shadow: 0 1px 0 #2d3142;
         }
 
-        .action-btn:disabled {
-            background-color: #2d3142;
-            border-color: #3f4254;
-            color: #6c757d;
-            cursor: not-allowed;
-            box-shadow: none;
-        }
-
         .btn-icon {
             font-size: 16px;
         }
@@ -215,6 +183,7 @@
             background-color: #2b9348;
             border-color: #55a630;
             box-shadow: 0 3px 0 #132a13;
+            grid-column: span 1;
         }
         .action-btn.work-btn:active:not(:disabled) {
             box-shadow: 0 1px 0 #132a13;
@@ -249,6 +218,23 @@
             line-height: 1.5;
             margin-bottom: 20px;
             color: #d8dee9;
+        }
+
+        .pixel-btn {
+            background-color: #ffe74c;
+            color: #111;
+            border: 2px solid #fff;
+            padding: 6px 14px;
+            font-family: 'DotGothic16', monospace;
+            font-weight: bold;
+            font-size: 12px;
+            cursor: pointer;
+            box-shadow: 0 3px 0 #b39f1e;
+        }
+
+        .pixel-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 #b39f1e;
         }
 
         .hidden {
@@ -294,19 +280,23 @@
     <div id="event-area">
         <div id="event-info">
             <strong id="event-title">【チャット】上司からの質問</strong><br>
-            <span id="event-desc">残り期限: 30分</span>
+            <span id="event-desc">残り期限: 30分（仕事ボタンで応答！）</span>
         </div>
-        <button class="pixel-btn" id="respond-btn" onclick="respondEvent()">応答する</button>
     </div>
 
     <!-- ログエリア -->
     <div id="log-area">
         <div class="log-item log-info">=== リモートワーク初日開始 ===</div>
-        <div class="log-item log-info">仕事をこなしつつサボりましょう。時間を過ぎた連絡は応答不可でペナルティになります！</div>
+        <div class="log-item log-info">「仕事」ボタンが応答ボタンを兼ねています！連打して仕事をすすめつつ連絡に対応しよう。</div>
     </div>
 
     <!-- 操作ボタンエリア (6つのボタン) -->
     <div id="action-area">
+        <button class="action-btn work-btn" onclick="doAction('work')" id="btn-work">
+            <span class="btn-icon">💻</span>
+            <span>仕事 / 応答</span>
+            <span class="btn-time">5分進む</span>
+        </button>
         <button class="action-btn" onclick="doAction('smoke')" id="btn-smoke">
             <span class="btn-icon">🚬</span>
             <span>タバコ</span>
@@ -332,11 +322,6 @@
             <span>スマホ</span>
             <span class="btn-time">30分消費</span>
         </button>
-        <button class="action-btn work-btn" onclick="doAction('work')" id="btn-work">
-            <span class="btn-icon">💻</span>
-            <span>仕事</span>
-            <span class="btn-time">5分進む</span>
-        </button>
     </div>
 
     <!-- スタート画面モーダル -->
@@ -344,10 +329,10 @@
         <h1>リモートワーク<br>サボりマスター</h1>
         <p>
             1日8時間(9:00〜17:00)、解雇されないようにサボりながら働こう！<br>
-            連絡の期限を過ぎると応答できなくなり、信頼度が10%下がります。<br>
-            連続5日間生き残ればゲームクリア！
+            「仕事ボタン」が連絡への応答も兼ねています。<br>
+            何度も連打して労働時間を埋め、5日間生き残れ！
         </p>
-        <button class="pixel-btn" onclick="startGame()" style="font-size: 15px; padding: 8px 20px;">ゲームスタート</button>
+        <button class="pixel-btn" onclick="startGame()">ゲームスタート</button>
     </div>
 
     <!-- ゲームオーバー画面 -->
@@ -367,23 +352,22 @@
 </div>
 
 <script>
-    // ゲーム状態
     let state = {
         day: 1,
         minute: 540, // 9:00 = 540分
         endMinute: 1020, // 17:00 = 1020分
         trust: 100,
         activeAction: 'work',
-        currentEvent: null, // { type, title, timeLeft, maxTime, desc }
+        currentEvent: null,
         isGameOver: false,
         isGameClear: false,
         started: false
     };
 
     const eventTypes = [
-        { type: 'mail', title: '【メール】重要なお知らせ', timeLimit: 120, desc: '2時間以内に返信' },
-        { type: 'chat', title: '【チャット】上司からの質問', timeLimit: 30, desc: '30分以内に返信' },
-        { type: 'meeting', title: '【オンライン会議】緊急ミーティング', timeLimit: 10, desc: '10分以内に参加必須！' }
+        { type: 'mail', title: '【メール】重要なお知らせ', timeLimit: 120, desc: '2時間以内に仕事ボタンで返信' },
+        { type: 'chat', title: '【チャット】上司からの質問', timeLimit: 30, desc: '30分以内に仕事ボタンで返信' },
+        { type: 'meeting', title: '【オンライン会議】緊急ミーティング', timeLimit: 10, desc: '10分以内に仕事ボタンで参加！' }
     ];
 
     const canvas = document.getElementById('animCanvas');
@@ -419,7 +403,6 @@
         triggerRandomEvent();
     }
 
-    // アクション実行
     function doAction(actionType) {
         if (!state.started || state.isGameOver || state.isGameClear) return;
 
@@ -427,50 +410,55 @@
         let actionName = '';
         let logClass = 'log-sabori';
 
-        switch(actionType) {
-            case 'smoke':
-                duration = 30;
-                actionName = 'タバコ休憩 (30分)';
-                break;
-            case 'coffee':
-                duration = 30;
-                actionName = 'コーヒーブレイク (30分)';
-                break;
-            case 'nap':
-                duration = 60;
-                actionName = '昼寝 (60分)';
-                break;
-            case 'game':
-                duration = 120;
-                actionName = 'ゲーム (120分)';
-                break;
-            case 'phone':
-                duration = 30;
-                actionName = 'スマホいじり (30分)';
-                break;
-            case 'work':
-                duration = 5;
-                actionName = '仕事 (5分)';
-                logClass = 'log-work';
-                break;
+        if (actionType === 'work') {
+            duration = 5;
+            actionName = '仕事 (5分)';
+            logClass = 'log-work';
+
+            // 仕事ボタンが押された場合、もし未対応の連絡があればここで自動応答を試みる
+            if (state.currentEvent) {
+                if (state.currentEvent.timeLeft > 0) {
+                    addLog(`✅ [仕事＆応答] ${state.currentEvent.title} に迅速に応答しました！`, 'log-info');
+                    state.currentEvent = null;
+                    document.getElementById('event-area').style.display = 'none';
+                    document.getElementById('event-area').classList.remove('flashing');
+                } else {
+                    // 既に時間切れの場合
+                    state.trust -= 10;
+                    addLog(`❌ [時間切れ] 間に合わなかったため、${state.currentEvent.title} で怒られました！信頼度 -10%`, 'log-alert');
+                    state.currentEvent = null;
+                    document.getElementById('event-area').style.display = 'none';
+                    document.getElementById('event-area').classList.remove('flashing');
+
+                    if (state.trust <= 0) {
+                        state.trust = 0;
+                        triggerGameOver('信頼度が0%になってしまい、解雇されました……。');
+                        return;
+                    }
+                }
+            }
+        } else {
+            switch(actionType) {
+                case 'smoke': duration = 30; actionName = 'タバコ休憩 (30分)'; break;
+                case 'coffee': duration = 30; actionName = 'コーヒーブレイク (30分)'; break;
+                case 'nap': duration = 60; actionName = '昼寝 (60分)'; break;
+                case 'game': duration = 120; actionName = 'ゲーム (120分)'; break;
+                case 'phone': duration = 30; actionName = 'スマホいじり (30分)'; break;
+            }
+            addLog(`${actionName} を実行しました。`, logClass);
         }
 
         state.activeAction = actionType;
-        addLog(`${actionName} を実行しました。`, logClass);
-
-        // 時間を進める
         advanceTime(duration);
     }
 
-    // 時間を進める関数
     function advanceTime(minutes) {
         state.minute += minutes;
 
-        // イベントの残り時間を減らす
+        // サボりアクションなどで時間が進んだ時、イベントの期限チェック
         if (state.currentEvent) {
             state.currentEvent.timeLeft -= minutes;
             if (state.currentEvent.timeLeft <= 0) {
-                // 期限超過！応答できずに信頼度ダウン
                 state.trust -= 10;
                 addLog(`【時間切れ】${state.currentEvent.title}に応答できず、怒られました！信頼度 -10%`, 'log-alert');
                 state.currentEvent = null;
@@ -485,7 +473,6 @@
             }
         }
 
-        // 1日の終了チェック (17:00 = 1020分)
         if (state.minute >= state.endMinute) {
             state.minute = state.endMinute;
             updateDisplay();
@@ -493,15 +480,13 @@
             return;
         }
 
-        // イベント発生判定 (確率)
-        if (!state.currentEvent && Math.random() < 0.70) {
+        if (!state.currentEvent && Math.random() < 0.68) {
             triggerRandomEvent();
         }
 
         updateDisplay();
     }
 
-    // ランダムイベント発生
     function triggerRandomEvent() {
         const template = eventTypes[Math.floor(Math.random() * eventTypes.length)];
         state.currentEvent = {
@@ -529,24 +514,6 @@
         addLog(`📢 新しい連絡: ${state.currentEvent.title}`, 'log-alert');
     }
 
-    // イベントに応答する
-    function respondEvent() {
-        if (!state.currentEvent || state.isGameOver || state.isGameClear) return;
-
-        // 期限が切れていないか念のためチェック
-        if (state.currentEvent.timeLeft <= 0) {
-            addLog(`❌ すでに時間を過ぎているため応答できません！`, 'log-alert');
-            return;
-        }
-
-        addLog(`✅ ${state.currentEvent.title} に正常に応答しました！セーフ！`, 'log-info');
-        state.currentEvent = null;
-        document.getElementById('event-area').style.display = 'none';
-        document.getElementById('event-area').classList.remove('flashing');
-        updateDisplay();
-    }
-
-    // 1日終了処理
     function endDay() {
         addLog(`=== ${state.day}日目の業務終了 ===`, 'info');
         
@@ -604,50 +571,41 @@
         logArea.scrollTop = logArea.scrollHeight;
     }
 
-    // === 高精細ドットアニメーション描画 (400x200) ===
     function drawScene() {
         ctx.fillStyle = '#111318';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         animFrame++;
 
-        // 部屋の背景（壁）
         ctx.fillStyle = '#222634';
         ctx.fillRect(0, 0, canvas.width, 130);
         
-        // 床
         ctx.fillStyle = '#3a3f5c';
         ctx.fillRect(0, 130, canvas.width, 70);
         ctx.fillStyle = '#2b2f42';
-        // 床のタイルライン
         for (let x = 0; x < canvas.width; x += 40) {
             ctx.fillRect(x, 130, 2, 70);
         }
 
-        // 窓
         ctx.fillStyle = '#1a1d26';
         ctx.fillRect(25, 20, 90, 70);
         ctx.fillStyle = '#4ea8de';
         ctx.fillRect(30, 25, 80, 60);
-        // 雲
         let cloudX = (animFrame * 0.15) % 120;
         ctx.fillStyle = '#90e0ef';
         ctx.fillRect(35 - cloudX + ((animFrame*0.05)%120), 40, 25, 10);
         ctx.fillRect(75 - cloudX + ((animFrame*0.05)%120), 55, 30, 10);
 
-        // 本棚 (右奥)
         ctx.fillStyle = '#5c4033';
         ctx.fillRect(310, 30, 65, 105);
         ctx.fillStyle = '#3e2723';
         ctx.fillRect(315, 45, 55, 6);
         ctx.fillRect(315, 75, 55, 6);
         ctx.fillRect(315, 105, 55, 6);
-        // 本棚の本
         ctx.fillStyle = '#e63946'; ctx.fillRect(320, 51, 8, 24);
         ctx.fillStyle = '#457b9d'; ctx.fillRect(330, 51, 6, 24);
         ctx.fillStyle = '#f1faee'; ctx.fillRect(345, 51, 10, 24);
 
-        // 観葉植物 (左隅)
         ctx.fillStyle = '#b5838d';
         ctx.fillRect(15, 110, 18, 22);
         ctx.fillStyle = '#52b788';
@@ -655,14 +613,12 @@
         ctx.arc(24, 102, 14, 0, Math.PI * 2);
         ctx.fill();
 
-        // 巨大デスク
         ctx.fillStyle = '#654321';
-        ctx.fillRect(140, 115, 140, 12); // 天板
+        ctx.fillRect(140, 115, 140, 12);
         ctx.fillStyle = '#432818';
-        ctx.fillRect(150, 127, 10, 55); // 脚左
-        ctx.fillRect(260, 127, 10, 55); // 脚右
+        ctx.fillRect(150, 127, 10, 55);
+        ctx.fillRect(260, 127, 10, 55);
 
-        // デュアルモニター
         ctx.fillStyle = '#111';
         ctx.fillRect(165, 65, 50, 42);
         ctx.fillRect(220, 70, 45, 37);
@@ -671,25 +627,20 @@
         ctx.fillStyle = '#70e000';
         ctx.fillRect(223, 73, 39, 31);
 
-        // 主人公キャラクター
         let charX = 190;
         let charY = 95;
 
-        // 椅子の背もたれ
         ctx.fillStyle = '#3a3a4a';
         ctx.fillRect(charX - 4, charY - 8, 28, 38);
 
-        // 肌
         ctx.fillStyle = '#ffcc99';
         ctx.fillRect(charX + 4, charY, 14, 12);
-        // 髪 (黒髪・ヘッドホン)
         ctx.fillStyle = '#1d3557';
         ctx.fillRect(charX + 3, charY - 2, 16, 6);
-        ctx.fillStyle = '#e0a96d'; // ヘッドホン
+        ctx.fillStyle = '#e0a96d';
         ctx.fillRect(charX + 1, charY + 2, 3, 8);
         ctx.fillRect(charX + 18, charY + 2, 3, 8);
 
-        // 服の色 (状態別)
         let shirtColor = '#457b9d';
         if (state.activeAction === 'work') shirtColor = '#2b9348';
         else if (state.activeAction === 'game') shirtColor = '#e63946';
@@ -699,32 +650,25 @@
         else if (state.activeAction === 'phone') shirtColor = '#264653';
 
         ctx.fillStyle = shirtColor;
-        ctx.fillRect(charX + 2, charY + 12, 18, 20); // 体
+        ctx.fillRect(charX + 2, charY + 12, 18, 20);
 
-        // アニメーション用パルス
         let bounce = (Math.floor(animFrame / 15) % 2 === 0) ? 0 : 2;
 
-        // 状態ごとの細かい描写
         if (state.activeAction === 'work') {
-            // タイピングの手
             ctx.fillStyle = '#ffcc99';
             ctx.fillRect(charX + (bounce ? 18 : 14), charY + 20, 5, 4);
         } else if (state.activeAction === 'smoke') {
-            // タバコと煙
             ctx.fillStyle = '#fff';
             let smokeY = charY - 6 - ((animFrame % 40));
             ctx.fillRect(charX + 20, smokeY, 4, 4);
             ctx.fillRect(charX + 18, smokeY - 6, 6, 4);
-            ctx.fillRect(charX + 15, smokeY - 12, 8, 6);
         } else if (state.activeAction === 'coffee') {
-            // マグカップと湯気
             ctx.fillStyle = '#f1faee';
             ctx.fillRect(charX - 10, charY + 22, 6, 7);
             ctx.fillStyle = '#ccc';
             let steamY = charY + 14 - ((animFrame % 25));
             ctx.fillRect(charX - 9, steamY, 3, 4);
         } else if (state.activeAction === 'nap') {
-            // 昼寝: Zzz
             if (Math.floor(animFrame / 25) % 2 === 0) {
                 ctx.fillStyle = '#fff';
                 ctx.font = '12px DotGothic16';
@@ -732,11 +676,9 @@
                 ctx.fillText('z', charX + 30, charY - 12);
             }
         } else if (state.activeAction === 'game') {
-            // 携帯ゲーム機
             ctx.fillStyle = '#222';
             ctx.fillRect(charX + 6 + bounce, charY + 18, 10, 6);
         } else if (state.activeAction === 'phone') {
-            // スマホ
             ctx.fillStyle = '#00f';
             ctx.fillRect(charX + 8, charY + 16, 6, 9);
         }
