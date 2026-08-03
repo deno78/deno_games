@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>リモートワーク・サボりマスター</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #1a1c23;
+            color: #f0f0f0;
+            font-family: 'DotGothic16', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 480px;
+            height: 100%;
+            max-height: 850px;
+            background-color: #2d3142;
+            display: flex;
+            flex-direction: column;
+            border: 4px solid #4f5d75;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            position: relative;
+        }
+
+        /* 画面上部30%: アニメーション・ビジュアルエリア */
+        #view-area {
+            width: 100%;
+            height: 30%;
+            background-color: #111318;
+            position: relative;
+            border-bottom: 4px solid #4f5d75;
+            overflow: hidden;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            display: block;
+        }
+
+        /* ステータスバー */
+        #status-bar {
+            background-color: #3f4254;
+            padding: 8px 12px;
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 5px;
+            font-size: 14px;
+            border-bottom: 3px solid #2d3142;
+            text-align: center;
+        }
+
+        .status-box {
+            background: #232530;
+            padding: 4px;
+            border: 2px solid #5a5f78;
+            border-radius: 2px;
+        }
+
+        .status-label {
+            font-size: 10px;
+            color: #a0aabf;
+        }
+
+        .status-value {
+            font-size: 14px;
+            font-weight: bold;
+            color: #fff;
+        }
+
+        /* 通知・イベントエリア */
+        #event-area {
+            background-color: #ff5964;
+            color: #fff;
+            padding: 8px 12px;
+            min-height: 55px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 3px solid #2d3142;
+            display: none;
+        }
+
+        #event-info {
+            font-size: 12px;
+            line-height: 1.3;
+        }
+
+        .pixel-btn {
+            background-color: #ffe74c;
+            color: #111;
+            border: 2px solid #fff;
+            padding: 6px 12px;
+            font-family: 'DotGothic16', monospace;
+            font-weight: bold;
+            font-size: 12px;
+            cursor: pointer;
+            box-shadow: 0 3px 0 #b39f1e;
+            active {
+                transform: translateY(2px);
+                box-shadow: 0 1px 0 #b39f1e;
+            }
+        }
+
+        .pixel-btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 1px 0 #b39f1e;
+        }
+
+        /* ログエリア */
+        #log-area {
+            flex: 1;
+            background-color: #191b22;
+            padding: 10px;
+            overflow-y: auto;
+            font-size: 12px;
+            line-height: 1.4;
+            border-bottom: 4px solid #4f5d75;
+            color: #c0cbdc;
+        }
+
+        .log-item {
+            margin-bottom: 4px;
+            border-left: 3px solid #6c757d;
+            padding-left: 6px;
+        }
+        .log-work { border-left-color: #38b000; color: #70e000; }
+        .log-sabori { border-left-color: #ffb703; color: #ffb703; }
+        .log-alert { border-left-color: #ff5964; color: #ff8fa3; }
+        .log-info { border-left-color: #4ea8de; color: #90e0ef; }
+
+        /* 操作ボタンエリア (6つのボタン) */
+        #action-area {
+            background-color: #232530;
+            padding: 10px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+        }
+
+        .action-btn {
+            background-color: #4f5d75;
+            color: white;
+            border: 3px solid #707993;
+            padding: 10px 4px;
+            font-family: 'DotGothic16', monospace;
+            font-size: 11px;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2px;
+            box-shadow: 0 4px 0 #2d3142;
+            transition: transform 0.05s;
+        }
+
+        .action-btn:active:not(:disabled) {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #2d3142;
+        }
+
+        .action-btn:disabled {
+            background-color: #2d3142;
+            border-color: #3f4254;
+            color: #6c757d;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+
+        .btn-icon {
+            font-size: 18px;
+        }
+
+        .btn-time {
+            font-size: 9px;
+            color: #a0aabf;
+        }
+
+        .action-btn.work-btn {
+            background-color: #2b9348;
+            border-color: #55a630;
+            box-shadow: 0 4px 0 #132a13;
+        }
+        .action-btn.work-btn:active:not(:disabled) {
+            box-shadow: 0 1px 0 #132a13;
+        }
+
+        /* モーダル画面 (ゲームオーバー / クリア / スタート) */
+        .modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(17, 19, 24, 0.92);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .modal h1 {
+            font-size: 24px;
+            color: #ffe74c;
+            margin-bottom: 10px;
+            text-shadow: 3px 3px 0 #000;
+        }
+
+        .modal p {
+            font-size: 13px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            color: #d8dee9;
+        }
+
+        .hidden {
+            display: none !important;
+        }
+
+        /* 警告アニメーション */
+        @keyframes flash {
+            0% { background-color: #ff5964; }
+            50% { background-color: #900; }
+            100% { background-color: #ff5964; }
+        }
+        .flashing {
+            animation: flash 0.8s infinite;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <!-- 画面上部30%: アニメーション -->
+    <div id="view-area">
+        <canvas id="animCanvas" width="320" height="150"></canvas>
+    </div>
+
+    <!-- ステータスバー -->
+    <div id="status-bar">
+        <div class="status-box">
+            <div class="status-label">日数</div>
+            <div class="status-value" id="day-val">1日目 / 5日</div>
+        </div>
+        <div class="status-box">
+            <div class="status-label">時刻</div>
+            <div class="status-value" id="time-val">09:00</div>
+        </div>
+        <div class="status-box">
+            <div class="status-label">信頼度</div>
+            <div class="status-value" id="trust-val">100%</div>
+        </div>
+    </div>
+
+    <!-- イベント通知エリア -->
+    <div id="event-area">
+        <div id="event-info">
+            <strong id="event-title">【チャット】上司からの質問</strong><br>
+            <span id="event-desc">残り期限: 30分</span>
+        </div>
+        <button class="pixel-btn" id="respond-btn" onclick="respondEvent()">応答する</button>
+    </div>
+
+    <!-- ログエリア -->
+    <div id="log-area" id="log-container">
+        <div class="log-item log-info">=== リモートワーク初日開始 ===</div>
+        <div class="log-item log-info">仕事をこなしつつ、うまくサボりましょう。連絡には期限内に応答を！</div>
+    </div>
+
+    <!-- 操作ボタンエリア (6つのボタン) -->
+    <div id="action-area">
+        <button class="action-btn" onclick="doAction('smoke')" id="btn-smoke">
+            <span class="btn-icon">🚬</span>
+            <span>タバコ</span>
+            <span class="btn-time">30分消費</span>
+        </button>
+        <button class="action-btn" onclick="doAction('coffee')" id="btn-coffee">
+            <span class="btn-icon">☕</span>
+            <span>コーヒー</span>
+            <span class="btn-time">30分消費</span>
+        </button>
+        <button class="action-btn" onclick="doAction('nap')" id="btn-nap">
+            <span class="btn-icon">💤</span>
+            <span>昼寝</span>
+            <span class="btn-time">60分消費</span>
+        </button>
+        <button class="action-btn" onclick="doAction('game')" id="btn-game">
+            <span class="btn-icon">🎮</span>
+            <span>ゲーム</span>
+            <span class="btn-time">120分消費</span>
+        </button>
+        <button class="action-btn" onclick="doAction('phone')" id="btn-phone">
+            <span class="btn-icon">📱</span>
+            <span>スマホ</span>
+            <span class="btn-time">30分消費</span>
+        </button>
+        <button class="action-btn work-btn" onclick="doAction('work')" id="btn-work">
+            <span class="btn-icon">💻</span>
+            <span>仕事</span>
+            <span class="btn-time">5分進む</span>
+        </button>
+    </div>
+
+    <!-- スタート画面モーダル -->
+    <div id="start-modal" class="modal">
+        <h1>リモートワーク<br>サボりマスター</h1>
+        <p>
+            1日8時間(9:00〜17:00)、解雇されないようにサボりながら働こう！<br>
+            連絡(メール・チャット・会議)には期限内に応答せよ。<br>
+            連続5日間生き残ればゲームクリア！
+        </p>
+        <button class="pixel-btn" onclick="startGame()" style="font-size: 16px; padding: 10px 24px;">ゲームスタート</button>
+    </div>
+
+    <!-- ゲームオーバー画面 -->
+    <div id="gameover-modal" class="modal hidden">
+        <h1 style="color: #ff5964;">解雇されました…</h1>
+        <p id="gameover-reason">信頼度が0%になってしまいました。</p>
+        <button class="pixel-btn" onclick="resetGame()">もう一度挑戦</button>
+    </div>
+
+    <!-- ゲームクリア画面 -->
+    <div id="gameclear-modal" class="modal hidden">
+        <h1 style="color: #70e000;">祝・完全クリア！</h1>
+        <p>見事に5日間をサボりつつ乗り切り、会社にしがみつきました！あなたは真のサボりマスターです！</p>
+        <button class="pixel-btn" onclick="resetGame()">もう一度遊ぶ</button>
+    </div>
+</div>
+
+<script>
+    // ゲーム状態
+    let state = {
+        day: 1,
+        minute: 540, // 9:00 = 540分
+        endMinute: 1020, // 17:00 = 1020分
+        trust: 100,
+        activeAction: 'work', // work, smoke, coffee, nap, game, phone
+        actionTimeRemaining: 0, // アクション中の残り時間（もし時間経過演出を入れる場合）
+        currentEvent: null, // { type, title, timeLeft, maxTime }
+        isGameOver: false,
+        isGameClear: false,
+        started: false
+    };
+
+    // イベント種類
+    const eventTypes = [
+        { type: 'mail', title: '【メール】重要なお知らせ', timeLimit: 120, desc: '2時間以内に返信してください' },
+        { type: 'chat', title: '【チャット】上司からの質問', timeLimit: 30, desc: '30分以内に返信してください' },
+        { type: 'meeting', title: '【オンライン会議】急遽のミーティング', timeLimit: 10, desc: '10分以内に参加してください！' }
+    ];
+
+    // キャンバスアニメーション用
+    const canvas = document.getElementById('animCanvas');
+    const ctx = canvas.getContext('2d');
+    let animFrame = 0;
+
+    function startGame() {
+        document.getElementById('start-modal').classList.add('hidden');
+        state.started = true;
+        addLog('=== リモートワーク 1日目 開始 ===', 'info');
+        updateDisplay();
+        triggerRandomEvent();
+    }
+
+    function resetGame() {
+        state = {
+            day: 1,
+            minute: 540,
+            endMinute: 1020,
+            trust: 100,
+            activeAction: 'work',
+            actionTimeRemaining: 0,
+            currentEvent: null,
+            isGameOver: false,
+            isGameClear: false,
+            started: true
+        };
+        document.getElementById('gameover-modal').classList.add('hidden');
+        document.getElementById('gameclear-modal').classList.add('hidden');
+        document.getElementById('event-area').style.display = 'none';
+        document.getElementById('log-area').innerHTML = '';
+        addLog('=== ゲームを再スタートしました ===', 'info');
+        updateDisplay();
+        triggerRandomEvent();
+    }
+
+    // アクション実行
+    function doAction(actionType) {
+        if (!state.started || state.isGameOver || state.isGameClear) return;
+
+        let duration = 0;
+        let actionName = '';
+        let logClass = 'log-sabori';
+
+        switch(actionType) {
+            case 'smoke':
+                duration = 30;
+                actionName = 'タバコ休憩 (30分)';
+                break;
+            case 'coffee':
+                duration = 30;
+                actionName = 'コーヒーブレイク (30分)';
+                break;
+            case 'nap':
+                duration = 60;
+                actionName = '昼寝 (60分)';
+                break;
+            case 'game':
+                duration = 120;
+                actionName = 'ゲーム (120分)';
+                break;
+            case 'phone':
+                duration = 30;
+                actionName = 'スマホいじり (30分)';
+                break;
+            case 'work':
+                duration = 5;
+                actionName = '仕事 (5分)';
+                logClass = 'log-work';
+                break;
+        }
+
+        state.activeAction = actionType;
+        addLog(`${actionName} を実行しました。`, logClass);
+
+        // 時間を進める
+        advanceTime(duration);
+    }
+
+    // 時間を進める関数
+    function advanceTime(minutes) {
+        let prevMinute = state.minute;
+        state.minute += minutes;
+
+        // イベントの残り時間を減らす
+        if (state.currentEvent) {
+            state.currentEvent.timeLeft -= minutes;
+            if (state.currentEvent.timeLeft <= 0) {
+                // 期限切れペナルティ
+                state.trust -= 10;
+                addLog(`【警告】${state.currentEvent.title}の期限に間に合いませんでした！信頼度-10%`, 'log-alert');
+                state.currentEvent = null;
+                document.getElementById('event-area').style.display = 'none';
+                
+                if (state.trust <= 0) {
+                    state.trust = 0;
+                    triggerGameOver('信頼度が0%になってしまい、解雇されました……。');
+                    return;
+                }
+            }
+        }
+
+        // 1日の終了チェック (17:00 = 1020分)
+        if (state.minute >= state.endMinute) {
+            state.minute = state.endMinute;
+            updateDisplay();
+            endDay();
+            return;
+        }
+
+        // イベント発生判定 (時間が進んだ時に確率で発生、または未発生時)
+        if (!state.currentEvent && Math.random() < 0.65) {
+            triggerRandomEvent();
+        }
+
+        updateDisplay();
+    }
+
+    // ランダムイベント発生
+    function triggerRandomEvent() {
+        const template = eventTypes[Math.floor(Math.random() * eventTypes.length)];
+        // コピーを作成
+        state.currentEvent = {
+            type: template.type,
+            title: template.title,
+            timeLeft: template.timeLimit,
+            maxTime: template.timeLimit,
+            desc: template.desc
+        };
+
+        const eventArea = document.getElementById('event-area');
+        const eventTitle = document.getElementById('event-title');
+        const eventDesc = document.getElementById('event-desc');
+
+        eventTitle.innerText = state.currentEvent.title;
+        eventDesc.innerText = `残り期限: ${state.currentEvent.timeLeft}分 - ${state.currentEvent.desc}`;
+        eventArea.style.display = 'flex';
+        
+        if (state.currentEvent.type === 'meeting') {
+            eventArea.classList.add('flashing');
+        } else {
+            eventArea.classList.remove('flashing');
+        }
+
+        addLog(`📢 新しい連絡が来ました: ${state.currentEvent.title}`, 'log-alert');
+    }
+
+    // イベントに応答する
+    function respondEvent() {
+        if (!state.currentEvent || state.isGameOver || state.isGameClear) return;
+
+        // サボり中であっても応答できる（「慌てて作業に戻って応答した」演出）
+        addLog(`✅ ${state.currentEvent.title} に迅速に応答しました！セーフ！`, 'log-info');
+        state.currentEvent = null;
+        document.getElementById('event-area').style.display = 'none';
+        document.getElementById('event-area').classList.remove('flashing');
+        updateDisplay();
+    }
+
+    // 1日終了処理
+    function endDay() {
+        addLog(`=== ${state.day}日目の業務（？）が終了しました ===`, 'info');
+        
+        // 未対応イベントがあれば強制ペナルティ
+        if (state.currentEvent) {
+            state.trust -= 10;
+            addLog(`【警告】未対応の連絡を放置して終業してしまいました！信頼度-10%`, 'log-alert');
+            state.currentEvent = null;
+            document.getElementById('event-area').style.display = 'none';
+            if (state.trust <= 0) {
+                state.trust = 0;
+                triggerGameOver('終業時に未対応案件が発覚し、解雇されました……。');
+                return;
+            }
+        }
+
+        if (state.day >= 5) {
+            // ゲームクリア！
+            state.isGameClear = true;
+            document.getElementById('gameclear-modal').classList.remove('hidden');
+            return;
+        }
+
+        // 翌日へ
+        state.day++;
+        state.minute = 540; // 9:00リセット
+        addLog(`=== 祝・${state.day}日目突入 ===`, 'info');
+        updateDisplay();
+        triggerRandomEvent();
+    }
+
+    function triggerGameOver(reason) {
+        state.isGameOver = true;
+        document.getElementById('gameover-reason').innerText = reason;
+        document.getElementById('gameover-modal').classList.remove('hidden');
+    }
+
+    // 表示更新
+    function updateDisplay() {
+        document.getElementById('day-val').innerText = `${state.day}日目 / 5日`;
+        document.getElementById('trust-val').innerText = `${state.trust}%`;
+
+        // 時刻フォーマット
+        let h = Math.floor(state.minute / 60);
+        let m = state.minute % 60;
+        let timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        document.getElementById('time-val').innerText = timeStr;
+
+        // イベント表示の更新
+        if (state.currentEvent) {
+            document.getElementById('event-desc').innerText = `残り期限: ${state.currentEvent.timeLeft}分 - ${state.currentEvent.desc}`;
+        }
+    }
+
+    // ログ追加
+    function addLog(text, type = '') {
+        const logArea = document.getElementById('log-area');
+        const item = document.createElement('div');
+        item.className = `log-item ${type}`;
+        item.innerText = `[${document.getElementById('time-val').innerText}] ${text}`;
+        logArea.appendChild(item);
+        logArea.scrollTop = logArea.scrollHeight;
+    }
+
+    // === 16ビット風ドット絵アニメーション描画 ===
+    function drawScene() {
+        ctx.fillStyle = '#111318';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        animFrame++;
+
+        // 部屋の背景（壁と床）
+        ctx.fillStyle = '#222634';
+        ctx.fillRect(0, 0, canvas.width, 100); // 壁
+        ctx.fillStyle = '#3a3f5c';
+        ctx.fillRect(0, 100, canvas.width, 50); // 床
+        ctx.fillStyle = '#2b2f42';
+        ctx.fillRect(20, 20, 80, 50); // 窓
+        ctx.fillStyle = '#557a95';
+        ctx.fillRect(25, 25, 70, 40); // 窓の空
+
+        // 窓の外の雲アニメーション
+        let cloudX = (animFrame * 0.2) % 100;
+        ctx.fillStyle = '#88a8c0';
+        ctx.fillRect(30 - cloudX + ((animFrame*0.1)%100), 35, 20, 8);
+
+        // 部屋の家具：机とパソコン
+        ctx.fillStyle = '#654321';
+        ctx.fillRect(110, 85, 120, 10); // 机の天板
+        ctx.fillStyle = '#432818';
+        ctx.fillRect(120, 95, 10, 45); // 机の脚左
+        ctx.fillRect(210, 95, 10, 45); // 机の脚右
+
+        // PCモニタ
+        ctx.fillStyle = '#111';
+        ctx.fillRect(150, 45, 40, 30);
+        ctx.fillStyle = (state.activeAction === 'work') ? '#38b000' : '#4ea8de';
+        ctx.fillRect(153, 48, 34, 24); // モニタ画面
+
+        // 主人公（キャラクター）描画
+        let charX = 155;
+        let charY = 70;
+
+        // 椅子の背もたれ
+        ctx.fillStyle = '#4a4e69';
+        ctx.fillRect(charX - 2, charY - 5, 24, 30);
+
+        // 状態に応じた主人公のポーズ・表情
+        ctx.fillStyle = '#ffb703'; // 肌
+        ctx.fillRect(charX + 4, charY, 12, 10); // 顔
+
+        ctx.fillStyle = '#3a86ff'; // 服
+        if (state.activeAction === 'work') {
+            ctx.fillStyle = '#38b000'; // 仕事中は緑シャツ
+        } else if (state.activeAction === 'game') {
+            ctx.fillStyle = '#ff006e'; // ゲーム中はピンク
+        } else if (state.activeAction === 'nap') {
+            ctx.fillStyle = '#8338ec'; // 昼寝中は紫
+        }
+        ctx.fillRect(charX + 2, charY + 10, 16, 16); // 体
+
+        // アニメーションの上下動（呼吸や作業の動き）
+        let bounce = (Math.floor(animFrame / 15) % 2 === 0) ? 0 : 1;
+
+        if (state.activeAction === 'work') {
+            // パソコンに向かってタイピング（手が動く）
+            ctx.fillStyle = '#ffb703';
+            ctx.fillRect(charX + (bounce ? 16 : 12), charY + 14, 4, 4);
+        } else if (state.activeAction === 'smoke') {
+            // タバコ：煙が立ち上る
+            ctx.fillStyle = '#fff';
+            let smokeY = charY - 5 - ((animFrame % 30));
+            ctx.fillRect(charX + 18, smokeY, 4, 4);
+            ctx.fillRect(charX + 16, smokeY - 6, 6, 4);
+        } else if (state.activeAction === 'coffee') {
+            // コーヒー：湯気
+            ctx.fillStyle = '#ccc';
+            let steamY = charY + 5 - ((animFrame % 20));
+            ctx.fillRect(charX - 6, steamY, 3, 3);
+        } else if (state.activeAction === 'nap') {
+            // 昼寝：Zzz
+            if (Math.floor(animFrame / 30) % 2 === 0) {
+                ctx.fillStyle = '#fff';
+                ctx.font = '10px DotGothic16';
+                ctx.fillText('Z', charX + 18, charY - 5);
+                ctx.fillText('z', charX + 24, charY - 12);
+            }
+        } else if (state.activeAction === 'game') {
+            // ゲーム機を持っている
+            ctx.fillStyle = '#111';
+            ctx.fillRect(charX + 6 + bounce, charY + 14, 8, 4);
+        } else if (state.activeAction === 'phone') {
+            // スマホを見ている
+            ctx.fillStyle = '#00f';
+            ctx.fillRect(charX + 6, charY + 12, 6, 8);
+        }
+
+        requestAnimationFrame(drawScene);
+    }
+
+    // 初回描画開始
+    requestAnimationFrame(drawScene);
+</script>
+
+</body>
+</html>

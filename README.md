@@ -21,3 +21,4 @@ Deno/Web games collection.
 - [15. 民明ゼミ進化論 (Minmei Cicada Evolution)](./15/index.html)
 - [16. 民明ゼミ進化論 スマホ版 (Minmei Cicada Evolution Mobile)](./16/index.html)
 - [17. 迷惑メール仕分け係長 (Spam Mail Sorting Manager)](./17/index.html)
+- [18. リモートワーク・サボりマスター (Remote Work Slack Master)](./18/index.html)
