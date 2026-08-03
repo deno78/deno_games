@@ -49,7 +49,7 @@
             margin-bottom: -80px;
         }
 
-        /* 画面上部30%: 高精細ドットアニメーションエリア */
+        /* 画面上部30%: 超高精細ドットアニメーションエリア (1600x800) */
         #view-area {
             width: 100%;
             height: 32%;
@@ -97,17 +97,24 @@
             color: #fff;
         }
 
-        /* 通知・イベントエリア */
+        /* 通知・イベントエリア（高さを固定してボタン位置を完全固定） */
         #event-area {
             background-color: #ff5964;
             color: #fff;
             padding: 8px 12px;
-            min-height: 48px;
+            height: 52px;
             display: flex;
             align-items: center;
             justify-content: center;
             border-bottom: 3px solid #2d3142;
-            display: none;
+            visibility: hidden;
+            opacity: 0;
+            transition: opacity 0.1s;
+        }
+
+        #event-area.visible {
+            visibility: visible;
+            opacity: 1;
         }
 
         #event-info {
@@ -139,7 +146,7 @@
         .log-alert { border-left-color: #ff5964; color: #ff8fa3; }
         .log-info { border-left-color: #4ea8de; color: #90e0ef; }
 
-        /* 操作ボタンエリア (6つのボタン) */
+        /* 操作ボタンエリア (6つのボタン) - 位置固定 */
         #action-area {
             background-color: #232530;
             padding: 8px;
@@ -254,9 +261,9 @@
 
 <div id="game-wrapper">
 <div id="game-container">
-    <!-- 画面上部30%: 2倍解像度高精細ドットアニメーションエリア (800x400) -->
+    <!-- 画面上部30%: 超超高精細ドットアニメーションエリア (1600x800) -->
     <div id="view-area">
-        <canvas id="animCanvas" width="800" height="400"></canvas>
+        <canvas id="animCanvas" width="1600" height="800"></canvas>
     </div>
 
     <!-- ステータスバー -->
@@ -275,7 +282,7 @@
         </div>
     </div>
 
-    <!-- イベント通知エリア -->
+    <!-- 通知・イベントエリア（高さを固定してボタン位置を完全固定） -->
     <div id="event-area">
         <div id="event-info">
             <strong id="event-title">【チャット】上司からの質問</strong><br>
@@ -395,7 +402,7 @@
         };
         document.getElementById('gameover-modal').classList.add('hidden');
         document.getElementById('gameclear-modal').classList.add('hidden');
-        document.getElementById('event-area').style.display = 'none';
+        document.getElementById('event-area').classList.remove('visible', 'flashing');
         document.getElementById('log-area').innerHTML = '';
         addLog('=== ゲームを再スタートしました ===', 'info');
         updateDisplay();
@@ -418,14 +425,14 @@
                 if (state.currentEvent.timeLeft > 0) {
                     addLog(`✅ [仕事＆応答] ${state.currentEvent.title} に迅速に応答しました！`, 'log-info');
                     state.currentEvent = null;
-                    document.getElementById('event-area').style.display = 'none';
-                    document.getElementById('event-area').classList.remove('flashing');
+                    const ea = document.getElementById('event-area');
+                    ea.classList.remove('visible', 'flashing');
                 } else {
                     state.trust -= 10;
                     addLog(`❌ [時間切れ] 間に合わなかったため、${state.currentEvent.title} で怒られました！信頼度 -10%`, 'log-alert');
                     state.currentEvent = null;
-                    document.getElementById('event-area').style.display = 'none';
-                    document.getElementById('event-area').classList.remove('flashing');
+                    const ea = document.getElementById('event-area');
+                    ea.classList.remove('visible', 'flashing');
 
                     if (state.trust <= 0) {
                         state.trust = 0;
@@ -458,8 +465,8 @@
                 state.trust -= 10;
                 addLog(`【時間切れ】${state.currentEvent.title}に応答できず、怒られました！信頼度 -10%`, 'log-alert');
                 state.currentEvent = null;
-                document.getElementById('event-area').style.display = 'none';
-                document.getElementById('event-area').classList.remove('flashing');
+                const ea = document.getElementById('event-area');
+                ea.classList.remove('visible', 'flashing');
 
                 if (state.trust <= 0) {
                     state.trust = 0;
@@ -499,7 +506,7 @@
 
         eventTitle.innerText = state.currentEvent.title;
         eventDesc.innerText = `残り期限: ${state.currentEvent.timeLeft}分 - ${state.currentEvent.desc}`;
-        eventArea.style.display = 'flex';
+        eventArea.classList.add('visible');
         
         if (state.currentEvent.type === 'meeting') {
             eventArea.classList.add('flashing');
@@ -517,7 +524,7 @@
             state.trust -= 10;
             addLog(`【時間切れ】未対応の連絡を残したまま終業してしまい、怒られました！信頼度 -10%`, 'log-alert');
             state.currentEvent = null;
-            document.getElementById('event-area').style.display = 'none';
+            document.getElementById('event-area').classList.remove('visible', 'flashing');
             if (state.trust <= 0) {
                 state.trust = 0;
                 triggerGameOver('終業時に未対応案件が発覚し、解雇されました……。');
@@ -567,92 +574,90 @@
         logArea.scrollTop = logArea.scrollHeight;
     }
 
-    // === 2倍解像度 (800x400) 高精細ドットアニメーション描画 ===
+    // === 超超高精細 (1600x800) ドットアニメーション描画 ===
     function drawScene() {
         ctx.fillStyle = '#111318';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         animFrame++;
 
-        // 背景の壁
+        // 背景壁
         ctx.fillStyle = '#222634';
-        ctx.fillRect(0, 0, canvas.width, 260);
+        ctx.fillRect(0, 0, canvas.width, 520);
         
         // 床
         ctx.fillStyle = '#3a3f5c';
-        ctx.fillRect(0, 260, canvas.width, 140);
+        ctx.fillRect(0, 520, canvas.width, 280);
         ctx.fillStyle = '#2b2f42';
-        for (let x = 0; x < canvas.width; x += 80) {
-            ctx.fillRect(x, 260, 4, 140);
+        for (let x = 0; x < canvas.width; x += 160) {
+            ctx.fillRect(x, 520, 8, 280);
         }
 
         // 窓
         ctx.fillStyle = '#1a1d26';
-        ctx.fillRect(50, 40, 180, 140);
+        ctx.fillRect(100, 80, 360, 280);
         ctx.fillStyle = '#4ea8de';
-        ctx.fillRect(60, 50, 160, 120);
-        // 雲
-        let cloudX = (animFrame * 0.3) % 240;
+        ctx.fillRect(120, 100, 320, 240);
+        let cloudX = (animFrame * 0.6) % 480;
         ctx.fillStyle = '#90e0ef';
-        ctx.fillRect(70 - cloudX + ((animFrame*0.1)%240), 80, 50, 20);
-        ctx.fillRect(150 - cloudX + ((animFrame*0.1)%240), 110, 60, 20);
+        ctx.fillRect(140 - cloudX + ((animFrame*0.2)%480), 160, 100, 40);
+        ctx.fillRect(300 - cloudX + ((animFrame*0.2)%480), 220, 120, 40);
 
         // 本棚 (右)
         ctx.fillStyle = '#5c4033';
-        ctx.fillRect(620, 60, 130, 210);
+        ctx.fillRect(1240, 120, 260, 420);
         ctx.fillStyle = '#3e2723';
-        ctx.fillRect(630, 90, 110, 12);
-        ctx.fillRect(630, 150, 110, 12);
-        ctx.fillRect(630, 210, 110, 12);
+        ctx.fillRect(1260, 180, 220, 24);
+        ctx.fillRect(1260, 300, 220, 24);
+        ctx.fillRect(1260, 420, 220, 24);
         // 本
-        ctx.fillStyle = '#e63946'; ctx.fillRect(640, 102, 16, 48);
-        ctx.fillStyle = '#457b9d'; ctx.fillRect(660, 102, 12, 48);
-        ctx.fillStyle = '#f1faee'; ctx.fillRect(690, 102, 20, 48);
-        ctx.fillStyle = '#ffb703'; ctx.fillRect(640, 162, 18, 48);
+        ctx.fillStyle = '#e63946'; ctx.fillRect(1280, 204, 32, 96);
+        ctx.fillStyle = '#457b9d'; ctx.fillRect(1320, 204, 24, 96);
+        ctx.fillStyle = '#f1faee'; ctx.fillRect(1380, 204, 40, 96);
+        ctx.fillStyle = '#ffb703'; ctx.fillRect(1280, 324, 36, 96);
 
         // 観葉植物 (左)
         ctx.fillStyle = '#b5838d';
-        ctx.fillRect(30, 220, 36, 44);
+        ctx.fillRect(60, 440, 72, 88);
         ctx.fillStyle = '#52b788';
         ctx.beginPath();
-        ctx.arc(48, 204, 28, 0, Math.PI * 2);
+        ctx.arc(96, 408, 56, 0, Math.PI * 2);
         ctx.fill();
 
         // 巨大デスク
         ctx.fillStyle = '#654321';
-        ctx.fillRect(280, 230, 280, 24); // 天板
+        ctx.fillRect(560, 460, 560, 48);
         ctx.fillStyle = '#432818';
-        ctx.fillRect(300, 254, 20, 110); // 脚左
-        ctx.fillRect(520, 254, 20, 110); // 脚右
+        ctx.fillRect(600, 508, 40, 220);
+        ctx.fillRect(1040, 508, 40, 220);
 
         // デュアルモニター
         ctx.fillStyle = '#111';
-        ctx.fillRect(330, 130, 100, 84);
-        ctx.fillRect(440, 140, 90, 74);
+        ctx.fillRect(660, 260, 200, 168);
+        ctx.fillRect(880, 280, 180, 148);
         ctx.fillStyle = (state.activeAction === 'work') ? '#38b000' : '#4ea8de';
-        ctx.fillRect(336, 136, 88, 72);
+        ctx.fillRect(672, 272, 176, 144);
         ctx.fillStyle = '#70e000';
-        ctx.fillRect(446, 146, 78, 62);
+        ctx.fillRect(892, 292, 156, 124);
 
-        // 主人公キャラクター (高精細)
-        let charX = 380;
-        let charY = 190;
+        // 主人公キャラクター (1600x800 スケール)
+        let charX = 760;
+        let charY = 380;
 
         // 椅子の背もたれ
         ctx.fillStyle = '#3a3a4a';
-        ctx.fillRect(charX - 8, charY - 16, 56, 76);
+        ctx.fillRect(charX - 16, charY - 32, 112, 152);
 
         // 頭 (肌)
         ctx.fillStyle = '#ffcc99';
-        ctx.fillRect(charX + 8, charY, 28, 24);
+        ctx.fillRect(charX + 16, charY, 56, 48);
         // 髪 & ヘッドホン
         ctx.fillStyle = '#1d3557';
-        ctx.fillRect(charX + 6, charY - 4, 32, 12);
+        ctx.fillRect(charX + 12, charY - 8, 64, 24);
         ctx.fillStyle = '#e0a96d';
-        ctx.fillRect(charX + 2, charY + 4, 6, 16);
-        ctx.fillRect(charX + 36, charY + 4, 6, 16);
+        ctx.fillRect(charX + 4, charY + 8, 12, 32);
+        ctx.fillRect(charX + 72, charY + 8, 12, 32);
 
-        // 服の色 (状態別)
         let shirtColor = '#457b9d';
         if (state.activeAction === 'work') shirtColor = '#2b9348';
         else if (state.activeAction === 'game') shirtColor = '#e63946';
@@ -662,37 +667,37 @@
         else if (state.activeAction === 'phone') shirtColor = '#264653';
 
         ctx.fillStyle = shirtColor;
-        ctx.fillRect(charX + 4, charY + 24, 36, 40);
+        ctx.fillRect(charX + 8, charY + 48, 72, 80);
 
-        let bounce = (Math.floor(animFrame / 15) % 2 === 0) ? 0 : 4;
+        let bounce = (Math.floor(animFrame / 15) % 2 === 0) ? 0 : 8;
 
         if (state.activeAction === 'work') {
             ctx.fillStyle = '#ffcc99';
-            ctx.fillRect(charX + (bounce ? 36 : 28), charY + 40, 10, 8);
+            ctx.fillRect(charX + (bounce ? 72 : 56), charY + 80, 20, 16);
         } else if (state.activeAction === 'smoke') {
             ctx.fillStyle = '#fff';
-            let smokeY = charY - 12 - ((animFrame % 50));
-            ctx.fillRect(charX + 40, smokeY, 8, 8);
-            ctx.fillRect(charX + 36, smokeY - 12, 12, 8);
+            let smokeY = charY - 24 - ((animFrame % 50));
+            ctx.fillRect(charX + 80, smokeY, 16, 16);
+            ctx.fillRect(charX + 72, smokeY - 24, 24, 16);
         } else if (state.activeAction === 'coffee') {
             ctx.fillStyle = '#f1faee';
-            ctx.fillRect(charX - 20, charY + 44, 12, 14);
+            ctx.fillRect(charX - 40, charY + 88, 24, 28);
             ctx.fillStyle = '#ccc';
-            let steamY = charY + 28 - ((animFrame % 30));
-            ctx.fillRect(charX - 18, steamY, 6, 8);
+            let steamY = charY + 56 - ((animFrame % 30));
+            ctx.fillRect(charX - 36, steamY, 12, 16);
         } else if (state.activeAction === 'nap') {
             if (Math.floor(animFrame / 25) % 2 === 0) {
                 ctx.fillStyle = '#fff';
-                ctx.font = '24px DotGothic16';
-                ctx.fillText('Z', charX + 44, charY - 4);
-                ctx.fillText('z', charX + 60, charY - 24);
+                ctx.font = '48px DotGothic16';
+                ctx.fillText('Z', charX + 88, charY - 8);
+                ctx.fillText('z', charX + 120, charY - 48);
             }
         } else if (state.activeAction === 'game') {
             ctx.fillStyle = '#222';
-            ctx.fillRect(charX + 12 + bounce, charY + 36, 20, 12);
+            ctx.fillRect(charX + 24 + bounce, charY + 72, 40, 24);
         } else if (state.activeAction === 'phone') {
             ctx.fillStyle = '#00f';
-            ctx.fillRect(charX + 16, charY + 32, 12, 18);
+            ctx.fillRect(charX + 32, charY + 64, 24, 36);
         }
 
         requestAnimationFrame(drawScene);
