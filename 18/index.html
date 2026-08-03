@@ -21,28 +21,38 @@
             font-family: 'DotGothic16', monospace;
             display: flex;
             justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden;
+            align-items: flex-start;
+            min-height: 100vh;
+            overflow-y: auto;
+        }
+
+        #game-wrapper {
+            width: 100%;
+            max-width: 480px;
+            display: flex;
+            justify-content: center;
+            padding: 5px 0;
         }
 
         #game-container {
             width: 100%;
-            max-width: 480px;
-            height: 100%;
-            max-height: 850px;
+            max-width: 460px;
+            height: 750px;
             background-color: #2d3142;
             display: flex;
             flex-direction: column;
             border: 4px solid #4f5d75;
-            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            box-shadow: 0 0 15px rgba(0,0,0,0.8);
             position: relative;
+            transform: scale(0.88);
+            transform-origin: top center;
+            margin-bottom: -80px; /* スケールによる余白調整 */
         }
 
-        /* 画面上部30%: アニメーション・ビジュアルエリア */
+        /* 画面上部30%: アニメーション・ビジュアルエリア (高精細ドット絵) */
         #view-area {
             width: 100%;
-            height: 30%;
+            height: 32%;
             background-color: #111318;
             position: relative;
             border-bottom: 4px solid #4f5d75;
@@ -60,29 +70,29 @@
         /* ステータスバー */
         #status-bar {
             background-color: #3f4254;
-            padding: 8px 12px;
+            padding: 6px 10px;
             display: grid;
             grid-template-columns: 1fr 1fr 1fr;
-            gap: 5px;
-            font-size: 14px;
+            gap: 4px;
+            font-size: 13px;
             border-bottom: 3px solid #2d3142;
             text-align: center;
         }
 
         .status-box {
             background: #232530;
-            padding: 4px;
+            padding: 3px;
             border: 2px solid #5a5f78;
             border-radius: 2px;
         }
 
         .status-label {
-            font-size: 10px;
+            font-size: 9px;
             color: #a0aabf;
         }
 
         .status-value {
-            font-size: 14px;
+            font-size: 13px;
             font-weight: bold;
             color: #fff;
         }
@@ -91,8 +101,8 @@
         #event-area {
             background-color: #ff5964;
             color: #fff;
-            padding: 8px 12px;
-            min-height: 55px;
+            padding: 6px 10px;
+            min-height: 50px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -101,24 +111,20 @@
         }
 
         #event-info {
-            font-size: 12px;
-            line-height: 1.3;
+            font-size: 11px;
+            line-height: 1.2;
         }
 
         .pixel-btn {
             background-color: #ffe74c;
             color: #111;
             border: 2px solid #fff;
-            padding: 6px 12px;
+            padding: 5px 10px;
             font-family: 'DotGothic16', monospace;
             font-weight: bold;
-            font-size: 12px;
+            font-size: 11px;
             cursor: pointer;
             box-shadow: 0 3px 0 #b39f1e;
-            active {
-                transform: translateY(2px);
-                box-shadow: 0 1px 0 #b39f1e;
-            }
         }
 
         .pixel-btn:active {
@@ -126,22 +132,31 @@
             box-shadow: 0 1px 0 #b39f1e;
         }
 
+        .pixel-btn:disabled {
+            background-color: #888;
+            color: #ccc;
+            border-color: #555;
+            box-shadow: none;
+            cursor: not-allowed;
+        }
+
         /* ログエリア */
         #log-area {
             flex: 1;
             background-color: #191b22;
-            padding: 10px;
+            padding: 8px;
             overflow-y: auto;
-            font-size: 12px;
-            line-height: 1.4;
+            font-size: 11px;
+            line-height: 1.3;
             border-bottom: 4px solid #4f5d75;
             color: #c0cbdc;
+            max-height: 150px;
         }
 
         .log-item {
-            margin-bottom: 4px;
+            margin-bottom: 3px;
             border-left: 3px solid #6c757d;
-            padding-left: 6px;
+            padding-left: 5px;
         }
         .log-work { border-left-color: #38b000; color: #70e000; }
         .log-sabori { border-left-color: #ffb703; color: #ffb703; }
@@ -151,17 +166,17 @@
         /* 操作ボタンエリア (6つのボタン) */
         #action-area {
             background-color: #232530;
-            padding: 10px;
+            padding: 8px;
             display: grid;
             grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
+            gap: 6px;
         }
 
         .action-btn {
             background-color: #4f5d75;
             color: white;
             border: 3px solid #707993;
-            padding: 10px 4px;
+            padding: 8px 4px;
             font-family: 'DotGothic16', monospace;
             font-size: 11px;
             cursor: pointer;
@@ -169,8 +184,8 @@
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            gap: 2px;
-            box-shadow: 0 4px 0 #2d3142;
+            gap: 1px;
+            box-shadow: 0 3px 0 #2d3142;
             transition: transform 0.05s;
         }
 
@@ -188,31 +203,31 @@
         }
 
         .btn-icon {
-            font-size: 18px;
+            font-size: 16px;
         }
 
         .btn-time {
-            font-size: 9px;
+            font-size: 8px;
             color: #a0aabf;
         }
 
         .action-btn.work-btn {
             background-color: #2b9348;
             border-color: #55a630;
-            box-shadow: 0 4px 0 #132a13;
+            box-shadow: 0 3px 0 #132a13;
         }
         .action-btn.work-btn:active:not(:disabled) {
             box-shadow: 0 1px 0 #132a13;
         }
 
-        /* モーダル画面 (ゲームオーバー / クリア / スタート) */
+        /* モーダル画面 */
         .modal {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(17, 19, 24, 0.92);
+            background: rgba(17, 19, 24, 0.94);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -223,15 +238,15 @@
         }
 
         .modal h1 {
-            font-size: 24px;
+            font-size: 22px;
             color: #ffe74c;
             margin-bottom: 10px;
-            text-shadow: 3px 3px 0 #000;
+            text-shadow: 2px 2px 0 #000;
         }
 
         .modal p {
-            font-size: 13px;
-            line-height: 1.6;
+            font-size: 12px;
+            line-height: 1.5;
             margin-bottom: 20px;
             color: #d8dee9;
         }
@@ -240,7 +255,6 @@
             display: none !important;
         }
 
-        /* 警告アニメーション */
         @keyframes flash {
             0% { background-color: #ff5964; }
             50% { background-color: #900; }
@@ -253,10 +267,11 @@
 </head>
 <body>
 
+<div id="game-wrapper">
 <div id="game-container">
-    <!-- 画面上部30%: アニメーション -->
+    <!-- 画面上部30%: 高精細ドットアニメーションエリア -->
     <div id="view-area">
-        <canvas id="animCanvas" width="320" height="150"></canvas>
+        <canvas id="animCanvas" width="400" height="200"></canvas>
     </div>
 
     <!-- ステータスバー -->
@@ -285,9 +300,9 @@
     </div>
 
     <!-- ログエリア -->
-    <div id="log-area" id="log-container">
+    <div id="log-area">
         <div class="log-item log-info">=== リモートワーク初日開始 ===</div>
-        <div class="log-item log-info">仕事をこなしつつ、うまくサボりましょう。連絡には期限内に応答を！</div>
+        <div class="log-item log-info">仕事をこなしつつサボりましょう。時間を過ぎた連絡は応答不可でペナルティになります！</div>
     </div>
 
     <!-- 操作ボタンエリア (6つのボタン) -->
@@ -329,10 +344,10 @@
         <h1>リモートワーク<br>サボりマスター</h1>
         <p>
             1日8時間(9:00〜17:00)、解雇されないようにサボりながら働こう！<br>
-            連絡(メール・チャット・会議)には期限内に応答せよ。<br>
+            連絡の期限を過ぎると応答できなくなり、信頼度が10%下がります。<br>
             連続5日間生き残ればゲームクリア！
         </p>
-        <button class="pixel-btn" onclick="startGame()" style="font-size: 16px; padding: 10px 24px;">ゲームスタート</button>
+        <button class="pixel-btn" onclick="startGame()" style="font-size: 15px; padding: 8px 20px;">ゲームスタート</button>
     </div>
 
     <!-- ゲームオーバー画面 -->
@@ -349,6 +364,7 @@
         <button class="pixel-btn" onclick="resetGame()">もう一度遊ぶ</button>
     </div>
 </div>
+</div>
 
 <script>
     // ゲーム状態
@@ -357,22 +373,19 @@
         minute: 540, // 9:00 = 540分
         endMinute: 1020, // 17:00 = 1020分
         trust: 100,
-        activeAction: 'work', // work, smoke, coffee, nap, game, phone
-        actionTimeRemaining: 0, // アクション中の残り時間（もし時間経過演出を入れる場合）
-        currentEvent: null, // { type, title, timeLeft, maxTime }
+        activeAction: 'work',
+        currentEvent: null, // { type, title, timeLeft, maxTime, desc }
         isGameOver: false,
         isGameClear: false,
         started: false
     };
 
-    // イベント種類
     const eventTypes = [
-        { type: 'mail', title: '【メール】重要なお知らせ', timeLimit: 120, desc: '2時間以内に返信してください' },
-        { type: 'chat', title: '【チャット】上司からの質問', timeLimit: 30, desc: '30分以内に返信してください' },
-        { type: 'meeting', title: '【オンライン会議】急遽のミーティング', timeLimit: 10, desc: '10分以内に参加してください！' }
+        { type: 'mail', title: '【メール】重要なお知らせ', timeLimit: 120, desc: '2時間以内に返信' },
+        { type: 'chat', title: '【チャット】上司からの質問', timeLimit: 30, desc: '30分以内に返信' },
+        { type: 'meeting', title: '【オンライン会議】緊急ミーティング', timeLimit: 10, desc: '10分以内に参加必須！' }
     ];
 
-    // キャンバスアニメーション用
     const canvas = document.getElementById('animCanvas');
     const ctx = canvas.getContext('2d');
     let animFrame = 0;
@@ -392,7 +405,6 @@
             endMinute: 1020,
             trust: 100,
             activeAction: 'work',
-            actionTimeRemaining: 0,
             currentEvent: null,
             isGameOver: false,
             isGameClear: false,
@@ -452,19 +464,19 @@
 
     // 時間を進める関数
     function advanceTime(minutes) {
-        let prevMinute = state.minute;
         state.minute += minutes;
 
         // イベントの残り時間を減らす
         if (state.currentEvent) {
             state.currentEvent.timeLeft -= minutes;
             if (state.currentEvent.timeLeft <= 0) {
-                // 期限切れペナルティ
+                // 期限超過！応答できずに信頼度ダウン
                 state.trust -= 10;
-                addLog(`【警告】${state.currentEvent.title}の期限に間に合いませんでした！信頼度-10%`, 'log-alert');
+                addLog(`【時間切れ】${state.currentEvent.title}に応答できず、怒られました！信頼度 -10%`, 'log-alert');
                 state.currentEvent = null;
                 document.getElementById('event-area').style.display = 'none';
-                
+                document.getElementById('event-area').classList.remove('flashing');
+
                 if (state.trust <= 0) {
                     state.trust = 0;
                     triggerGameOver('信頼度が0%になってしまい、解雇されました……。');
@@ -481,8 +493,8 @@
             return;
         }
 
-        // イベント発生判定 (時間が進んだ時に確率で発生、または未発生時)
-        if (!state.currentEvent && Math.random() < 0.65) {
+        // イベント発生判定 (確率)
+        if (!state.currentEvent && Math.random() < 0.70) {
             triggerRandomEvent();
         }
 
@@ -492,7 +504,6 @@
     // ランダムイベント発生
     function triggerRandomEvent() {
         const template = eventTypes[Math.floor(Math.random() * eventTypes.length)];
-        // コピーを作成
         state.currentEvent = {
             type: template.type,
             title: template.title,
@@ -515,15 +526,20 @@
             eventArea.classList.remove('flashing');
         }
 
-        addLog(`📢 新しい連絡が来ました: ${state.currentEvent.title}`, 'log-alert');
+        addLog(`📢 新しい連絡: ${state.currentEvent.title}`, 'log-alert');
     }
 
     // イベントに応答する
     function respondEvent() {
         if (!state.currentEvent || state.isGameOver || state.isGameClear) return;
 
-        // サボり中であっても応答できる（「慌てて作業に戻って応答した」演出）
-        addLog(`✅ ${state.currentEvent.title} に迅速に応答しました！セーフ！`, 'log-info');
+        // 期限が切れていないか念のためチェック
+        if (state.currentEvent.timeLeft <= 0) {
+            addLog(`❌ すでに時間を過ぎているため応答できません！`, 'log-alert');
+            return;
+        }
+
+        addLog(`✅ ${state.currentEvent.title} に正常に応答しました！セーフ！`, 'log-info');
         state.currentEvent = null;
         document.getElementById('event-area').style.display = 'none';
         document.getElementById('event-area').classList.remove('flashing');
@@ -532,12 +548,11 @@
 
     // 1日終了処理
     function endDay() {
-        addLog(`=== ${state.day}日目の業務（？）が終了しました ===`, 'info');
+        addLog(`=== ${state.day}日目の業務終了 ===`, 'info');
         
-        // 未対応イベントがあれば強制ペナルティ
         if (state.currentEvent) {
             state.trust -= 10;
-            addLog(`【警告】未対応の連絡を放置して終業してしまいました！信頼度-10%`, 'log-alert');
+            addLog(`【時間切れ】未対応の連絡を残したまま終業してしまい、怒られました！信頼度 -10%`, 'log-alert');
             state.currentEvent = null;
             document.getElementById('event-area').style.display = 'none';
             if (state.trust <= 0) {
@@ -548,15 +563,13 @@
         }
 
         if (state.day >= 5) {
-            // ゲームクリア！
             state.isGameClear = true;
             document.getElementById('gameclear-modal').classList.remove('hidden');
             return;
         }
 
-        // 翌日へ
         state.day++;
-        state.minute = 540; // 9:00リセット
+        state.minute = 540;
         addLog(`=== 祝・${state.day}日目突入 ===`, 'info');
         updateDisplay();
         triggerRandomEvent();
@@ -568,24 +581,20 @@
         document.getElementById('gameover-modal').classList.remove('hidden');
     }
 
-    // 表示更新
     function updateDisplay() {
         document.getElementById('day-val').innerText = `${state.day}日目 / 5日`;
         document.getElementById('trust-val').innerText = `${state.trust}%`;
 
-        // 時刻フォーマット
         let h = Math.floor(state.minute / 60);
         let m = state.minute % 60;
         let timeStr = `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
         document.getElementById('time-val').innerText = timeStr;
 
-        // イベント表示の更新
         if (state.currentEvent) {
             document.getElementById('event-desc').innerText = `残り期限: ${state.currentEvent.timeLeft}分 - ${state.currentEvent.desc}`;
         }
     }
 
-    // ログ追加
     function addLog(text, type = '') {
         const logArea = document.getElementById('log-area');
         const item = document.createElement('div');
@@ -595,103 +604,146 @@
         logArea.scrollTop = logArea.scrollHeight;
     }
 
-    // === 16ビット風ドット絵アニメーション描画 ===
+    // === 高精細ドットアニメーション描画 (400x200) ===
     function drawScene() {
         ctx.fillStyle = '#111318';
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
         animFrame++;
 
-        // 部屋の背景（壁と床）
+        // 部屋の背景（壁）
         ctx.fillStyle = '#222634';
-        ctx.fillRect(0, 0, canvas.width, 100); // 壁
+        ctx.fillRect(0, 0, canvas.width, 130);
+        
+        // 床
         ctx.fillStyle = '#3a3f5c';
-        ctx.fillRect(0, 100, canvas.width, 50); // 床
+        ctx.fillRect(0, 130, canvas.width, 70);
         ctx.fillStyle = '#2b2f42';
-        ctx.fillRect(20, 20, 80, 50); // 窓
-        ctx.fillStyle = '#557a95';
-        ctx.fillRect(25, 25, 70, 40); // 窓の空
+        // 床のタイルライン
+        for (let x = 0; x < canvas.width; x += 40) {
+            ctx.fillRect(x, 130, 2, 70);
+        }
 
-        // 窓の外の雲アニメーション
-        let cloudX = (animFrame * 0.2) % 100;
-        ctx.fillStyle = '#88a8c0';
-        ctx.fillRect(30 - cloudX + ((animFrame*0.1)%100), 35, 20, 8);
+        // 窓
+        ctx.fillStyle = '#1a1d26';
+        ctx.fillRect(25, 20, 90, 70);
+        ctx.fillStyle = '#4ea8de';
+        ctx.fillRect(30, 25, 80, 60);
+        // 雲
+        let cloudX = (animFrame * 0.15) % 120;
+        ctx.fillStyle = '#90e0ef';
+        ctx.fillRect(35 - cloudX + ((animFrame*0.05)%120), 40, 25, 10);
+        ctx.fillRect(75 - cloudX + ((animFrame*0.05)%120), 55, 30, 10);
 
-        // 部屋の家具：机とパソコン
+        // 本棚 (右奥)
+        ctx.fillStyle = '#5c4033';
+        ctx.fillRect(310, 30, 65, 105);
+        ctx.fillStyle = '#3e2723';
+        ctx.fillRect(315, 45, 55, 6);
+        ctx.fillRect(315, 75, 55, 6);
+        ctx.fillRect(315, 105, 55, 6);
+        // 本棚の本
+        ctx.fillStyle = '#e63946'; ctx.fillRect(320, 51, 8, 24);
+        ctx.fillStyle = '#457b9d'; ctx.fillRect(330, 51, 6, 24);
+        ctx.fillStyle = '#f1faee'; ctx.fillRect(345, 51, 10, 24);
+
+        // 観葉植物 (左隅)
+        ctx.fillStyle = '#b5838d';
+        ctx.fillRect(15, 110, 18, 22);
+        ctx.fillStyle = '#52b788';
+        ctx.beginPath();
+        ctx.arc(24, 102, 14, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 巨大デスク
         ctx.fillStyle = '#654321';
-        ctx.fillRect(110, 85, 120, 10); // 机の天板
+        ctx.fillRect(140, 115, 140, 12); // 天板
         ctx.fillStyle = '#432818';
-        ctx.fillRect(120, 95, 10, 45); // 机の脚左
-        ctx.fillRect(210, 95, 10, 45); // 机の脚右
+        ctx.fillRect(150, 127, 10, 55); // 脚左
+        ctx.fillRect(260, 127, 10, 55); // 脚右
 
-        // PCモニタ
+        // デュアルモニター
         ctx.fillStyle = '#111';
-        ctx.fillRect(150, 45, 40, 30);
+        ctx.fillRect(165, 65, 50, 42);
+        ctx.fillRect(220, 70, 45, 37);
         ctx.fillStyle = (state.activeAction === 'work') ? '#38b000' : '#4ea8de';
-        ctx.fillRect(153, 48, 34, 24); // モニタ画面
+        ctx.fillRect(168, 68, 44, 36);
+        ctx.fillStyle = '#70e000';
+        ctx.fillRect(223, 73, 39, 31);
 
-        // 主人公（キャラクター）描画
-        let charX = 155;
-        let charY = 70;
+        // 主人公キャラクター
+        let charX = 190;
+        let charY = 95;
 
         // 椅子の背もたれ
-        ctx.fillStyle = '#4a4e69';
-        ctx.fillRect(charX - 2, charY - 5, 24, 30);
+        ctx.fillStyle = '#3a3a4a';
+        ctx.fillRect(charX - 4, charY - 8, 28, 38);
 
-        // 状態に応じた主人公のポーズ・表情
-        ctx.fillStyle = '#ffb703'; // 肌
-        ctx.fillRect(charX + 4, charY, 12, 10); // 顔
+        // 肌
+        ctx.fillStyle = '#ffcc99';
+        ctx.fillRect(charX + 4, charY, 14, 12);
+        // 髪 (黒髪・ヘッドホン)
+        ctx.fillStyle = '#1d3557';
+        ctx.fillRect(charX + 3, charY - 2, 16, 6);
+        ctx.fillStyle = '#e0a96d'; // ヘッドホン
+        ctx.fillRect(charX + 1, charY + 2, 3, 8);
+        ctx.fillRect(charX + 18, charY + 2, 3, 8);
 
-        ctx.fillStyle = '#3a86ff'; // 服
+        // 服の色 (状態別)
+        let shirtColor = '#457b9d';
+        if (state.activeAction === 'work') shirtColor = '#2b9348';
+        else if (state.activeAction === 'game') shirtColor = '#e63946';
+        else if (state.activeAction === 'nap') shirtColor = '#6a0dad';
+        else if (state.activeAction === 'smoke') shirtColor = '#a8dadc';
+        else if (state.activeAction === 'coffee') shirtColor = '#f4a261';
+        else if (state.activeAction === 'phone') shirtColor = '#264653';
+
+        ctx.fillStyle = shirtColor;
+        ctx.fillRect(charX + 2, charY + 12, 18, 20); // 体
+
+        // アニメーション用パルス
+        let bounce = (Math.floor(animFrame / 15) % 2 === 0) ? 0 : 2;
+
+        // 状態ごとの細かい描写
         if (state.activeAction === 'work') {
-            ctx.fillStyle = '#38b000'; // 仕事中は緑シャツ
-        } else if (state.activeAction === 'game') {
-            ctx.fillStyle = '#ff006e'; // ゲーム中はピンク
-        } else if (state.activeAction === 'nap') {
-            ctx.fillStyle = '#8338ec'; // 昼寝中は紫
-        }
-        ctx.fillRect(charX + 2, charY + 10, 16, 16); // 体
-
-        // アニメーションの上下動（呼吸や作業の動き）
-        let bounce = (Math.floor(animFrame / 15) % 2 === 0) ? 0 : 1;
-
-        if (state.activeAction === 'work') {
-            // パソコンに向かってタイピング（手が動く）
-            ctx.fillStyle = '#ffb703';
-            ctx.fillRect(charX + (bounce ? 16 : 12), charY + 14, 4, 4);
+            // タイピングの手
+            ctx.fillStyle = '#ffcc99';
+            ctx.fillRect(charX + (bounce ? 18 : 14), charY + 20, 5, 4);
         } else if (state.activeAction === 'smoke') {
-            // タバコ：煙が立ち上る
+            // タバコと煙
             ctx.fillStyle = '#fff';
-            let smokeY = charY - 5 - ((animFrame % 30));
-            ctx.fillRect(charX + 18, smokeY, 4, 4);
-            ctx.fillRect(charX + 16, smokeY - 6, 6, 4);
+            let smokeY = charY - 6 - ((animFrame % 40));
+            ctx.fillRect(charX + 20, smokeY, 4, 4);
+            ctx.fillRect(charX + 18, smokeY - 6, 6, 4);
+            ctx.fillRect(charX + 15, smokeY - 12, 8, 6);
         } else if (state.activeAction === 'coffee') {
-            // コーヒー：湯気
+            // マグカップと湯気
+            ctx.fillStyle = '#f1faee';
+            ctx.fillRect(charX - 10, charY + 22, 6, 7);
             ctx.fillStyle = '#ccc';
-            let steamY = charY + 5 - ((animFrame % 20));
-            ctx.fillRect(charX - 6, steamY, 3, 3);
+            let steamY = charY + 14 - ((animFrame % 25));
+            ctx.fillRect(charX - 9, steamY, 3, 4);
         } else if (state.activeAction === 'nap') {
-            // 昼寝：Zzz
-            if (Math.floor(animFrame / 30) % 2 === 0) {
+            // 昼寝: Zzz
+            if (Math.floor(animFrame / 25) % 2 === 0) {
                 ctx.fillStyle = '#fff';
-                ctx.font = '10px DotGothic16';
-                ctx.fillText('Z', charX + 18, charY - 5);
-                ctx.fillText('z', charX + 24, charY - 12);
+                ctx.font = '12px DotGothic16';
+                ctx.fillText('Z', charX + 22, charY - 2);
+                ctx.fillText('z', charX + 30, charY - 12);
             }
         } else if (state.activeAction === 'game') {
-            // ゲーム機を持っている
-            ctx.fillStyle = '#111';
-            ctx.fillRect(charX + 6 + bounce, charY + 14, 8, 4);
+            // 携帯ゲーム機
+            ctx.fillStyle = '#222';
+            ctx.fillRect(charX + 6 + bounce, charY + 18, 10, 6);
         } else if (state.activeAction === 'phone') {
-            // スマホを見ている
+            // スマホ
             ctx.fillStyle = '#00f';
-            ctx.fillRect(charX + 6, charY + 12, 6, 8);
+            ctx.fillRect(charX + 8, charY + 16, 6, 9);
         }
 
         requestAnimationFrame(drawScene);
     }
 
-    // 初回描画開始
     requestAnimationFrame(drawScene);
 </script>
 
