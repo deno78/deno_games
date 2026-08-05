@@ -600,6 +600,14 @@ showGameOver = function() {
     originalShowGameOver();
 };
 
+// ゲームスタートボタンのクリックハンドラ（確実にイベントを紐付け）
+document.addEventListener('DOMContentLoaded', () => {
+    const startBtn = document.querySelector('#start-panel .btn');
+    if (startBtn) {
+        startBtn.onclick = startGame;
+    }
+});
+
 </script>
 </body>
 </html>
