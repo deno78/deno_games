@@ -1,0 +1,783 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>スーパーロボット大戦風シミュレーションゲーム</title>
+    <style>
+        body {
+            margin: 0;
+            background-color: #0b0f19;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        h1 {
+            margin: 10px 0;
+            font-size: 24px;
+            letter-spacing: 2px;
+            color: #00ffcc;
+            text-shadow: 0 0 10px rgba(0,255,204,0.5);
+        }
+        #game-container {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+        }
+        #map-view {
+            position: relative;
+            background: #111a2e;
+            border: 2px solid #334466;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+        }
+        canvas {
+            display: block;
+            background: #152238;
+        }
+        #sidebar {
+            width: 320px;
+            background: #111a2e;
+            border: 2px solid #334466;
+            padding: 15px;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .panel {
+            background: #1b2845;
+            border: 1px solid #446688;
+            padding: 10px;
+            margin-bottom: 10px;
+            border-radius: 4px;
+        }
+        .panel h3 {
+            margin: 0 0 8px 0;
+            font-size: 14px;
+            color: #ffcc00;
+            border-bottom: 1px solid #446688;
+            padding-bottom: 4px;
+        }
+        .stat-row {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+            margin-bottom: 4px;
+        }
+        .bar-container {
+            width: 100%;
+            background: #333;
+            height: 10px;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-top: 2px;
+            margin-bottom: 6px;
+        }
+        .bar-fill {
+            height: 100%;
+            transition: width 0.3s;
+        }
+        .hp-fill { background: #00cc66; }
+        .en-fill { background: #0088ff; }
+        .exp-fill { background: #ffaa00; }
+
+        #action-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+        .btn {
+            background: #22385c;
+            color: #fff;
+            border: 1px solid #5588cc;
+            padding: 8px;
+            text-align: center;
+            cursor: pointer;
+            font-family: inherit;
+            font-weight: bold;
+            font-size: 13px;
+            border-radius: 3px;
+            transition: background 0.2s, border-color 0.2s;
+        }
+        .btn:hover:not(:disabled) {
+            background: #335588;
+            border-color: #88ccff;
+        }
+        .btn:disabled {
+            background: #152238;
+            color: #556688;
+            border-color: #223344;
+            cursor: not-allowed;
+        }
+        #log-box {
+            height: 110px;
+            background: #090e17;
+            border: 1px solid #223344;
+            padding: 8px;
+            font-size: 11px;
+            overflow-y: auto;
+            color: #aaccff;
+            line-height: 1.4;
+        }
+        #turn-indicator {
+            font-size: 16px;
+            font-weight: bold;
+            text-align: center;
+            padding: 6px;
+            background: #223355;
+            border-radius: 3px;
+            margin-bottom: 10px;
+            color: #00ffcc;
+        }
+
+        /* 戦闘演出画面のオーバーレイ */
+        #battle-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 640px;
+            height: 480px;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            box-sizing: border-box;
+            border: 4px solid #ffcc00;
+        }
+        .battle-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 14px;
+            font-weight: bold;
+            color: #ffcc00;
+        }
+        .battle-arena {
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            flex-grow: 1;
+        }
+        .unit-sprite {
+            font-size: 60px;
+            text-align: center;
+            animation: bounce 0.5s infinite alternate;
+        }
+        @keyframes bounce {
+            from { transform: translateY(0); }
+            to { transform: translateY(-10px); }
+        }
+        .battle-log {
+            height: 80px;
+            background: #000;
+            border: 2px solid #5588cc;
+            padding: 8px;
+            font-size: 13px;
+            overflow-y: auto;
+            color: #fff;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>スーパーロボット大戦 - TACTICAL SIMULATION -</h1>
+    
+    <div id="game-container">
+        <!-- マップ表示部 -->
+        <div id="map-view">
+            <canvas id="canvas" width="640" height="480"></canvas>
+            
+            <!-- 戦闘アニメーションオーバーレイ -->
+            <div id="battle-overlay">
+                <div class="battle-header">
+                    <span id="b-atkW">味方ロボ</span>
+                    <span>VS</span>
+                    <span id="b-defW">敵ロボ</span>
+                </div>
+                <div class="battle-arena">
+                    <div>
+                        <div id="b-atk-sprite" class="unit-sprite">🤖</div>
+                        <div id="b-atk-name" style="text-align:center; font-weight:bold;"></div>
+                        <div class="stat-row">HP: <span id="b-atk-hp"></span></div>
+                    </div>
+                    <div style="font-size:24px; font-weight:bold; color:#ff3333;" id="b-action-text">戦闘開始！</div>
+                    <div>
+                        <div id="b-def-sprite" class="unit-sprite">👾</div>
+                        <div id="b-def-name" style="text-align:center; font-weight:bold;"></div>
+                        <div class="stat-row">HP: <span id="b-def-hp"></span></div>
+                    </div>
+                </div>
+                <div id="b-log" class="battle-log">戦闘準備...</div>
+            </div>
+        </div>
+
+        <!-- サイドバー -->
+        <div id="sidebar">
+            <div>
+                <div id="turn-indicator">プレイヤーターン (第1ターン)</div>
+                
+                <!-- ユニット情報パネル -->
+                <div class="panel" id="info-panel">
+                    <h3>ユニット情報</h3>
+                    <div id="no-selection" style="font-size:12px; color:#8899aa; text-align:center; padding:10px;">
+                        ユニットを選択してください
+                    </div>
+                    <div id="unit-details" style="display:none;">
+                        <div class="stat-row"><strong id="info-name" style="color:#00ffcc;">-</strong><span id="info-type" style="font-size:11px; background:#334466; padding:1px 4px; border-radius:2px;">-</span></div>
+                        <div class="stat-row"><span>パイロット:</span> <span id="info-pilot">-</span></div>
+                        <div class="stat-row"><span>Lv:</span> <span id="info-lv">1</span> <span>EXP:</span> <span id="info-exp">0</span></div>
+                        
+                        <div class="stat-row"><span>HP:</span> <span id="info-hp">0/0</span></div>
+                        <div class="bar-container"><div id="info-hp-bar" class="bar-fill hp-fill" style="width: 100%;"></div></div>
+                        
+                        <div class="stat-row"><span>EN:</span> <span id="info-en">0/0</span></div>
+                        <div class="bar-container"><div id="info-en-bar" class="bar-fill en-fill" style="width: 100%;"></div></div>
+
+                        <div class="stat-row"><span>移動:</span> <span id="info-move">0</span> <span>射程:</span> <span id="info-range">0</span></div>
+                        <div class="stat-row"><span>攻撃力:</span> <span id="info-atk">0</span> <span>防御力:</span> <span id="info-def">0</span></div>
+                    </div>
+                </div>
+
+                <!-- アクションメニュー -->
+                <div class="panel">
+                    <h3>コマンド</h3>
+                    <div id="action-menu">
+                        <button class="btn" id="btn-move" onclick="startMove()" disabled>移動</button>
+                        <button class="btn" id="btn-attack" onclick="startAttack()" disabled>攻撃</button>
+                        <button class="btn" id="btn-wait" onclick="actionWait()" disabled>待機</button>
+                        <button class="btn" id="btn-end" onclick="endPlayerTurn()" style="background:#332211; border-color:#cc8844; color:#ffcc00;">ターン終了</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ログパネル -->
+            <div class="panel" style="margin-bottom:0;">
+                <h3>戦闘ログ</h3>
+                <div id="log-box">ゲーム開始！味方ユニットを動かして敵を殲滅せよ！</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 定数・設定
+        const TILE_SIZE = 40;
+        const MAP_WIDTH = 16;
+        const MAP_HEIGHT = 12;
+
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        // ゲーム状態
+        let turn = 1;
+        let phase = 'player'; // 'player', 'enemy', 'move', 'attack', 'battle', 'gameover', 'clear'
+        let selectedUnit = null;
+        let activeUnit = null;
+        let movableTiles = [];
+        let attackableTiles = [];
+        let actionState = 'idle'; // 'idle', 'moving', 'attacking'
+
+        // ユニット定義
+        class Unit {
+            constructor(id, name, pilot, type, x, y, allegiance, maxHp, maxEn, move, range, atk, def, sprite) {
+                this.id = id;
+                this.name = name;
+                this.pilot = pilot;
+                this.type = type; // 'real', 'super', 'enemy'
+                this.x = x;
+                this.y = y;
+                this.allegiance = allegiance; // 'player', 'enemy'
+                this.maxHp = maxHp;
+                this.hp = maxHp;
+                this.maxEn = maxEn;
+                this.en = maxEn;
+                this.move = move;
+                this.range = range;
+                this.atk = atk;
+                this.def = def;
+                this.sprite = sprite;
+                this.lv = 1;
+                this.exp = 0;
+                this.hasActed = false;
+                this.hasMoved = false;
+            }
+        }
+
+        let units = [
+            // 味方
+            new Unit('p1', 'マジンガーZ', '兜甲児', 'super', 2, 9, 'player', 250, 100, 5, 1, 65, 50, '🤖'),
+            new Unit('p2', 'ガンダム', 'アムロ', 'real', 3, 10, 'player', 180, 120, 6, 2, 55, 35, '⚡'),
+            new Unit('p3', 'ゲッター1', '流竜馬', 'super', 1, 10, 'player', 220, 110, 6, 1, 70, 30, '🦾'),
+            
+            // 敵
+            new Unit('e1', 'ザク', 'ジオン兵', 'enemy', 12, 2, 'enemy', 120, 50, 5, 2, 40, 20, '👾'),
+            new Unit('e2', 'ザク', 'ジオン兵', 'enemy', 14, 3, 'enemy', 120, 50, 5, 2, 40, 20, '👾'),
+            new Unit('e3', 'ドム', '黒い三連星', 'enemy', 13, 1, 'enemy', 200, 80, 4, 1, 60, 45, '👹'),
+            new Unit('e4', 'ボスロボット', 'あシュラ男爵', 'enemy', 13, 9, 'enemy', 300, 100, 4, 1, 75, 50, '🐉')
+        ];
+
+        // ログ出力
+        function log(message) {
+            const box = document.getElementById('log-box');
+            box.innerHTML += `<br>${message}`;
+            box.scrollTop = box.scrollHeight;
+        }
+
+        // 初期化
+        function init() {
+            canvas.addEventListener('click', handleCanvasClick);
+            updateUI();
+            draw();
+            log('第1ターン開始：味方のフェイズです。');
+        }
+
+        // 描画処理
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // グリッド描画
+            ctx.strokeStyle = '#1b2a4a';
+            ctx.lineWidth = 1;
+            for (let x = 0; x <= MAP_WIDTH; x++) {
+                ctx.beginPath();
+                ctx.moveTo(x * TILE_SIZE, 0);
+                ctx.lineTo(x * TILE_SIZE, canvas.height);
+                ctx.stroke();
+            }
+            for (let y = 0; y <= MAP_HEIGHT; y++) {
+                ctx.beginPath();
+                ctx.moveTo(0, y * TILE_SIZE);
+                ctx.lineTo(canvas.width, y * TILE_SIZE);
+                ctx.stroke();
+            }
+
+            // 移動可能範囲の描画
+            ctx.fillStyle = 'rgba(0, 150, 255, 0.25)';
+            movableTiles.forEach(t => {
+                ctx.fillRect(t.x * TILE_SIZE, t.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+            });
+
+            // 攻撃可能範囲の描画
+            ctx.fillStyle = 'rgba(255, 50, 50, 0.3)';
+            attackableTiles.forEach(t => {
+                ctx.fillRect(t.x * TILE_SIZE, t.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+            });
+
+            // 選択カーソルの描画
+            if (selectedUnit) {
+                ctx.strokeStyle = selectedUnit.hasActed ? '#555' : '#00ffcc';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(selectedUnit.x * TILE_SIZE, selectedUnit.y * TILE_SIZE, TILE_SIZE, TILE_SIZE);
+            }
+
+            // ユニット描画
+            units.forEach(u => {
+                if (u.hp <= 0) return;
+                
+                // 足元の所属サークル
+                ctx.fillStyle = u.allegiance === 'player' ? 'rgba(0, 120, 255, 0.4)' : 'rgba(255, 50, 50, 0.4)';
+                ctx.beginPath();
+                ctx.arc(u.x * TILE_SIZE + TILE_SIZE/2, u.y * TILE_SIZE + TILE_SIZE/2, TILE_SIZE/2 - 4, 0, Math.PI * 2);
+                ctx.fill();
+
+                // 未行動なら光らせる
+                if (u.allegiance === 'player' && !u.hasActed && phase === 'player') {
+                    ctx.strokeStyle = '#ffcc00';
+                    ctx.lineWidth = 1;
+                    ctx.stroke();
+                }
+
+                // スプライト（絵文字）
+                ctx.font = '24px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText(u.sprite, u.x * TILE_SIZE + TILE_SIZE/2, u.y * TILE_SIZE + TILE_SIZE/2);
+
+                // HPバー（頭上）
+                const barW = TILE_SIZE - 6;
+                const barH = 4;
+                const bx = u.x * TILE_SIZE + 3;
+                const by = u.y * TILE_SIZE + 2;
+                ctx.fillStyle = '#333';
+                ctx.fillRect(bx, by, barW, barH);
+                ctx.fillStyle = u.allegiance === 'player' ? '#00cc66' : '#cc3333';
+                ctx.fillRect(bx, by, barW * (u.hp / u.maxHp), barH);
+            });
+        }
+
+        // キャンバスクリック処理
+        function handleCanvasClick(e) {
+            if (phase !== 'player') return;
+
+            const rect = canvas.getBoundingClientRect();
+            const clickX = Math.floor((e.clientX - rect.left) / TILE_SIZE);
+            const clickY = Math.floor((e.clientY - rect.top) / TILE_SIZE);
+
+            if (clickX < 0 || clickX >= MAP_WIDTH || clickY < 0 || clickY >= MAP_HEIGHT) return;
+
+            // ユニットがいるか
+            const clickedUnit = units.find(u => u.x === clickX && u.y === clickY && u.hp > 0);
+
+            if (actionState === 'moving') {
+                // 移動先指定
+                const isMovable = movableTiles.some(t => t.x === clickX && t.y === clickY);
+                if (isMovable && !clickedUnit) {
+                    selectedUnit.x = clickX;
+                    selectedUnit.y = clickY;
+                    selectedUnit.hasMoved = true;
+                    actionState = 'idle';
+                    movableTiles = [];
+                    log(`${selectedUnit.name} が移動しました。`);
+                    updateActionButtons();
+                    draw();
+                } else {
+                    log('そこへは移動できません。');
+                }
+                return;
+            }
+
+            if (actionState === 'attacking') {
+                // 攻撃対象指定
+                const isAttackable = attackableTiles.some(t => t.x === clickX && t.y === clickY);
+                if (isAttackable && clickedUnit && clickedUnit.allegiance === 'enemy') {
+                    actionState = 'idle';
+                    attackableTiles = [];
+                    startBattle(selectedUnit, clickedUnit);
+                } else {
+                    log('その目標は攻撃範囲外、または味方です。');
+                }
+                return;
+            }
+
+            // 通常選択
+            if (clickedUnit) {
+                selectedUnit = clickedUnit;
+                updateUI();
+                updateActionButtons();
+                draw();
+            } else {
+                selectedUnit = null;
+                updateUI();
+                updateActionButtons();
+                draw();
+            }
+        }
+
+        // UI更新
+        function updateUI() {
+            const noSel = document.getElementById('no-selection');
+            const details = document.getElementById('unit-details');
+
+            if (!selectedUnit) {
+                noSel.style.display = 'block';
+                details.style.display = 'none';
+                return;
+            }
+
+            noSel.style.display = 'none';
+            details.style.display = 'block';
+
+            document.getElementById('info-name').innerText = selectedUnit.name;
+            document.getElementById('info-type').innerText = selectedUnit.type.toUpperCase();
+            document.getElementById('info-pilot').innerText = selectedUnit.pilot;
+            document.getElementById('info-lv').innerText = selectedUnit.lv;
+            document.getElementById('info-exp').innerText = selectedUnit.exp;
+            document.getElementById('info-hp').innerText = `${selectedUnit.hp} / ${selectedUnit.maxHp}`;
+            document.getElementById('info-hp-bar').style.width = `${(selectedUnit.hp / selectedUnit.maxHp) * 100}%`;
+            document.getElementById('info-en').innerText = `${selectedUnit.en} / ${selectedUnit.maxEn}`;
+            document.getElementById('info-en-bar').style.width = `${(selectedUnit.en / selectedUnit.maxEn) * 100}%`;
+            document.getElementById('info-move').innerText = selectedUnit.move;
+            document.getElementById('info-range').innerText = selectedUnit.range;
+            document.getElementById('info-atk').innerText = selectedUnit.atk;
+            document.getElementById('info-def').innerText = selectedUnit.def;
+        }
+
+        // アクションボタンの状態更新
+        function updateActionButtons() {
+            const btnMove = document.getElementById('btn-move');
+            const btnAttack = document.getElementById('btn-attack');
+            const btnWait = document.getElementById('btn-wait');
+
+            if (!selectedUnit || selectedUnit.allegiance !== 'player' || selectedUnit.hasActed || phase !== 'player') {
+                btnMove.disabled = true;
+                btnAttack.disabled = true;
+                btnWait.disabled = true;
+                return;
+            }
+
+            btnMove.disabled = selectedUnit.hasMoved;
+            // 敵が攻撃範囲内にいるかチェック
+            const hasEnemyInRange = units.some(u => u.allegiance === 'enemy' && u.hp > 0 && Math.abs(u.x - selectedUnit.x) + Math.abs(u.y - selectedUnit.y) <= selectedUnit.range);
+            btnAttack.disabled = !hasEnemyInRange;
+            btnWait.disabled = false;
+        }
+
+        // 移動開始
+        function startMove() {
+            if (!selectedUnit || selectedUnit.hasMoved) return;
+            actionState = 'moving';
+            attackableTiles = [];
+            
+            // マンハッタン距離で移動範囲計算
+            movableTiles = [];
+            for (let x = 0; x < MAP_WIDTH; x++) {
+                for (let y = 0; y < MAP_HEIGHT; y++) {
+                    const dist = Math.abs(x - selectedUnit.x) + Math.abs(y - selectedUnit.y);
+                    if (dist > 0 && dist <= selectedUnit.move) {
+                        // 他のユニットがいないか
+                        const occupied = units.some(u => u.x === x && u.y === y && u.hp > 0);
+                        if (!occupied) {
+                            movableTiles.push({x, y});
+                        }
+                    }
+                }
+            }
+            log(`${selectedUnit.name} の移動先を選択してください。`);
+            draw();
+        }
+
+        // 攻撃開始
+        function startAttack() {
+            if (!selectedUnit) return;
+            actionState = 'attacking';
+            movableTiles = [];
+
+            attackableTiles = [];
+            units.forEach(u => {
+                if (u.allegiance === 'enemy' && u.hp > 0) {
+                    const dist = Math.abs(u.x - selectedUnit.x) + Math.abs(u.y - selectedUnit.y);
+                    if (dist <= selectedUnit.range) {
+                        attackableTiles.push({x: u.x, y: u.y});
+                    }
+                }
+            });
+            log(`${selectedUnit.name} の攻撃目標を選択してください。`);
+            draw();
+        }
+
+        // 待機
+        actionWait = function() {
+            if (!selectedUnit) return;
+            selectedUnit.hasActed = true;
+            selectedUnit.hasMoved = true;
+            log(`${selectedUnit.name} は待機しました。`);
+            actionState = 'idle';
+            movableTiles = [];
+            attackableTiles = [];
+            selectedUnit = null;
+            updateUI();
+            updateActionButtons();
+            draw();
+            checkPhaseEnd();
+        }
+
+        // 戦闘演出・処理
+        function startBattle(attacker, defender) {
+            const overlay = document.getElementById('battle-overlay');
+            overlay.style.display = 'flex';
+
+            document.getElementById('b-atkW').innerText = attacker.name;
+            document.getElementById('b-defW').innerText = defender.name;
+            document.getElementById('b-atk-sprite').innerText = attacker.sprite;
+            document.getElementById('b-def-sprite').innerText = defender.sprite;
+            document.getElementById('b-atk-name').innerText = attacker.name;
+            document.getElementById('b-def-name').innerText = defender.name;
+            document.getElementById('b-atk-hp').innerText = `${attacker.hp} / ${attacker.maxHp}`;
+            document.getElementById('b-def-hp').innerText = `${defender.hp} / ${defender.maxHp}`;
+            
+            const bLog = document.getElementById('b-log');
+            bLog.innerHTML = `${attacker.name} (${attacker.pilot}) が ${defender.name} に攻撃！`;
+
+            document.getElementById('b-action-text').innerText = '戦闘中...';
+
+            setTimeout(() => {
+                // ダメージ計算
+                const damage = Math.max(10, Math.floor(attacker.atk * 1.5 - defender.def));
+                defender.hp = Math.max(0, defender.hp - damage);
+                bLog.innerHTML += `<br>${attacker.name} の攻撃！ ${defender.name} に ${damage} のダメージ！`;
+                document.getElementById('b-def-hp').innerText = `${defender.hp} / ${defender.maxHp}`;
+
+                // 反撃判定（敵が生きていて射程内なら）
+                const dist = Math.abs(attacker.x - defender.x) + Math.abs(attacker.y - defender.y);
+                setTimeout(() => {
+                    if (defender.hp > 0 && dist <= defender.range) {
+                        const counterDamage = Math.max(5, Math.floor(defender.atk * 1.2 - attacker.def));
+                        attacker.hp = Math.max(0, attacker.hp - counterDamage);
+                        bLog.innerHTML += `<br>${defender.name} の反撃！ ${attacker.name} に ${counterDamage} のダメージ！`;
+                        document.getElementById('b-atk-hp').innerText = `${attacker.hp} / ${attacker.maxHp}`;
+                    } else if (defender.hp <= 0) {
+                        bLog.innerHTML += `<br>${defender.name} を撃破した！`;
+                        attacker.exp += 50;
+                        if (attacker.exp >= 100) {
+                            attacker.lv++;
+                            attacker.exp -= 100;
+                            attacker.maxHp += 30;
+                            attacker.hp = attacker.maxHp;
+                            attacker.atk += 10;
+                            bLog.innerHTML += `<br>★ ${attacker.name} がレベルアップ！ (Lv.${attacker.lv})`;
+                        }
+                    }
+
+                    setTimeout(() => {
+                        overlay.style.display = 'none';
+                        log(`${attacker.name} と ${defender.name} の戦闘終了。`);
+                        
+                        attacker.hasActed = true;
+                        attacker.hasMoved = true;
+                        selectedUnit = null;
+                        updateUI();
+                        updateActionButtons();
+                        draw();
+                        checkWinLose();
+                        checkPhaseEnd();
+                    }, 1500);
+
+                }, 1000);
+
+            }, 800);
+        }
+
+        // ターン終了チェック
+        function checkPhaseEnd() {
+            const playerUnits = units.filter(u => u.allegiance === 'player' && u.hp > 0);
+            const allActed = playerUnits.every(u => u.hasActed);
+
+            if (allActed) {
+                endPlayerTurn();
+            }
+        }
+
+        // プレイヤーターン終了
+        function endPlayerTurn() {
+            if (phase !== 'player') return;
+            phase = 'enemy';
+            selectedUnit = null;
+            movableTiles = [];
+            attackableTiles = [];
+            document.getElementById('turn-indicator').innerText = `敵ターン (第${turn}ターン)`;
+            document.getElementById('turn-indicator').style.color = '#ff3333';
+            log('敵フェイズに移行します。');
+            updateActionButtons();
+            updateUI();
+            draw();
+
+            // 敵のAI行動開始
+            setTimeout(enemyTurn, 1000);
+        }
+
+        // 敵AI処理
+        function enemyTurn() {
+            const enemyUnits = units.filter(u => u.allegiance === 'enemy' && u.hp > 0);
+            let index = 0;
+
+            function processNextEnemy() {
+                if (index >= enemyUnits.length) {
+                    // 全敵行動終了 -> プレイヤーターンへ
+                    units.forEach(u => {
+                        if (u.allegiance === 'player') {
+                            u.hasActed = false;
+                            u.hasMoved = false;
+                        }
+                    });
+                    turn++;
+                    phase = 'player';
+                    document.getElementById('turn-indicator').innerText = `プレイヤーターン (第${turn}ターン)`;
+                    document.getElementById('turn-indicator').style.color = '#00ffcc';
+                    log(`第${turn}ターン開始：味方のフェイズです。`);
+                    updateUI();
+                    draw();
+                    return;
+                }
+
+                const en = enemyUnits[index++];
+                // 最も近い味方を探す
+                let target = null;
+                let minDist = 999;
+                units.forEach(u => {
+                    if (u.allegiance === 'player' && u.hp > 0) {
+                        const d = Math.abs(u.x - en.x) + Math.abs(u.y - en.y);
+                        if (d < minDist) {
+                            minDist = d;
+                            target = u;
+                        }
+                    }
+                });
+
+                if (target) {
+                    // 射程内なら攻撃、外なら近づく
+                    if (minDist <= en.range) {
+                        log(`敵 ${en.name} が ${target.name} に攻撃！`);
+                        enemyAttack(en, target, processNextEnemy);
+                    } else {
+                        // 近づく方向に1〜2歩移動
+                        let dx = target.x - en.x;
+                        let dy = target.y - en.y;
+                        let moveSteps = Math.min(en.move, Math.abs(dx) + Math.abs(dy) - en.range);
+                        
+                        if (moveSteps > 0) {
+                            if (Math.abs(dx) > Math.abs(dy)) {
+                                en.x += Math.sign(dx) * Math.min(Math.abs(dx), moveSteps);
+                            } else {
+                                en.y += Math.sign(dy) * Math.min(Math.abs(dy), moveSteps);
+                            }
+                        }
+                        draw();
+
+                        // 移動後に再度攻撃判定
+                        const newDist = Math.abs(target.x - en.x) + Math.abs(target.y - en.y);
+                        if (newDist <= en.range) {
+                            log(`敵 ${en.name} が接近して ${target.name} に攻撃！`);
+                            setTimeout(() => enemyAttack(en, target, processNextEnemy), 600);
+                        } else {
+                            setTimeout(processNextEnemy, 400);
+                        }
+                    }
+                } else {
+                    setTimeout(processNextEnemy, 400);
+                }
+            }
+
+            processNextEnemy();
+        }
+
+        // 敵の攻撃処理
+        function enemyAttack(attacker, defender, callback) {
+            const damage = Math.max(10, Math.floor(attacker.atk * 1.3 - defender.def));
+            defender.hp = Math.max(0, defender.hp - damage);
+            log(`↳ ${attacker.name} の攻撃！ ${defender.name} に ${damage} のダメージ！ (HP: ${defender.hp}/${defender.maxHp})`);
+            
+            if (defender.hp <= 0) {
+                log(`💥 味方 ${defender.name} が撃破されてしまった...！`);
+            }
+            
+            updateUI();
+            draw();
+            checkWinLose();
+            setTimeout(callback, 1000);
+        }
+
+        // 勝敗判定
+        function checkWinLose() {
+            const playerAlive = units.some(u => u.allegiance === 'player' && u.hp > 0);
+            const enemyAlive = units.some(u => u.allegiance === 'enemy' && u.hp > 0);
+
+            if (!playerAlive) {
+                phase = 'gameover';
+                document.getElementById('turn-indicator').innerText = 'GAME OVER';
+                document.getElementById('turn-indicator').style.color = '#ff0000';
+                log('全滅しました...ゲームオーバー。');
+            } else if (!enemyAlive) {
+                phase = 'clear';
+                document.getElementById('turn-indicator').innerText = 'VICTORY!';
+                document.getElementById('turn-indicator').style.color = '#00ffcc';
+                log('🎉 敵部隊をすべて撃破した！ステージクリア！！');
+            }
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
