@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>16bit ショート動画スワイプ評価バトル (Shorts Swipe Master)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #121216;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 420px;
+            height: 100%;
+            max-height: 850px;
+            background: #000;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 4px solid #333;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+        }
+
+        @media (min-width: 420px) {
+            #game-container {
+                height: 800px;
+                border-radius: 16px;
+                border-color: #444;
+            }
+        }
+
+        /* ヘルプ / UIオーバレイ */
+        .header-ui {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: linear-gradient(to bottom, rgba(0,0,0,0.8) 0%, rgba(0,0,0,0) 100%);
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .stat-box {
+            background: rgba(0, 0, 0, 0.6);
+            border: 2px solid #555;
+            padding: 5px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: bold;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: #aaa;
+        }
+
+        .stat-value {
+            color: #ffcc00;
+            font-size: 16px;
+        }
+
+        /* 動画描画キャンバスエリア */
+        #video-viewport {
+            flex: 1;
+            position: relative;
+            background: #1a1a24;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+        }
+
+        canvas {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        /* 動画情報・コメントオーバーレイ */
+        .video-overlay {
+            position: absolute;
+            bottom: 20px;
+            left: 15px;
+            right: 70px;
+            z-index: 10;
+            pointer-events: none;
+            text-shadow: 2px 2px #000, -2px -2px #000, 2px -2px #000, -2px 2px #000;
+        }
+
+        .channel-name {
+            font-size: 14px;
+            color: #00ffff;
+            margin-bottom: 4px;
+            font-weight: bold;
+        }
+
+        .video-title {
+            font-size: 16px;
+            color: #ffffff;
+            line-height: 1.3;
+            margin-bottom: 8px;
+        }
+
+        /* 右側アクションボタン（いいね・バズ等） */
+        .side-actions {
+            position: absolute;
+            right: 15px;
+            bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            z-index: 15;
+            pointer-events: none;
+        }
+
+        .action-icon {
+            width: 48px;
+            height: 48px;
+            background: rgba(0,0,0,0.6);
+            border: 2px solid #fff;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            transition: transform 0.1s;
+        }
+
+        .action-icon.liked {
+            background: #ff3366;
+            border-color: #ff99bb;
+            transform: scale(1.2);
+            animation: pulse 0.4s ease;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.4); }
+            100% { transform: scale(1.2); }
+        }
+
+        .action-count {
+            font-size: 11px;
+            font-weight: bold;
+            text-shadow: 1px 1px #000;
+            margin-top: 2px;
+        }
+
+        /* スワイプ案内エフェクト */
+        .swipe-hint {
+            position: absolute;
+            bottom: 10px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 12px;
+            color: #888;
+            animation: bounceUpDown 1.5s infinite;
+            z-index: 25;
+            pointer-events: none;
+            background: rgba(0,0,0,0.7);
+            padding: 4px 12px;
+            border-radius: 10px;
+            border: 1px dashed #555;
+        }
+
+        @keyframes bounceUpDown {
+            0%, 100% { transform: translate(-50%, 0); }
+            50% { transform: translate(-50%, -8px); }
+        }
+
+        /* 画面切り替えトランジション */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #121216;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 50;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .screen.hidden {
+            display: none;
+        }
+
+        h1 {
+            font-size: 24px;
+            color: #ffcc00;
+            margin-bottom: 10px;
+            text-shadow: 3px 3px #ff0055;
+        }
+
+        p {
+            font-size: 13px;
+            color: #ccc;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .btn {
+            background: #ff3366;
+            color: white;
+            border: 3px solid #ff99bb;
+            padding: 14px 28px;
+            font-size: 18px;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 8px;
+            box-shadow: 0 4px 0 #990033;
+            transition: transform 0.1s, background 0.1s;
+            margin: 10px 0;
+        }
+
+        .btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #990033;
+        }
+
+        .btn-secondary {
+            background: #3366ff;
+            border-color: #99bbff;
+            box-shadow: 0 4px 0 #003399;
+        }
+        .btn-secondary:active {
+            box-shadow: 0 0 0 #003399;
+        }
+
+        /* リザルト画面のスコア表示 */
+        .result-card {
+            background: #1c1c24;
+            border: 3px solid #555;
+            padding: 20px;
+            border-radius: 12px;
+            width: 100%;
+            max-width: 320px;
+            margin-bottom: 20px;
+        }
+
+        .result-row {
+            display: flex;
+            justify-content: space-between;
+            margin: 10px 0;
+            font-size: 14px;
+        }
+
+        .result-row span:last-child {
+            color: #00ffff;
+            font-weight: bold;
+        }
+
+        /* フキダシ演出 */
+        .bubble-msg {
+            position: absolute;
+            top: 25%;
+            left: 50%;
+            transform: translateX(-50%) scale(0);
+            background: #fff;
+            color: #000;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            z-index: 30;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+            white-space: nowrap;
+        }
+        .bubble-msg.show {
+            transform: translateX(-50%) scale(1);
+        }
+
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <!-- タイトル画面 -->
+    <div id="title-screen" class="screen">
+        <div style="font-size: 40px; margin-bottom: 10px;">📱✨</div>
+        <h1>バズれ！<br>16bitショート動画</h1>
+        <p>制限時間内に、面白そうな動画（ハートがつく動画）をいかに素早く見つけてスワイプしていけるかを競うインフルエンサー育成ゲーム！</p>
+        <div style="background: rgba(255,255,255,0.05); border: 1px solid #444; padding: 12px; border-radius: 8px; margin-bottom: 20px; font-size: 12px; text-align: left;">
+            🎯 <b>遊び方:</b><br>
+            ・動画は自動で再生されます。<br>
+            ・<b>面白い動画ならしばらくして♡ハートが付きます！</b><br>
+            ・ハズレ動画はハートがつきません。<br>
+            ・<b>上下スワイプ（またはキーボード上下 / ボタン）</b>で次の動画へ素早くスクロール！<br>
+            ・面白い動画を当てるとスコア＆残り時間UP！ハズレを即スワイプするとタイムロス軽減？
+        </div>
+        <button class="btn" onclick="startGame()">ゲームスタート</button>
+    </div>
+
+    <!-- ゲームオーバー/リザルト画面 -->
+    <div id="result-screen" class="screen hidden">
+        <div style="font-size: 40px; margin-bottom: 10px;" id="result-emoji">🏆</div>
+        <h1 id="result-title">タイムアップ！</h1>
+        <div class="result-card">
+            <div class="result-row"><span>スコア:</span><span id="res-score">0 pt</span></div>
+            <div class="result-row"><span>評価した動画数:</span><span id="res-total">0 本</span></div>
+            <div class="result-row"><span>アタリ動画発見:</span><span id="res-hit">0 本</span></div>
+            <div class="result-row"><span>見送り正解率:</span><span id="res-accuracy">0%</span></div>
+        </div>
+        <button class="btn" onclick="startGame()">もう一度プレイ</button>
+        <button class="btn btn-secondary" onclick="returnToTitle()">タイトルへ</button>
+    </div>
+
+    <!-- ゲームプレイ画面UI -->
+    <div class="header-ui">
+        <div class="stat-box">
+            <span class="stat-label">制限時間</span>
+            <span class="stat-value" id="timer-val">30.0s</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">スコア</span>
+            <span class="stat-value" id="score-val">0</span>
+        </div>
+        <div class="stat-box">
+            <span class="stat-label">連勝バズ</span>
+            <span class="stat-value" id="streak-val">0 🔥</span>
+        </div>
+    </div>
+
+    <!-- 動画プレビューエリア -->
+    <div id="video-viewport">
+        <canvas id="renderCanvas" width="240" height="380"></canvas>
+        
+        <!-- フキダシ -->
+        <div id="bubble" class="bubble-msg">神動画ｷﾀ━━━━(ﾟ∀ﾟ)━━━━!!</div>
+
+        <!-- 動画情報 -->
+        <div class="video-overlay">
+            <div class="channel-name" id="chan-text">@pixel_cat_ch</div>
+            <div class="video-title" id="title-text">うちの猫がキーボードの上で寝てたら変なコマンド打たれたwww</div>
+        </div>
+
+        <!-- 右側アクション -->
+        <div class="side-actions">
+            <div>
+                <div class="action-icon" id="like-icon">♡</div>
+                <div class="action-count" id="like-count">1.2万</div>
+            </div>
+            <div>
+                <div class="action-icon" style="font-size: 20px;">💬</div>
+                <div class="action-count" id="comment-count">428</div>
+            </div>
+            <div>
+                <div class="action-icon" style="font-size: 20px;">↗</div>
+                <div class="action-count">シェア</div>
+            </div>
+        </div>
+
+        <div class="swipe-hint">▲ 上下スワイプで次へ ▼</div>
+    </div>
+</div>
+
+<script>
+// --- ゲーム設定・データ ---
+const canvas = document.getElementById('renderCanvas');
+const ctx = canvas.getContext('2d');
+
+let gameState = 'title'; // 'title' | 'playing' | 'result'
+let score = 0;
+let timeLeft = 30.0;
+let streak = 0;
+let totalSwipes = 0;
+let hitCount = 0;
+let correctRejects = 0;
+let totalBoring = 0;
+
+let currentVideo = null;
+let animFrameId = null;
+let lastTime = 0;
+
+// 動画のテンプレートリスト
+const videoTemplates = [
+    // アタリ動画 (good: true)
+    {
+        chan: "@retro_gamer_j",
+        title: "裏技で隠しステージの全裸マリオ出してみた結果ｗｗｗ",
+        good: true,
+        type: "game_glitch",
+        likes: 45200, comments: 1520
+    },
+    {
+        chan: "@pixel_cooking",
+        title: "【限界調理】スライムを強火で5分炒めたらエライことになった",
+        good: true,
+        type: "cooking",
+        likes: 89100, comments: 3400
+    },
+    {
+        chan: "@nekomimi_ch",
+        title: "うちの猫がエジプト神みたいなポーズのまま固まったんだが",
+        good: true,
+        type: "cat",
+        likes: 124000, comments: 5120
+    },
+    {
+        chan: "@cyber_dj_k",
+        title: "ファミコンの起動音でパリピ向け重低音EDM作ってみた",
+        good: true,
+        type: "music",
+        likes: 67300, comments: 2100
+    },
+    {
+        chan: "@hero_yusha",
+        title: "魔王城の前で勇者がまさかの寝坊！全視聴者がツッこんだ瞬間",
+        good: true,
+        type: "rpg",
+        likes: 98000, comments: 4300
+    },
+    {
+        chan: "@ufo_hunter_z",
+        title: "田んぼの様子がおかしいのでドローン飛ばしたらガチだった",
+        good: true,
+        type: "ufo",
+        likes: 156000, comments: 8900
+    },
+
+    // ハズレ動画 (good: false)
+    {
+        chan: "@takuya_vlog_88",
+        title: "今日の朝食のトーストです。特に何も起きません。",
+        good: false,
+        type: "boring_toast",
+        likes: 12, comments: 1
+    },
+    {
+        chan: "@kusa_bot_99",
+        title: "草。ただそれだけ。草生える。",
+        good: false,
+        type: "boring_text",
+        likes: 45, comments: 3
+    },
+    {
+        chan: "@test_stream_01",
+        title: "マイクテスト中聞こえてますか？あーあーあー",
+        good: false,
+        type: "mic_test",
+        likes: 3, comments: 0
+    },
+    {
+        chan: "@nandemo_nai_ch",
+        title: "特に意味のない壁のシミを3分間じっと見つめる配信",
+        good: false,
+        type: "wall",
+        likes: 8, comments: 2
+    },
+    {
+        chan: "@jimi_oyaji",
+        title: "昨日買った消しゴムの匂いを嗅ぐだけのショート動画",
+        good: false,
+        type: "eraser",
+        likes: 19, comments: 4
+    }
+];
+
+// 現在再生中の動画の内部状態
+let videoState = {
+    timer: 0,       // 動画内経過時間
+    liked: false,   // ハートがついたか
+    likeTime: 0,    // ハートがつくまでの必要時間 (random 1.2s - 2.5s if good, else never)
+    evaluated: false,
+    animFrameCount: 0
+};
+
+function generateNewVideo() {
+    // ランダムにテンプレートを選択 (アタリ40%、ハズレ60%など調整可能)
+    const template = videoTemplates[Math.floor(Math.random() * videoTemplates.length)];
+    
+    // いいねがつくまでの時間（アタリなら1.0〜2.2秒後に出現）
+    let likeTime = 999;
+    if (template.good) {
+        likeTime = 0.8 + Math.random() * 1.4;
+        totalBoring++; // 実際はアタリなので総数カウント用
+    } else {
+        totalBoring++;
+    }
+
+    currentVideo = {
+        ...template,
+        timer: 0,
+        liked: false,
+        likeTime: likeTime,
+        evaluated: false,
+        elements: []
+    };
+
+    // UI更新
+    document.getElementById('chan-text').innerText = currentVideo.chan;
+    document.getElementById('title-text').innerText = currentVideo.title;
+    document.getElementById('like-count').innerText = (currentVideo.likes + Math.floor(Math.random()*100)).toLocaleString();
+    document.getElementById('comment-count').innerText = currentVideo.comments.toLocaleString();
+    
+    const likeIcon = document.getElementById('like-icon');
+    likeIcon.classList.remove('liked');
+    likeIcon.innerText = '♡';
+
+    videoState = {
+        timer: 0,
+        liked: false,
+        likeTime: likeTime,
+        evaluated: false
+    };
+}
+
+// --- ゲーム制御 ---
+function startGame() {
+    document.getElementById('title-screen').classList.add('hidden');
+    document.getElementById('result-screen').classList.add('hidden');
+    
+    score = 0;
+    timeLeft = 30.0;
+    streak = 0;
+    totalSwipes = 0;
+    hitCount = 0;
+    correctRejects = 0;
+    totalBoring = 0;
+
+    gameState = 'playing';
+    lastTime = performance.now();
+
+    generateNewVideo();
+
+    if (animFrameId) cancelAnimationFrame(animFrameId);
+    animFrameId = requestAnimationFrame(gameLoop);
+}
+
+function gameOver() {
+    gameState = 'result';
+    document.getElementById('result-screen').classList.remove('hidden');
+
+    document.getElementById('res-score').innerText = score + ' pt';
+    document.getElementById('res-total').innerText = totalSwipes + ' 本';
+    document.getElementById('res-hit').innerText = hitCount + ' 本';
+    
+    const accuracy = totalSwipes > 0 ? Math.round(((hitCount + correctRejects) / totalSwipes) * 100) : 0;
+    document.getElementById('res-accuracy').innerText = accuracy + '%';
+
+    // 評価コメント
+    let emoji = "🏆";
+    let titleMsg = "スーパーインフルエンサー！";
+    if (score < 500) {
+        emoji = "🥚";
+        titleMsg = "駆け出しビギナー";
+    } else if (score < 1500) {
+        emoji = "🔥";
+        titleMsg = "バズり気味クリエイター";
+    }
+    document.getElementById('result-emoji').innerText = emoji;
+    document.getElementById('result-title').innerText = titleMsg;
+}
+
+function returnToTitle() {
+    document.getElementById('result-screen').classList.add('hidden');
+    document.getElementById('title-screen').classList.remove('hidden');
+    gameState = 'title';
+}
+
+// --- スワイプ / スキップ処理 ---
+function nextVideo(swipeDirection = 'up') {
+    if (gameState !== 'playing') return;
+
+    totalSwipes++;
+
+    // 判定！
+    // もしアタリ動画（good === true）で、かつハートがついていたのにスワイプしてしまった場合＝「もったいない（早すぎた）」
+    // もしアタリ動画で、ハートがついてからスワイプした場合＝「ナイス発掘！（正解）」
+    // もしハズレ動画で、サクッとスワイプした場合＝「ナイス見送り！（正解）」
+    // もしハズレ動画で、無駄にずっと粘ってしまった場合＝「タイムロス」
+
+    const bubble = document.getElementById('bubble');
+
+    if (currentVideo.good) {
+        if (videoState.liked) {
+            // 大正解！アタリを発見してスムーズに次へ
+            hitCount++;
+            streak++;
+            const addScore = 200 + streak * 50;
+            score += addScore;
+            timeLeft += 2.0; // 時間ボーナス！
+            showBubble(`✨ 神動画発掘! +${addScore}pt (+2秒)`);
+        } else {
+            // まだハートが出てないうちにスワイプした（惜しい or 早すぎ）
+            streak = 0;
+            score += 20;
+            showBubble("🤔 まだ面白くなる前だった… (+20pt)");
+        }
+    } else {
+        // ハズレ動画
+        if (!videoState.liked) {
+            // ハズレをすぐ見送った！正解！
+            correctRejects++;
+            streak = 0;
+            score += 50;
+            showBubble("👍 クソ動画回避！ (+50pt)");
+        } else {
+            // ハズレなのに何故か粘ってしまった
+            streak = 0;
+            score -= 30;
+            showBubble("💦 クソ動画に時間使っちゃった… (-30pt)");
+        }
+    }
+
+    // スワイプ演出エフェクト（画面スクロールアニメーション風）
+    // 次の動画を生成
+    generateNewVideo();
+}
+
+function showBubble(text) {
+    const bubble = document.getElementById('bubble');
+    bubble.innerText = text;
+    bubble.classList.add('show');
+    setTimeout(() => {
+        bubble.classList.remove('show');
+    }, 800);
+}
+
+
+// --- 16bit風ドット絵グラフィックレンダリングエンジン ---
+function gameLoop(timestamp) {
+    if (gameState !== 'playing') return;
+
+    const dt = (timestamp - lastTime) / 1000;
+    lastTime = timestamp;
+
+    // タイマー減少
+    timeLeft -= dt;
+    if (timeLeft <= 0) {
+        timeLeft = 0;
+        updateUI();
+        gameOver();
+        return;
+    }
+
+    // 動画内時間進行
+    videoState.timer += dt;
+
+    // ハート出現判定
+    if (!videoState.liked && currentVideo.good && videoState.timer >= currentVideo.likeTime) {
+        videoState.liked = true;
+        const likeIcon = document.getElementById('like-icon');
+        likeIcon.classList.add('liked');
+        likeIcon.innerText = '♥';
+        // カウントも少し増やす
+        document.getElementById('like-count').innerText = (currentVideo.likes + 1200).toLocaleString();
+        showBubble("✨ ハートがついた！面白い動画だ！");
+    }
+
+    updateUI();
+    renderVideo(dt);
+
+    animFrameId = requestAnimationFrame(gameLoop);
+}
+
+function updateUI() {
+    document.getElementById('timer-val').innerText = timeLeft.toFixed(1) + 's';
+    document.getElementById('score-val').innerText = score;
+    document.getElementById('streak-val').innerText = streak + ' 🔥';
+}
+
+// 16bit風アニメーション描画メイン
+function renderVideo(dt) {
+    ctx.fillStyle = '#111118';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    const type = currentVideo.type;
+    const t = videoState.timer;
+
+    // 背景描画（共通）
+    drawRetroBackground(type, t);
+
+    // メイン被写体描画
+    ctx.save();
+    switch(type) {
+        case 'game_glitch':
+            drawGameGlitch(t);
+            break;
+        case 'cooking':
+            drawCooking(t);
+            break;
+        case 'cat':
+            drawCat(t);
+            break;
+        case 'music':
+            drawMusic(t);
+            break;
+        case 'rpg':
+            drawRpg(t);
+            break;
+        case 'ufo':
+            drawUfo(t);
+            break;
+        case 'boring_toast':
+        case 'boring_text':
+        case 'mic_test':
+        case 'wall':
+        case 'eraser':
+            drawBoringContent(type, t);
+            break;
+    }
+    ctx.restore();
+
+    // 16bit風スキャンライン・CRTエフェクト
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.15)';
+    for (let y = 0; y < canvas.height; y += 3) {
+        ctx.fillRect(0, y, canvas.width, 1);
+    }
+}
+
+// 背景装飾
+function drawRetroBackground(type, t) {
+    if (type === 'cooking') {
+        // キッチン風
+        ctx.fillStyle = '#443322';
+        ctx.fillRect(0, 220, canvas.width, canvas.height - 220);
+        ctx.fillStyle = '#665544';
+        ctx.fillRect(0, 200, canvas.width, 20);
+    } else if (type === 'cat') {
+        // 部屋
+        ctx.fillStyle = '#332244';
+        ctx.fillRect(0, 240, canvas.width, canvas.height - 240);
+        // 窓
+        ctx.fillStyle = '#111122';
+        ctx.fillRect(40, 50, 80, 100);
+    } else if (type === 'ufo') {
+        // 夜空
+        ctx.fillStyle = '#050515';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+        // 星
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(30, 40, 2, 2);
+        ctx.fillRect(180, 70, 3, 3);
+        ctx.fillRect(100, 120, 2, 2);
+    } else {
+        // デフォルトグラデ・ルーム
+        ctx.fillStyle = '#181824';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+}
+
+// 各動画ごとの16bitキャラ・アニメーション描画
+function drawGameGlitch(t) {
+    // レトロマリオ風キャラがバグる
+    const x = canvas.width / 2 + Math.sin(t * 8) * 20;
+    const y = 180 + Math.cos(t * 5) * 10;
+    
+    // キャラ本体
+    ctx.fillStyle = '#ff2233'; // 赤い服
+    ctx.fillRect(x - 16, y - 24, 32, 40);
+    ctx.fillStyle = '#ffcc99'; // 肌
+    ctx.fillRect(x - 12, y - 20, 24, 16);
+    ctx.fillStyle = '#3366cc'; // オーバーオール
+    ctx.fillRect(x - 16, y - 4, 32, 20);
+
+    // バグ演出（グリッチの矩形）
+    if (Math.floor(t * 10) % 3 === 0) {
+        ctx.fillStyle = '#00ffff';
+        ctx.fillRect(x - 30, y - 10, 60, 6);
+        ctx.fillStyle = '#ff00ff';
+        ctx.fillRect(x - 20, y + 10, 50, 4);
+    }
+}
+
+function drawCooking(t) {
+    // フライパン
+    const fx = canvas.width / 2;
+    const fy = 240;
+    ctx.fillStyle = '#444';
+    ctx.beginPath();
+    ctx.arc(fx, fy, 50, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#222';
+    ctx.beginPath();
+    ctx.arc(fx, fy, 40, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 持ち手
+    ctx.fillRect(fx + 35, fy - 8, 60, 16);
+
+    // 炒められているスライム（爆発エフェクト付き）
+    const bounce = Math.abs(Math.sin(t * 15)) * 15;
+    ctx.fillStyle = videoState.liked ? '#ff00ff' : '#33cc66';
+    ctx.beginPath();
+    ctx.arc(fx, fy - 10 - bounce, 25, 0, Math.PI * 2);
+    ctx.fill();
+
+    // 湯気・炎
+    if (videoState.liked) {
+        ctx.fillStyle = '#ffff00';
+        ctx.fillRect(fx - 20 + Math.sin(t*20)*10, fy - 70, 10, 20);
+        ctx.fillRect(fx + 10 + Math.cos(t*25)*10, fy - 85, 12, 25);
+    }
+}
+
+function drawCat(t) {
+    const cx = canvas.width / 2;
+    const cy = 200;
+
+    // クッション
+    ctx.fillStyle = '#cc3366';
+    ctx.fillRect(cx - 60, cy - 10, 120, 50);
+
+    // 猫の体（エジプト神ポーズ＝スフィンクス座り）
+    ctx.fillStyle = '#ffaa33';
+    ctx.fillRect(cx - 35, cy - 25, 70, 40);
+
+    // 頭（ツンと上に伸びる）
+    ctx.fillRect(cx - 20, cy - 60, 40, 40);
+    // 耳
+    ctx.beginPath();
+    ctx.moveTo(cx - 20, cy - 60);
+    ctx.lineTo(cx - 30, cy - 80);
+    ctx.lineTo(cx - 10, cy - 60);
+    ctx.fill();
+
+    ctx.beginPath();
+    ctx.moveTo(cx + 20, cy - 60);
+    ctx.lineTo(cx + 30, cy - 80);
+    ctx.lineTo(cx + 10, cy - 60);
+    ctx.fill();
+
+    // 目（キリッとした目）
+    ctx.fillStyle = '#000';
+    ctx.fillRect(cx - 12, cy - 45, 6, 8);
+    ctx.fillRect(cx + 6, cy - 45, 6, 8);
+}
+
+function drawMusic(t) {
+    const cx = canvas.width / 2;
+    const cy = 190;
+
+    // ターンテーブル / DJ機材
+    ctx.fillStyle = '#222';
+    ctx.fillRect(cx - 80, cy - 50, 160, 100);
+    ctx.fillStyle = '#111';
+    ctx.beginPath();
+    ctx.arc(cx - 40, cy, 35, 0, Math.PI*2);
+    ctx.arc(cx + 40, cy, 35, 0, Math.PI*2);
+    ctx.fill();
+
+    // 音符が跳ねる
+    ctx.fillStyle = '#00ffff';
+    const noteY = cy - 60 - ((t * 80) % 80);
+    const noteX = cx + Math.sin(t * 10) * 40;
+    ctx.font = "20px monospace";
+    ctx.fillText("♫", noteX, noteY);
+    ctx.fillText("♪", noteX - 30, noteY + 20);
+}
+
+function drawRpg(t) {
+    const cx = canvas.width / 2;
+    const cy = 180;
+
+    // 魔王城背景
+    ctx.fillStyle = '#442244';
+    ctx.fillRect(cx - 70, cy - 60, 140, 120);
+    ctx.fillStyle = '#663366';
+    ctx.fillRect(cx - 50, cy - 90, 100, 40);
+
+    // 勇者が寝ている（Zzz）
+    ctx.fillStyle = '#3366cc';
+    ctx.fillRect(cx - 30, cy + 10, 60, 30);
+    ctx.fillStyle = '#ffcc99';
+    ctx.fillRect(cx - 10, cy - 5, 25, 20); // 頭
+
+    // Zzz文字
+    ctx.fillStyle = '#ffffff';
+    ctx.font = "bold 16px monospace";
+    const zOffset = (t * 20) % 40;
+    ctx.fillText("Z", cx + 20, cy - 10 - zOffset);
+    ctx.fillText("z", cx + 32, cy - 25 - zOffset);
+}
+
+function drawUfo(t) {
+    const cx = canvas.width / 2;
+    const cy = 160;
+
+    // UFO本体
+    ctx.fillStyle = '#aaaaaa';
+    ctx.beginPath();
+    ctx.ellipse(cx, cy, 50, 18, 0, 0, Math.PI*2);
+    ctx.fill();
+
+    ctx.fillStyle = '#00ffff';
+    ctx.beginPath();
+    ctx.arc(cx, cy - 8, 20, 0, Math.PI, true);
+    ctx.fill();
+
+    // 光の柱
+    ctx.fillStyle = 'rgba(0, 255, 255, 0.25)';
+    ctx.beginPath();
+    ctx.moveTo(cx - 35, cy + 10);
+    ctx.lineTo(cx + 35, cy + 10);
+    ctx.lineTo(cx + 70, cy + 140);
+    ctx.lineTo(cx - 70, cy + 140);
+    ctx.closePath();
+    ctx.fill();
+}
+
+function drawBoringContent(type, t) {
+    // 退屈なコンテンツ（動きがほとんどない、またはシュールに地味）
+    const cx = canvas.width / 2;
+    const cy = 190;
+
+    if (type === 'boring_toast') {
+        // 茶色い四角（トースト）
+        ctx.fillStyle = '#cc9966';
+        ctx.fillRect(cx - 30, cy - 30, 60, 60);
+        ctx.fillStyle = '#885533';
+        ctx.fillRect(cx - 20, cy - 20, 40, 40);
+    } else if (type === 'wall' || type === 'boring_text') {
+        // 単調な壁・文字
+        ctx.fillStyle = '#333344';
+        ctx.fillRect(cx - 40, cy - 40, 80, 80);
+        ctx.fillStyle = '#555';
+        ctx.fillRect(cx - 20, cy - 20, 10, 10);
+    } else if (type === 'eraser') {
+        // 消しゴム
+        ctx.fillStyle = '#ff66aa';
+        ctx.fillRect(cx - 25, cy - 15, 50, 30);
+    } else {
+        // マイクテスト等
+        ctx.fillStyle = '#444';
+        ctx.fillRect(cx - 15, cy - 30, 30, 50);
+        ctx.fillStyle = '#666';
+        ctx.fillRect(cx - 5, cy + 20, 10, 30);
+    }
+}
+
+
+// --- 入力ハンドリング (スマホ・PC両対応: スワイプ＆キーボード) ---
+let touchStartY = 0;
+let touchStartX = 0;
+
+const viewport = document.getElementById('video-viewport');
+
+viewport.addEventListener('touchstart', (e) => {
+    if (gameState !== 'playing') return;
+    touchStartY = e.touches[0].clientY;
+    touchStartX = e.touches[0].clientX;
+    e.preventDefault();
+}, { passive: false });
+
+viewport.addEventListener('touchend', (e) => {
+    if (gameState !== 'playing') return;
+    const touchEndY = e.changedTouches[0].clientY;
+    const touchEndX = e.changedTouches[0].clientX;
+
+    const diffY = touchEndY - touchStartY;
+    const diffX = touchEndX - touchStartX;
+
+    // 縦方向のフリックを検知
+    if (Math.abs(diffY) > Math.abs(diffX) && Math.abs(diffY) > 30) {
+        if (diffY < 0) {
+            nextVideo('up');    // 上スワイプ（次へ）
+        } else {
+            nextVideo('down');  // 下スワイプ（次へ）
+        }
+    }
+    e.preventDefault();
+}, { passive: false });
+
+// マウスドラッグ / スクロールでもスワイプ判定できるようにする
+let isMouseDown = false;
+let mouseYStart = 0;
+
+viewport.addEventListener('mousedown', (e) => {
+    if (gameState !== 'playing') return;
+    isMouseDown = true;
+    mouseYStart = e.clientY;
+});
+
+window.addEventListener('mouseup', (e) => {
+    if (!isMouseDown || gameState !== 'playing') return;
+    isMouseDown = false;
+    const diffY = e.clientY - mouseYStart;
+    if (Math.abs(diffY) > 40) {
+        nextVideo(diffY < 0 ? 'up' : 'down');
+    }
+});
+
+// キーボード操作 (上下キーで次へ)
+window.addEventListener('keydown', (e) => {
+    if (gameState !== 'playing') return;
+    if (e.key === 'ArrowUp' || e.key === 'ArrowDown' || e.key === ' ' || e.key === 'Enter') {
+        nextVideo('up');
+        e.preventDefault();
+    }
+});
+
+</script>
+</body>
+</html>

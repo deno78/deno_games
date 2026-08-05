@@ -33,3 +33,4 @@ Deno/Web games collection.
 - [20. ネオン・エアホッケー (Neon Air Hockey)](./20/index.html)
 - [21. スパロボ風シミュレーションゲーム (Super Robot Wars Style Simulation)](./21/index.html)
 - [22. スマホ横持ち2人用ピンポン (Dual Ping Pong Timing Battle)](./22/index.html)
+- [23. 16bitショート動画スワイプ評価バトル (Shorts Swipe Master)](./23/index.html)
