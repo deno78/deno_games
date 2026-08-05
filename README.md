@@ -32,3 +32,4 @@ Deno/Web games collection.
 - [19. 黒って256種類あるんやで (Black Color Finding Game)](./19/index.html)
 - [20. ネオン・エアホッケー (Neon Air Hockey)](./20/index.html)
 - [21. スパロボ風シミュレーションゲーム (Super Robot Wars Style Simulation)](./21/index.html)
+- [22. スマホ横持ち2人用ピンポン (Dual Ping Pong Timing Battle)](./22/index.html)

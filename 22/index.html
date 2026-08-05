@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>スマホ横持ち2人用ピンポン (Dual Ping Pong)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #111;
+            color: #fff;
+            font-family: sans-serif;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+        #game-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            max-width: 900px;
+            max-height: 500px;
+            background: linear-gradient(135deg, #0f2027, #203a43, #2c5364);
+            border: 4px solid #444;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            box-shadow: 0 0 20px rgba(0,255,255,0.2);
+        }
+        /* プレイヤーエリア (上下反転 or 左右分割。今回はスマホを横持ちして机に置き、画面の左右に分かれて対戦する形、または画面の上部下部に分かれる形。スマホ横持ちなら画面の左と右にプレイヤーが分かれるのが自然、あるいは画面の上下に分かれる形でも可。ユーザー指定「スマホを横持ちして2人で遊べるピンポンゲーム。ボールが往復するのでタイミングよくボタンを押すだけ」) */
+        /* 横持ちの場合、スマホの上下がプレイヤー1とプレイヤー2になる（縦長画面を横にするため、物理的には上側と下側、あるいは左側と右側になる。スマホの画面を横にしたとき、上下にプレイヤーのボタンを配置するのが一番押しやすい！） */
+        
+        .player-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            padding: 20px;
+            transition: background 0.2s;
+        }
+        #player1-panel {
+            background: rgba(255, 75, 75, 0.1);
+            border-right: 2px dashed rgba(255,255,255,0.2);
+        }
+        #player2-panel {
+            background: rgba(75, 125, 255, 0.1);
+        }
+
+        .player-label {
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            letter-spacing: 1px;
+        }
+        #player1-panel .player-label { color: #ff6b6b; transform: rotate(180deg); }
+        #player2-panel .player-label { color: #4dabf7; }
+
+        .score {
+            font-size: 3rem;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        #player1-panel .score { transform: rotate(180deg); color: #ff6b6b; }
+        #player2-panel .score { color: #4dabf7; }
+
+        .hit-button {
+            width: 140px;
+            height: 140px;
+            border-radius: 50%;
+            border: none;
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #fff;
+            cursor: pointer;
+            box-shadow: 0 8px 0 rgba(0,0,0,0.4), 0 0 20px rgba(255,255,255,0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            outline: none;
+            transition: transform 0.05s, box-shadow 0.05s;
+        }
+        .hit-button:active, .hit-button.pressed {
+            transform: translateY(6px);
+            box-shadow: 0 2px 0 rgba(0,0,0,0.4), 0 0 10px rgba(255,255,255,0.4);
+        }
+        #p1-btn {
+            background: linear-gradient(135deg, #ff416c, #ff4b2b);
+        }
+        #p2-btn {
+            background: linear-gradient(135deg, #1d976c, #93edc7);
+        }
+
+        /* 中央のピンポンコート（ビジュアル表示用キャンバスまたはエリア） */
+        #court-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        canvas {
+            background: transparent;
+        }
+
+        /* オーバレイ画面 (スタート・ゲームオーバー) */
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: #ffd700;
+            text-shadow: 0 0 10px rgba(255,215,0,0.5);
+        }
+        p {
+            font-size: 1rem;
+            margin-bottom: 25px;
+            color: #ccc;
+            line-height: 1.5;
+        }
+        .primary-btn {
+            background: linear-gradient(135deg, #f7b733, #fc4a1a);
+            border: none;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #fff;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(252,74,26,0.4);
+        }
+        .primary-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* エフェクト・メッセージ */
+        .message-popup {
+            position: absolute;
+            font-size: 1.8rem;
+            font-weight: bold;
+            pointer-events: none;
+            animation: popUp 0.6s ease-out forwards;
+            z-index: 5;
+            text-shadow: 0 0 10px rgba(0,0,0,0.8);
+        }
+        @keyframes popUp {
+            0% { transform: scale(0.5) translateY(0); opacity: 0; }
+            30% { transform: scale(1.2) translateY(-20px); opacity: 1; }
+            100% { transform: scale(1) translateY(-50px); opacity: 0; }
+        }
+
+        /* スマホ縦持ち注意喚起バナー */
+        #rotate-notice {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #111;
+            z-index: 100;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+        }
+        #rotate-notice svg {
+            width: 80px;
+            height: 80px;
+            fill: #ffd700;
+            margin-bottom: 20px;
+            animation: rotateAnim 2s infinite ease-in-out;
+        }
+        @keyframes rotateAnim {
+            0%, 100% { transform: rotate(0deg); }
+            50% { transform: rotate(90deg); }
+        }
+
+        @media screen and (orientation: portrait) {
+            #rotate-notice {
+                display: flex;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="rotate-notice">
+        <svg viewBox="0 0 24 24"><path d="M16.48 2.52c3.27 1.55 5.61 4.72 5.97 8.48h2.02C23.9 5.86 20.31 2 15.9 2h-1.42v2.02h1.42c1.9 0 3.56.97 4.58 2.52zM7.52 21.48C4.25 19.93 1.91 16.76 1.55 13H-.47C-.1 18.14 3.5 22 7.9 22h1.42v-2.02H7.52c-1.9 0-3.56-.97-4.58-2.52zM18 7H6c-1.1 0-2 .9-2 2v6c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V9c0-1.1-.9-2-2-2zm0 8H6V9h12v6z"/></svg>
+        <h1>スマホを横向きにしてください</h1>
+        <p>このゲームは画面を横向きにして2人で向かい合って遊ぶピンポンゲームです。</p>
+    </div>
+
+    <div id="game-container">
+        <!-- プレイヤー1（画面上側） -->
+        <div class="player-panel" id="player1-panel">
+            <div class="player-label">PLAYER 1 (TOP)</div>
+            <div class="score" id="p1-score">0</div>
+            <button class="hit-button" id="p1-btn">打つ！</button>
+        </div>
+
+        <!-- 中央コート・ボール描画用 -->
+        <div id="court-container">
+            <canvas id="courtCanvas"></canvas>
+        </div>
+
+        <!-- プレイヤー2（画面下側） -->
+        <div class="player-panel" id="player2-panel">
+            <div class="player-label">PLAYER 2 (BOTTOM)</div>
+            <div class="score" id="p2-score">0</div>
+            <button class="hit-button" id="p2-btn">打つ！</button>
+        </div>
+
+        <!-- オーバレイ -->
+        <div id="overlay">
+            <h1 id="overlay-title">卓球タイミングバトル</h1>
+            <p id="overlay-desc">スマホを横に持ち、2人で上下に分かれて構えてください。<br>ボールが自分の陣地に近づいたタイミングで「打つ！」ボタンを押して打ち返せ！<br>先取 5 点で勝利！</p>
+            <button class="primary-btn" id="start-btn">ゲームスタート</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('courtCanvas');
+        const ctx = canvas.getContext('2d');
+        const container = document.getElementById('game-container');
+
+        const p1ScoreEl = document.getElementById('p1-score');
+        const p2ScoreEl = document.getElementById('p2-score');
+        const p1Btn = document.getElementById('p1-btn');
+        const p2Btn = document.getElementById('p2-btn');
+        const overlay = document.getElementById('overlay');
+        const overlayTitle = document.getElementById('overlay-title');
+        const overlayDesc = document.getElementById('overlay-desc');
+        const startBtn = document.getElementById('start-btn');
+
+        let gameState = 'START'; // START, PLAYING, ROUND_OVER, GAME_OVER
+        let score1 = 0;
+        let score2 = 0;
+        const WINNING_SCORE = 5;
+
+        // ボールとコートの状態
+        let ball = {
+            x: 0,
+            y: 0,
+            vy: 0, // 上下が y軸方向の移動
+            speed: 5,
+            radius: 12,
+            active: false
+        };
+
+        let turn = 1; // 1: P1へ向かっている, 2: P2へ向かっている
+        let hitWindow = false; // ヒット可能なタイミングか
+        let rallyCount = 0;
+
+        function resizeCanvas() {
+            canvas.width = container.clientWidth;
+            canvas.height = container.clientHeight;
+            if (gameState === 'START' || gameState === 'GAME_OVER') {
+                resetBallPositions();
+            }
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        function resetBallPositions() {
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+        }
+
+        function startRound(servingPlayer) {
+            turn = servingPlayer; // 1ならP1へ向かう（上へ）、2ならP2へ向かう（下へ）
+            ball.x = canvas.width / 2;
+            ball.y = canvas.height / 2;
+            ball.speed = 5 + Math.min(rallyCount * 0.3, 6);
+            ball.vy = (turn === 1 ? -1 : 1) * ball.speed;
+            ball.active = true;
+            hitWindow = false;
+        }
+
+        function showPopup(text, color, x, y) {
+            const popup = document.createElement('div');
+            popup.className = 'message-popup';
+            popup.innerText = text;
+            popup.style.color = color;
+            popup.style.left = (x - 50) + 'px';
+            popup.style.top = (y - 20) + 'px';
+            container.appendChild(popup);
+            setTimeout(() => popup.remove(), 600);
+        }
+
+        // 判定ライン
+        // 上側プレイヤー(P1): yが 0 ～ 100 付近
+        // 下側プレイヤー(P2): yが canvas.height - 100 ～ canvas.height 付近
+        function update() {
+            if (!ball.active) return;
+
+            ball.y += ball.vy;
+
+            // ターゲット判定エリア
+            const topBoundary = 90;
+            const bottomBoundary = canvas.height - 90;
+
+            if (turn === 1 && ball.y <= topBoundary) {
+                // P1の陣地に到達。ヒット可能ゾーンに入る
+                hitWindow = true;
+                if (ball.y <= 40) {
+                    // 打ち逃し（アウト・ミス）
+                    missShot(1);
+                }
+            } else if (turn === 2 && ball.y >= bottomBoundary) {
+                // P2の陣地に到達。ヒット可能ゾーンに入る
+                hitWindow = true;
+                if (ball.y >= canvas.height - 40) {
+                    // 打ち逃し（アウト・ミス）
+                    missShot(2);
+                }
+            }
+        }
+
+        function hitBall(player) {
+            if (!ball.active) return;
+
+            const topBoundary = 130;
+            const bottomBoundary = canvas.height - 130;
+
+            if (player === 1 && turn === 1) {
+                if (ball.y <= topBoundary && ball.y >= 30) {
+                    // 成功
+                    const accuracy = Math.abs(ball.y - 80); // 80がスイートスポット
+                    let rating = "GOOD!";
+                    let color = "#4dabf7";
+                    if (accuracy < 20) {
+                        rating = "PERFECT!!";
+                        color = "#ffd700";
+                        ball.speed += 0.5;
+                    }
+                    showPopup(rating, color, ball.x, ball.y);
+                    
+                    turn = 2;
+                    ball.vy = ball.speed;
+                    rallyCount++;
+                    hitWindow = false;
+                    flashPanel(1);
+                }
+            } else if (player === 2 && turn === 2) {
+                if (ball.y >= bottomBoundary && ball.y <= canvas.height - 30) {
+                    // 成功
+                    const accuracy = Math.abs(ball.y - (canvas.height - 80));
+                    let rating = "GOOD!";
+                    let color = "#ff6b6b";
+                    if (accuracy < 20) {
+                        rating = "PERFECT!!";
+                        color = "#ffd700";
+                        ball.speed += 0.5;
+                    }
+                    showPopup(rating, color, ball.x, ball.y);
+
+                    turn = 1;
+                    ball.vy = -ball.speed;
+                    rallyCount++;
+                    hitWindow = false;
+                    flashPanel(2);
+                }
+            } else {
+                // 早打ちペナルティまたは空振り
+                showPopup("MISS!", "#ff416c", ball.x, ball.y);
+                missShot(player);
+            }
+        }
+
+        function missShot(playerWhoMissed) {
+            ball.active = false;
+            // ミスしたプレイヤーとは逆のプレイヤーに得点
+            if (playerWhoMissed === 1) {
+                score2++;
+                showPopup("P2 GET POINT!", "#4dabf7", canvas.width / 2, 100);
+            } else {
+                score1++;
+                showPopup("P1 GET POINT!", "#ff6b6b", canvas.width / 2, canvas.height - 100);
+            }
+
+            p1ScoreEl.innerText = score1;
+            p2ScoreEl.innerText = score2;
+
+            checkGameEnd();
+        }
+
+        function checkGameEnd() {
+            if (score1 >= WINNING_SCORE || score2 >= WINNING_SCORE) {
+                gameState = 'GAME_OVER';
+                overlayTitle.innerText = score1 >= WINNING_SCORE ? "PLAYER 1 WIN!" : "PLAYER 2 WIN!";
+                overlayDesc.innerText = `最終スコア P1: ${score1} - P2: ${score2}`;
+                startBtn.innerText = "もう一度遊ぶ";
+                overlay.style.display = 'flex';
+            } else {
+                setTimeout(() => {
+                    rallyCount = 0;
+                    // 得点した側が次のサーブ（あるいは負けた側）
+                    const nextServer = (score1 + score2) % 2 === 0 ? 1 : 2;
+                    startRound(nextServer);
+                }, 1000);
+            }
+        }
+
+        function flashPanel(player) {
+            const panel = player === 1 ? p1Btn : p2Btn;
+            panel.classList.add('pressed');
+            setTimeout(() => panel.classList.remove('pressed'), 100);
+        }
+
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // ネットの描画（中央の点線）
+            ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+            ctx.lineWidth = 4;
+            ctx.setLineDash([10, 10]);
+            ctx.beginPath();
+            ctx.moveTo(0, canvas.height / 2);
+            ctx.lineTo(canvas.width, canvas.height / 2);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // ヒットゾーンの表示（うっすらガイド）
+            ctx.fillStyle = "rgba(255, 255, 255, 0.05)";
+            ctx.fillRect(0, 30, canvas.width, 90); // P1ゾーン
+            ctx.fillRect(0, canvas.height - 120, canvas.width, 90); // P2ゾーン
+
+            // ボールの影と本体
+            if (ball.active) {
+                ctx.shadowColor = turn === 1 ? "#ff6b6b" : "#4dabf7";
+                ctx.shadowBlur = 15;
+                ctx.fillStyle = "#fff";
+                ctx.beginPath();
+                ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.shadowBlur = 0; // リセット
+            }
+        }
+
+        function loop() {
+            if (gameState === 'PLAYING') {
+                update();
+                draw();
+            }
+            requestAnimationFrame(loop);
+        }
+
+        // ボタンイベント
+        p1Btn.addEventListener('click', () => hitBall(1));
+        p1Btn.addEventListener('touchstart', (e) => { e.preventDefault(); hitBall(1); });
+
+        p2Btn.addEventListener('click', () => hitBall(2));
+        p2Btn.addEventListener('touchstart', (e) => { e.preventDefault(); hitBall(2); });
+
+        startBtn.addEventListener('click', () => {
+            score1 = 0;
+            score2 = 0;
+            p1ScoreEl.innerText = '0';
+            p2ScoreEl.innerText = '0';
+            overlay.style.display = 'none';
+            gameState = 'PLAYING';
+            rallyCount = 0;
+            startRound(1);
+        });
+
+        // キーボード操作対応（PCテスト用: P1 = Wキー, P2 = 上矢印キー）
+        window.addEventListener('keydown', (e) => {
+            if (gameState !== 'PLAYING') return;
+            if (e.code === 'KeyW' || e.code === 'KeyS' || e.code === 'Space') {
+                hitBall(1);
+            }
+            if (e.code === 'ArrowUp' || e.code === 'ArrowDown' || e.code === 'Enter') {
+                hitBall(2);
+            }
+        });
+
+        requestAnimationFrame(loop);
+    </script>
+</body>
+</html>
