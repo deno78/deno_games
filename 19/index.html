@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>黒って256種類あるんやで - Black Color Matching Game</title>
+  <style>
+    :root {
+      --bg-color: #0d0d0f;
+      --card-bg: #16161a;
+      --text-color: #e4e4e7;
+      --accent-color: #ef4444;
+      --accent-hover: #dc2626;
+      --success-color: #22c55e;
+      --panel-border: #27272a;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+    }
+
+    body {
+      font-family: 'Helvetica Neue', Arial, 'Hiragino Kaku Gothic ProN', 'Hiragino Sans', Meiryo, sans-serif;
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 800px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 20px;
+    }
+
+    header {
+      text-align: center;
+    }
+
+    h1 {
+      font-size: 2.2rem;
+      font-weight: 800;
+      letter-spacing: -0.5px;
+      background: linear-gradient(135deg, #ffffff 0%, #71717a 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      margin-bottom: 6px;
+    }
+
+    p.subtitle {
+      color: #a1a1aa;
+      font-size: 0.95rem;
+    }
+
+    .status-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      width: 100%;
+      background-color: var(--card-bg);
+      padding: 14px 24px;
+      border-radius: 12px;
+      border: 1px solid var(--panel-border);
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.4);
+    }
+
+    .status-item {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
+    .status-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      color: #a1a1aa;
+      letter-spacing: 0.5px;
+      margin-bottom: 2px;
+    }
+
+    .status-value {
+      font-size: 1.5rem;
+      font-weight: 700;
+      font-family: 'Courier New', Courier, monospace;
+    }
+
+    .life-container {
+      display: flex;
+      gap: 6px;
+      font-size: 1.4rem;
+    }
+
+    .game-area {
+      display: flex;
+      gap: 40px;
+      justify-content: center;
+      align-items: center;
+      width: 100%;
+      flex-wrap: wrap;
+    }
+
+    .target-section {
+      display: flex;
+      align-items: center;
+      gap: 24px;
+    }
+
+    .target-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .target-title {
+      font-size: 0.95rem;
+      color: #38bdf8;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+    }
+
+    .target-panel-box {
+      width: 150px;
+      height: 150px;
+      background-color: #09090b;
+      padding: 10px;
+      border-radius: 16px;
+      border: 2px solid #38bdf8;
+      box-shadow: 0 10px 20px -3px rgba(56, 189, 248, 0.15);
+    }
+
+    .target-panel {
+      width: 100%;
+      height: 100%;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .grid-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .grid-title {
+      font-size: 0.95rem;
+      color: #a1a1aa;
+      font-weight: 600;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-template-rows: repeat(3, 1fr);
+      gap: 10px;
+      width: 300px;
+      height: 300px;
+      background-color: #09090b;
+      padding: 10px;
+      border-radius: 16px;
+      border: 1px solid var(--panel-border);
+      box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+    }
+
+    .panel {
+      border-radius: 10px;
+      cursor: pointer;
+      position: relative;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      overflow: hidden;
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    .grid .panel:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.15);
+      z-index: 2;
+    }
+
+    .grid .panel:active {
+      transform: scale(0.95);
+    }
+
+    .panel.disabled {
+      cursor: default;
+      pointer-events: none;
+    }
+
+    .color-code {
+      font-family: 'Courier New', Courier, monospace;
+      font-weight: 700;
+      font-size: 0.85rem;
+      color: #f4f4f5;
+      background: rgba(0, 0, 0, 0.82);
+      padding: 4px 6px;
+      border-radius: 6px;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.5);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      letter-spacing: 0.5px;
+    }
+
+    .show-codes .color-code {
+      opacity: 1;
+    }
+
+    .panel.correct-target {
+      outline: 4px solid var(--success-color);
+      outline-offset: -4px;
+    }
+
+    .panel.wrong-clicked {
+      outline: 4px solid var(--accent-color);
+      outline-offset: -4px;
+    }
+
+    .controls {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, #27272a 0%, #18181b 100%);
+      color: #f4f4f5;
+      font-size: 1.1rem;
+      font-weight: 700;
+      padding: 14px 40px;
+      border: 1px solid #3f3f46;
+      border-radius: 50px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.4);
+      transition: all 0.2s ease;
+    }
+
+    .btn:hover {
+      background: linear-gradient(135deg, #3f3f46 0%, #27272a 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6);
+      border-color: #71717a;
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .message {
+      font-size: 1.2rem;
+      font-weight: 700;
+      min-height: 1.8rem;
+      text-align: center;
+    }
+
+    .message.win {
+      color: var(--success-color);
+    }
+
+    .message.lose {
+      color: var(--accent-color);
+    }
+
+    @media (max-width: 600px) {
+      .game-area {
+        flex-direction: column;
+        gap: 20px;
+      }
+      .target-panel-box {
+        width: 130px;
+        height: 130px;
+      }
+      .grid {
+        width: 280px;
+        height: 280px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <div class="container">
+    <header>
+      <h1>黒って256種類あるんやで</h1>
+      <p class="subtitle">お題の「黒」と同じ色のパネルを 3x3 の選択肢から見つけ出せ！</p>
+    </header>
+
+    <div class="status-bar">
+      <div class="status-item">
+        <span class="status-label">残り時間</span>
+        <span class="status-value" id="timer">10.0s</span>
+      </div>
+      <div class="status-item">
+        <span class="status-label">ライフ</span>
+        <div class="life-container" id="lives">❤️❤️❤️</div>
+      </div>
+    </div>
+
+    <div class="message" id="message">「スタート」ボタンを押してゲームを開始してください</div>
+
+    <div class="game-area">
+      <div class="target-section">
+        <div class="target-container">
+          <span class="target-title">🎯 お題の「黒」</span>
+          <div class="target-panel-box" id="target-box">
+            <div class="target-panel panel disabled" id="target-panel">
+              <span class="color-code" id="target-code"></span>
+            </div>
+          </div>
+        </div>
+
+        <div class="controls">
+          <button class="btn" id="start-btn">ゲームスタート</button>
+        </div>
+      </div>
+
+      <div class="grid-container">
+        <span class="grid-title">3x3 選択肢</span>
+        <div class="grid" id="choice-grid"></div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const targetBox = document.getElementById('target-box');
+    const targetPanel = document.getElementById('target-panel');
+    const targetCode = document.getElementById('target-code');
+    const choiceGrid = document.getElementById('choice-grid');
+    const timerEl = document.getElementById('timer');
+    const livesEl = document.getElementById('lives');
+    const messageEl = document.getElementById('message');
+    const startBtn = document.getElementById('start-btn');
+
+    let gameActive = false;
+    let timerInterval = null;
+    let timeLeft = 10.0;
+    let mistakes = 0;
+    const MAX_MISTAKES = 3;
+
+    let targetIndex = -1;
+    let targetColorHex = '';
+
+    function numToHex(n) {
+      return n.toString(16).padStart(2, '0');
+    }
+
+    function createRgbColor(r, g, b) {
+      return `#${numToHex(r)}${numToHex(g)}${numToHex(b)}`;
+    }
+
+    function initGrids() {
+      choiceGrid.innerHTML = '';
+      choiceGrid.classList.remove('show-codes');
+      targetBox.classList.remove('show-codes');
+
+      for (let i = 0; i < 9; i++) {
+        const p = document.createElement('div');
+        p.className = 'panel disabled';
+        p.dataset.index = i;
+        p.addEventListener('click', handlePanelClick);
+
+        const code = document.createElement('span');
+        code.className = 'color-code';
+        p.appendChild(code);
+        choiceGrid.appendChild(p);
+      }
+    }
+
+    function updateLivesDisplay() {
+      const remaining = MAX_MISTAKES - mistakes;
+      let hearts = '';
+      for (let i = 0; i < MAX_MISTAKES; i++) {
+        hearts += i < remaining ? '❤️' : '🖤';
+      }
+      livesEl.textContent = hearts;
+    }
+
+    function startGame() {
+      // Range for each RGB component: 0 to 68 (deep blacks)
+      const MIN_VAL = 0;
+      const MAX_VAL = 68;
+      const NUM_CHOICES = 9;
+
+      // Generate 9 distinct RGB colors
+      const choiceColors = [];
+      const usedHexes = new Set();
+
+      while (choiceColors.length < NUM_CHOICES) {
+        // Base value for darkness control
+        const base = Math.floor(Math.random() * (MAX_VAL - MIN_VAL + 1)) + MIN_VAL;
+        
+        // Random slight variation for R, G, B components (-10 to +10 from base, clamped to 0-68)
+        const r = Math.min(MAX_VAL, Math.max(MIN_VAL, base + (Math.floor(Math.random() * 21) - 10)));
+        const g = Math.min(MAX_VAL, Math.max(MIN_VAL, base + (Math.floor(Math.random() * 21) - 10)));
+        const b = Math.min(MAX_VAL, Math.max(MIN_VAL, base + (Math.floor(Math.random() * 21) - 10)));
+
+        const hex = createRgbColor(r, g, b);
+        if (!usedHexes.has(hex)) {
+          usedHexes.add(hex);
+          choiceColors.push(hex);
+        }
+      }
+
+      // Randomly choose 1 of the 9 choices to be the target
+      targetIndex = Math.floor(Math.random() * NUM_CHOICES);
+      targetColorHex = choiceColors[targetIndex];
+
+      // Set target panel color
+      targetPanel.style.backgroundColor = targetColorHex;
+      targetCode.textContent = targetColorHex;
+
+      // Render choice panels
+      const panels = choiceGrid.querySelectorAll('.panel');
+      panels.forEach((panel, idx) => {
+        panel.className = 'panel';
+        panel.style.pointerEvents = 'auto';
+        const color = choiceColors[idx];
+        panel.style.backgroundColor = color;
+        panel.querySelector('.color-code').textContent = color;
+      });
+
+      choiceGrid.classList.remove('show-codes');
+      targetBox.classList.remove('show-codes');
+
+      mistakes = 0;
+      updateLivesDisplay();
+
+      timeLeft = 10.0;
+      timerEl.textContent = timeLeft.toFixed(1) + 's';
+
+      gameActive = true;
+      messageEl.textContent = 'お題と同じ色のパネルを選んでタップ！';
+      messageEl.className = 'message';
+      startBtn.style.display = 'none';
+
+      clearInterval(timerInterval);
+      const startTime = Date.now();
+      timerInterval = setInterval(() => {
+        const elapsed = (Date.now() - startTime) / 1000;
+        timeLeft = Math.max(0, 10.0 - elapsed);
+        timerEl.textContent = timeLeft.toFixed(1) + 's';
+
+        if (timeLeft <= 0) {
+          endGame(false, 'タイムアップ！時間切れです。');
+        }
+      }, 50);
+    }
+
+    function handlePanelClick(e) {
+      if (!gameActive) return;
+
+      const panel = e.currentTarget;
+      const idx = parseInt(panel.dataset.index, 10);
+
+      if (idx === targetIndex) {
+        endGame(true, 'クリア！見事お題の「黒」を当てました！');
+      } else {
+        panel.classList.add('wrong-clicked');
+        panel.style.pointerEvents = 'none';
+        mistakes++;
+        updateLivesDisplay();
+
+        if (mistakes >= MAX_MISTAKES) {
+          endGame(false, 'ゲームオーバー！3回ミスタッチしました。');
+        } else {
+          messageEl.textContent = `違います！あと ${MAX_MISTAKES - mistakes} 回ミス可能`;
+          messageEl.className = 'message lose';
+        }
+      }
+    }
+
+    function endGame(isWin, text) {
+      gameActive = false;
+      clearInterval(timerInterval);
+
+      messageEl.textContent = text;
+      messageEl.className = 'message ' + (isWin ? 'win' : 'lose');
+
+      const allPanels = choiceGrid.querySelectorAll('.panel');
+      allPanels.forEach(p => p.classList.add('disabled'));
+
+      const correctPanel = choiceGrid.querySelector(`[data-index="${targetIndex}"]`);
+      if (correctProvider = correctPanel) {
+        correctPanel.classList.add('correct-target');
+      }
+
+      choiceGrid.classList.add('show-codes');
+      targetBox.classList.add('show-codes');
+
+      startBtn.textContent = 'もう一度プレイ';
+      startBtn.style.display = 'inline-block';
+    }
+
+    startBtn.addEventListener('click', startGame);
+
+    initGrids();
+  </script>
+</body>
+</html>
