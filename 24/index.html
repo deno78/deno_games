@@ -562,7 +562,7 @@ function showGameOver() {
     startPanel.classList.remove('hidden');
     startPanel.querySelector('h1').innerText = "ゲームオーバー 😢";
     startPanel.querySelector('p').innerHTML = `最終スコア: <strong>${score}</strong>点<br>お疲れ様でした！`;
-    startPanel.querySelector('btn').innerText = "もう一度プレイ";
+    startPanel.querySelector('.btn').innerText = "もう一度プレイ";
 }
 
 // 画面上に「判定ボタン」を配置するか、一定時間動かない or スワイプ後に完了ボタンがあると遊びやすいのでボタンを追加
