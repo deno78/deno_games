@@ -292,6 +292,12 @@ function loop() {
         // ピザを描画（待機中）
         drawPizza();
 
+        // 人数の案内表示
+        ctx.fillStyle = '#ffda79';
+        ctx.font = 'bold 20px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(`👥 お客さん: ${customerCount}人`, canvas.width / 2, 40);
+
         if (walkProgress >= 1) {
             gameState = 'SLICING';
             document.getElementById('instructions').innerText = `✨ ${customerCount}人分にピザを切ってください！ (${cutLines.length}回カット)`;
@@ -305,6 +311,12 @@ function loop() {
     drawPizza();
     drawCustomers();
     drawCutLines();
+
+    // 人数の案内表示（スライス中）
+    ctx.fillStyle = '#ffda79';
+    ctx.font = 'bold 20px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText(`👥 お客さん: ${customerCount}人`, canvas.width / 2, 40);
 
     if (gameState === 'SLICING' && currentCut) {
         ctx.strokeStyle = '#ff3838';
@@ -364,10 +376,15 @@ function drawPizza() {
 }
 
 function drawCustomers() {
-    customers.forEach(c => {
+    customers.forEach((c, index) => {
         ctx.font = '32px sans-serif';
         ctx.textAlign = 'center';
         ctx.fillText(c.emoji, c.targetX, c.finalY);
+
+        // 各キャラクターに番号を表示
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 14px sans-serif';
+        ctx.fillText(`#${index + 1}`, c.targetX, c.finalY + 22);
     });
 }
 
@@ -468,22 +485,39 @@ function judgePizza() {
         }
     });
 
-    // 判定ロジック
-    // お客さんの人数に対して、カットが適切か
-    // 例: 3人なら3等分（3本の線で中心をまたぐ、またはきれいにスライス）
-    let diff = Math.abs(cutLines.length - (customerCount === 2 ? 1 : Math.ceil(customerCount / 2)));
+    // 判定ロジック（数が合っていればOK、面積は大目に見る）
+    // 直線によって切られた回数が、お客さんの人数に対して適切かどうかをチェック
+    // 理想のカット本数: customerCountが偶数の場合 customerCount / 2 本（またはそれに近い）、奇数の場合 (customerCount+1)/2 本など、あるいは十分な回数切られているか。
+    // ユーザーのご要望：「数が合ってたら、面積などは大目に見といて。数が割り切れたらOKということで」
     
+    let validCuts = 0;
+    cutLines.forEach(l => {
+        const d1 = Math.hypot(l.x1 - pizzaCenter.x, l.y1 - pizzaCenter.y);
+        const d2 = Math.hypot(l.x2 - pizzaCenter.x, l.y2 - pizzaCenter.y);
+        if (d1 < pizzaCenter.radius || d2 < pizzaCenter.radius) {
+            validCuts++;
+        }
+    });
+
     let success = false;
     let msg = "";
 
-    if (validCuts === 0) {
+    if (cutLines.length === 0) {
         msg = "ピザが全く切れていません！";
-    } else if (avgProximity < 0.4) {
-        msg = "中心からズレすぎてバラバラの大きさになりました…";
-    } else if (cutLines.length < Math.ceil(customerCount / 2) && customerCount > 2) {
-        msg = `カット数が足りません！（${customerCount}人に対して${cutLines.length}回）`;
+    } else if (validCuts === 0) {
+        msg = "ピザが切断されていません！";
     } else {
-        success = true;
+        // カットした本数から推測されるピース数 (1本の直線で約2ピースに増える、綺麗に中心を通れば 2 * validCuts ピース等)
+        // ここではユーザーの「数が合っていれば（＝指定された人数分に分かれるようなカット本数・またはピース数になっていれば）OK」という意図に沿って緩めに判定
+        // 例: 3人なら1〜2本以上の有効なカット、4人なら2本以上など
+        let requiredCuts = Math.max(1, Math.floor(customerCount / 2));
+        if (customerCount === 3) requiredCuts = 2; // 3人の場合は2本以上クロスするなど
+        
+        if (validCuts >= requiredCuts || cutLines.length >= Math.ceil(customerCount / 2)) {
+            success = true;
+        } else {
+            msg = `カット数が足りません！（${customerCount}人に対して${cutLines.length}回）`;
+        }
     }
 
     const panel = document.getElementById('result-panel');
