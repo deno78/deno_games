@@ -2,6 +2,13 @@
 
 Deno/Web games collection.
 
+## GitHub Pages
+<p align="center">
+  <img src="https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=https://deno78.github.io/deno_games/" alt="GitHub Pages QR Code">
+  <br>
+  <a href="https://deno78.github.io/deno_games/">https://deno78.github.io/deno_games/</a>
+</p>
+
 ## Games List
 
 - [01. Tetris](./01/index.html)
@@ -22,3 +29,4 @@ Deno/Web games collection.
 - [16. 民明ゼミ進化論 スマホ版 (Minmei Cicada Evolution Mobile)](./16/index.html)
 - [17. 迷惑メール仕分け係長 (Spam Mail Sorting Manager)](./17/index.html)
 - [18. リモートワーク・サボりマスター (Remote Work Slack Master)](./18/index.html)
+- [19. 黒って256種類あるんやで (Black Color Finding Game)](./19/index.html)
