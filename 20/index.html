@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ネオン・エアホッケー (Neon Air Hockey)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: #09090e;
+            color: #fff;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        h1 {
+            margin: 5px 0;
+            font-size: 1.5rem;
+            text-align: center;
+            text-shadow: 0 0 10px #00f0ff, 0 0 20px #00f0ff;
+            letter-spacing: 2px;
+        }
+        .score-board {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            max-width: 450px;
+            padding: 5px 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            text-shadow: 0 0 8px currentColor;
+        }
+        .score-cpu { color: #ff0055; }
+        .score-player { color: #00ff66; }
+        
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 450px;
+            aspect-ratio: 2 / 3;
+            padding: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        canvas {
+            background: #0f101a;
+            border: 4px solid #333954;
+            border-radius: 12px;
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.2), inset 0 0 20px rgba(0, 0, 0, 0.8);
+            width: 100%;
+            height: 100%;
+            touch-action: none;
+            display: block;
+        }
+        .controls-hint {
+            margin-top: 5px;
+            font-size: 0.85rem;
+            color: #8892b0;
+            text-align: center;
+        }
+        .modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(9, 9, 14, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            border-radius: 12px;
+            backdrop-filter: blur(4px);
+        }
+        .modal h2 {
+            font-size: 2rem;
+            margin-bottom: 20px;
+            text-shadow: 0 0 15px #fff;
+        }
+        .btn {
+            background: linear-gradient(135deg, #00f0ff, #0077ff);
+            color: #000;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.6);
+            transition: all 0.2s ease;
+        }
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 25px rgba(0, 240, 255, 0.9);
+        }
+        .difficulty-select {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        .diff-btn {
+            background: #1a1c29;
+            color: #8892b0;
+            border: 2px solid #333954;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+        .diff-btn.active {
+            background: #00f0ff;
+            color: #000;
+            border-color: #00f0ff;
+            box-shadow: 0 0 10px #00f0ff;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>NEON AIR HOCKEY</h1>
+    <div class="score-board">
+        <div class="score-cpu">CPU: <span id="cpu-score">0</span></div>
+        <div class="score-player">PLAYER: <span id="player-score">0</span></div>
+    </div>
+
+    <div id="game-container">
+        <canvas id="board" width="400" height="600"></canvas>
+        
+        <div id="start-modal" class="modal">
+            <h2>AIR HOCKEY</h2>
+            <div class="difficulty-select">
+                <button class="diff-btn active" data-diff="easy">EASY</button>
+                <button class="diff-btn" data-diff="normal">NORMAL</button>
+                <button class="diff-btn" data-diff="hard">HARD</button>
+            </div>
+            <button id="start-btn" class="btn">GAME START</button>
+        </div>
+
+        <div id="gameover-modal" class="modal" style="display: none;">
+            <h2 id="winner-text">PLAYER WINS!</h2>
+            <button id="restart-btn" class="btn">PLAY AGAIN</button>
+        </div>
+    </div>
+
+    <div class="controls-hint">マウスポインタまたはタッチでマレットを操作します (先取5点)</div>
+
+<script>
+const canvas = document.getElementById('board');
+const ctx = canvas.getContext('2d');
+
+const cpuScoreEl = document.getElementById('cpu-score');
+const playerScoreEl = document.getElementById('player-score');
+const startModal = document.getElementById('start-modal');
+const gameoverModal = document.getElementById('gameover-modal');
+const startBtn = document.getElementById('start-btn');
+const restartBtn = document.getElementById('restart-btn');
+const winnerText = document.getElementById('winner-text');
+const diffBtns = document.querySelectorAll('.diff-btn');
+
+// Game Settings
+let difficulty = 'easy';
+let gameRunning = false;
+let scores = { player: 0, cpu: 0 };
+const winningScore = 5;
+
+// Table dimensions
+const width = canvas.width;
+const height = canvas.height;
+const goalWidth = 120;
+
+// Entities
+const puck = {
+    x: width / 2,
+    y: height / 2,
+    vx: 0,
+    vy: 0,
+    radius: 14,
+    speed: 0,
+    maxSpeed: 14,
+    friction: 0.992,
+    color: '#ffff00',
+    glow: '#ffaa00'
+};
+
+const player = {
+    x: width / 2,
+    y: height - 80,
+    targetX: width / 2,
+    targetY: height - 80,
+    radius: 25,
+    color: '#00ff66',
+    glow: '#00cc44',
+    minY: height / 2 + 30,
+    maxY: height - 30
+};
+
+const cpu = {
+    x: width / 2,
+    y: 80,
+    vx: 0,
+    radius: 25,
+    color: '#ff0055',
+    glow: '#cc0044',
+    minY: 30,
+    maxY: height / 2 - 30,
+    speedMap: { easy: 3.2, normal: 5.2, hard: 7.5 }
+};
+
+// Input handling
+let isPointerDown = false;
+
+function handlePointerMove(e) {
+    if (!gameRunning) return;
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = canvas.width / rect.width;
+    const scaleY = canvas.height / rect.height;
+    
+    let clientX, clientY;
+    if (e.touches && e.touches[0]) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+    } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
+    }
+    
+    player.targetX = (clientX - rect.left) * scaleX;
+    player.targetY = (clientY - rect.top) * scaleY;
+
+    // Clamp player movement within their half
+    if (player.targetX < player.radius) player.targetX = player.radius;
+    if (player.targetX > width - player.radius) player.targetX = width - player.radius;
+    if (player.targetY < player.minY) player.targetY = player.minY;
+    if (player.targetY > player.maxY) player.targetY = player.maxY;
+}
+
+canvas.addEventListener('mousemove', handlePointerMove);
+canvas.addEventListener('touchmove', (e) => {
+    e.preventDefault();
+    handlePointerMove(e);
+}, { passive: false });
+
+canvas.addEventListener('mousedown', () => isPointerDown = true);
+window.addEventListener('mouseup', () => isPointerDown = false);
+canvas.addEventListener('touchstart', (e) => { isPointerDown = true; handlePointerMove(e); }, { passive: false });
+window.addEventListener('touchend', () => isPointerDown = false);
+
+// Difficulty selection
+diffBtns.forEach(btn => {
+    btn.addEventListener('click', () => {
+        diffBtns.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        difficulty = btn.getAttribute('data-diff');
+    });
+});
+
+startBtn.addEventListener('click', startGame);
+restartBtn.addEventListener('click', resetGame);
+
+function startGame() {
+    startModal.style.display = 'none';
+    gameoverModal.style.display = 'none';
+    scores.player = 0;
+    scores.cpu = 0;
+    updateScoreBoard();
+    resetPuck('player');
+    gameRunning = true;
+    requestAnimationFrame(update);
+}
+
+function resetGame() {
+    gameoverModal.style.display = 'none';
+    scores.player = 0;
+    scores.cpu = 0;
+    updateScoreBoard();
+    resetPuck('player');
+    gameRunning = true;
+    requestAnimationFrame(update);
+}
+
+function updateScoreBoard() {
+    cpuScoreEl.textContent = scores.cpu;
+    playerScoreEl.textContent = scores.player;
+}
+
+function resetPuck(servesTo) {
+    puck.x = width / 2;
+    puck.y = height / 2;
+    puck.vx = 0;
+    puck.vy = servesTo === 'player' ? 4 : -4;
+}
+
+function update() {
+    if (!gameRunning) return;
+
+    // Smooth player movement
+    player.x += (player.targetX - player.x) * 0.35;
+    player.y += (player.targetY - player.y) * 0.35;
+
+    // CPU AI logic
+    let cpuSpeed = cpu.speedMap[difficulty];
+    let targetCpuX = puck.x;
+    let targetCpuY = puck.y < height / 2 ? puck.y : height / 4; // Stay in defensive half unless tracking
+    
+    // Add some reaction lag/error based on difficulty
+    if (difficulty === 'easy' && puck.y > height / 2) {
+        targetCpuX = width / 2; // return to center when puck is in player half
+    }
+    
+    if (cpu.x < targetCpuX) cpu.vx = cpuSpeed;
+    else if (cpu.x > targetCpuX) cpu.vx = -cpuSpeed;
+    else cpu.vx = 0;
+
+    cpu.x += cpu.vx;
+    if (cpu.x < cpu.radius) cpu.x = cpu.radius;
+    if (cpu.x > width - cpu.radius) cpu.x = width - cpu.radius;
+
+    // CPU vertical tracking
+    let targetCpuRealY = Math.min(Math.max(targetCpuY, cpu.minY), cpu.maxY);
+    cpu.y += (targetCpuRealY - cpu.y) * 0.15;
+
+    // Puck physics
+    puck.vx *= puck.friction;
+    puck.vy *= puck.friction;
+    puck.x += puck.vx;
+    puck.y += puck.vy;
+
+    // Wall collisions (Left & Right)
+    if (puck.x - puck.radius < 15) {
+        puck.x = 15 + puck.radius;
+        puck.vx *= -1;
+    }
+    if (puck.x + puck.radius > width - 15) {
+        puck.x = width - 15 - puck.radius;
+        puck.vx *= -1;
+    }
+
+    // Wall collisions / Goals (Top & Bottom)
+    const goalLeft = width / 2 - goalWidth / 2;
+    const goalRight = width / 2 + goalWidth / 2;
+
+    // Top wall (CPU goal area)
+    if (puck.y - puck.radius < 15) {
+        if (puck.x > goalLeft && puck.x < goalRight) {
+            // Player scores!
+            scores.player++;
+            updateScoreBoard();
+            checkWin();
+            if (gameRunning) resetPuck('cpu');
+        } else {
+            puck.y = 15 + puck.radius;
+            puck.vy *= -1;
+        }
+    }
+
+    // Bottom wall (Player goal area)
+    if (puck.y + puck.radius > height - 15) {
+        if (puck.x > goalLeft && puck.x < goalRight) {
+            // CPU scores!
+            scores.cpu++;
+            updateScoreBoard();
+            checkWin();
+            if (gameRunning) resetPuck('player');
+        } else {
+            puck.y = height - 15 - puck.radius;
+            puck.vy *= -1;
+        }
+    }
+
+    // Mallet & Puck Collisions
+    checkCollision(player);
+    checkCollision(cpu);
+
+    // Render
+    draw();
+
+    if (gameRunning) {
+        requestAnimationFrame(update);
+    }
+}
+
+function checkCollision(mallet) {
+    const dx = puck.x - mallet.x;
+    const dy = puck.y - mallet.y;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+    const minDist = puck.radius + mallet.radius;
+
+    if (dist < minDist) {
+        const angle = Math.atan2(dy, dx);
+        const overlap = minDist - dist;
+        
+        // Push puck out of overlap
+        puck.x += Math.cos(angle) * overlap;
+        puck.y += Math.sin(angle) * overlap;
+
+        // Calculate bounce velocity
+        const speed = Math.sqrt(puck.vx * puck.vx + puck.vy * puck.vy);
+        const malletVelX = mallet === player ? (player.x - player.targetX) * 0.2 : cpu.vx;
+        const malletVelY = mallet === player ? (player.y - player.targetY) * 0.2 : 0;
+        
+        let newSpeed = Math.max(speed * 1.05, Math.sqrt(malletVelX * malletVelX + malletVelY * malletVelY) + 4);
+        if (newSpeed > puck.maxSpeed) newSpeed = puck.maxSpeed;
+
+        puck.vx = Math.cos(angle) * newSpeed + malletVelX * 0.3;
+        puck.vy = Math.sin(angle) * newSpeed + malletVelY * 0.3;
+    }
+}
+
+function checkWin() {
+    if (scores.player >= winningScore) {
+        gameRunning = false;
+        winnerText.textContent = "PLAYER WINS!";
+        winnerText.style.color = "#00ff66";
+        gameoverModal.style.display = 'flex';
+    } else if (scores.cpu >= winningScore) {
+        gameRunning = false;
+        winnerText.textContent = "CPU WINS...";
+        winnerText.style.color = "#ff0055";
+        gameoverModal.style.display = 'flex';
+    }
+}
+
+function draw() {
+    ctx.clearRect(0, 0, width, height);
+
+    // Rink Background / Grid lines
+    ctx.strokeStyle = '#1e2238';
+    ctx.lineWidth = 2;
+
+    // Outer boundary
+    ctx.strokeRect(15, 15, width - 30, height - 30);
+
+    // Center line
+    ctx.beginPath();
+    ctx.moveTo(15, height / 2);
+    ctx.lineTo(width - 15, height / 2);
+    ctx.stroke();
+
+    // Center circle
+    ctx.beginPath();
+    ctx.arc(width / 2, height / 2, 50, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Center dot
+    ctx.fillStyle = '#1e2238';
+    ctx.beginPath();
+    ctx.arc(width / 2, height / 2, 6, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Goal arcs & markings
+    const goalLeft = width / 2 - goalWidth / 2;
+    const goalRight = width / 2 + goalWidth / 2;
+
+    // CPU Goal (Top)
+    ctx.strokeStyle = '#ff0055';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(goalLeft, 15);
+    ctx.lineTo(goalRight, 15);
+    ctx.stroke();
+
+    // Player Goal (Bottom)
+    ctx.strokeStyle = '#00ff66';
+    ctx.beginPath();
+    ctx.moveTo(goalLeft, height - 15);
+    ctx.lineTo(goalRight, height - 15);
+    ctx.stroke();
+
+    // Draw CPU Mallet
+    drawMallet(cpu);
+
+    // Draw Player Mallet
+    drawMallet(player);
+
+    // Draw Puck
+    ctx.save();
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = puck.glow;
+    ctx.fillStyle = puck.color;
+    ctx.beginPath();
+    ctx.arc(puck.x, puck.y, puck.radius, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+}
+
+function drawMallet(mallet) {
+    ctx.save();
+    ctx.shadowBlur = 15;
+    ctx.shadowColor = mallet.glow;
+    
+    // Outer body
+    ctx.fillStyle = mallet.color;
+    ctx.beginPath();
+    ctx.arc(mallet.x, mallet.y, mallet.radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Inner ring
+    ctx.strokeStyle = '#fff';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(mallet.x, mallet.y, mallet.radius * 0.6, 0, Math.PI * 2);
+    ctx.stroke();
+
+    // Center handle
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(mallet.x, mallet.y, mallet.radius * 0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+}
+
+// Initial draw preview
+draw();
+</script>
+
+</body>
+</html>
