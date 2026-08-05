@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>ピザパニック！人数分スワイプスライス</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: #1a1a2e;
+            color: #fff;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            height: 100vh;
+            height: 100dvh;
+        }
+        header {
+            width: 100%;
+            padding: 10px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0,0,0,0.3);
+            font-size: 16px;
+            font-weight: bold;
+            z-index: 10;
+        }
+        .stats {
+            display: flex;
+            gap: 15px;
+        }
+        .stat-item {
+            background: rgba(255,255,255,0.1);
+            padding: 5px 12px;
+            border-radius: 20px;
+        }
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        canvas {
+            background: #222244;
+            border-radius: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            cursor: crosshair;
+        }
+        .panel {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            color: #ff6b6b;
+            margin-bottom: 10px;
+            font-size: 28px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        p {
+            color: #ccc;
+            margin-bottom: 25px;
+            font-size: 15px;
+            line-height: 1.6;
+        }
+        .btn {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(255, 107, 107, 0.4);
+            transition: transform 0.1s, background 0.2s;
+        }
+        .btn:active {
+            transform: scale(0.95);
+            background: #ff5252;
+        }
+        #instructions {
+            padding: 10px 20px;
+            background: rgba(255,255,255,0.05);
+            font-size: 14px;
+            color: #ffda79;
+            text-align: center;
+            width: 100%;
+        }
+        .hidden {
+            display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div>🍕 ピザパニック</div>
+        <div class="stats">
+            <div class="stat-item">スコア: <span id="score">0</span></div>
+            <div class="stat-item">ライフ: <span id="lives">❤️❤️❤️</span></div>
+        </div>
+    </header>
+
+    <div id="game-container">
+        <canvas id="canvas"></canvas>
+
+        <!-- スタート画面 -->
+        <div id="start-panel" class="panel">
+            <h1>🍕 ピザパニック！</h1>
+            <p>
+                お腹を空かせたお客さんたちがやってきた！<br>
+                人数分にピザをスワイプ（ドラッグ）で切り分けよう。<br>
+                均等に切り分けて全員を満足させろ！
+            </p>
+            <button class="btn" onclick="startGame()">ゲームスタート</button>
+        </div>
+
+        <!-- 結果 / ラウンドクリア画面 -->
+        <div id="result-panel" class="panel hidden">
+            <h1 id="result-title">判定</h1>
+            <p id="result-msg">ここに詳細メッセージ</p>
+            <button class="btn" id="next-btn" onclick="nextStage()">つぎへ</button>
+        </div>
+    </div>
+
+    <div id="instructions">
+        💡 画面をなぞって（スワイプして）ピザをナイフでカット！
+    </div>
+
+<script>
+const canvas = document.getElementById('canvas');
+const ctx = canvas.getContext('2d');
+
+// レスポンシブキャンバスサイズ設定
+function resizeCanvas() {
+    const container = document.getElementById('game-container');
+    const width = Math.min(container.clientWidth - 20, 420);
+    const height = Math.min(container.clientHeight - 20, 500);
+    canvas.width = width;
+    canvas.height = height;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+let gameState = 'START'; // START, WALK, WAITING, SLICING, JUDGE, GAMEOVER
+let score = 0;
+let lives = 3;
+let customers = []; // やってきた人たち
+let customerCount = 0; // 人数
+let slices = []; // 切り分けられた多角形リスト（または単純に線分のリストからパーツ判定）
+let cutLines = []; // プレイヤーが引いた線のリスト [{x1, y1, x2, y2}]
+let currentCut = null; // 現在ドラッグ中の線
+
+let pizzaCenter = { x: canvas.width / 2, y: canvas.height / 2 - 30, radius: 100 };
+
+// サウンド用（Web Audio API）
+const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+function playSound(type) {
+    if (audioCtx.state === 'suspended') {
+        audioCtx.resume();
+    }
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+
+    if (type === 'walk') {
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+        gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.1);
+    } else if (type === 'cut') {
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(200, audioCtx.currentTime + 0.15);
+        gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.15);
+    } else if (type === 'success') {
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+        osc.frequency.setValueAtTime(554.37, audioCtx.currentTime + 0.1);
+        osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.4);
+    } else if (type === 'fail') {
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+        osc.frequency.setValueAtTime(150, audioCtx.currentTime + 0.2);
+        gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+        gain.gain.linearRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.4);
+    }
+}
+
+// ゲーム開始
+function startGame() {
+    score = 0;
+    lives = 3;
+    document.getElementById('start-panel').classList.add('hidden');
+    updateStats();
+    startRound();
+}
+
+function updateStats() {
+    document.getElementById('score').innerText = score;
+    document.getElementById('lives').innerText = '❤️'.repeat(Math.max(0, lives));
+}
+
+// ラウンド開始（お客さんが歩いてくる）
+let walkProgress = 0;
+function startRound() {
+    gameState = 'WALK';
+    cutLines = [];
+    pizzaCenter = { x: canvas.width / 2, y: canvas.height / 2 - 20, radius: Math.min(canvas.width, canvas.height) * 0.28 };
+    
+    // 難易度に応じて人数決定（最初は2〜4人、徐々に増える）
+    const maxCust = Math.min(2 + Math.floor(score / 3), 8);
+    customerCount = Math.floor(Math.random() * (maxCust - 1)) + 2;
+
+    customers = [];
+    for (let i = 0; i < customerCount; i++) {
+        customers.push({
+            targetX: canvas.width / 2 + (i - (customerCount - 1) / 2) * (canvas.width / (customerCount + 1)),
+            y: canvas.height + 50,
+            finalY: canvas.height - 50,
+            emoji: ['👦', '👧', '👨', '👩', '👴', '👵', '🧑', '🤖'][Math.floor(Math.random() * 8)],
+            animOffset: Math.random() * Math.PI * 2
+        });
+    }
+    walkProgress = 0;
+    loop();
+}
+
+// メインループ・アニメーション
+let animationFrameId;
+function loop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    if (gameState === 'WALK') {
+        walkProgress += 0.03;
+        let arrived = true;
+        customers.forEach((c, index) => {
+            let currentY = c.y + (c.finalY - c.y) * Math.min(walkProgress, 1);
+            if (currentY > c.finalY) arrived = false;
+            
+            // 歩行アニメーション（上下に揺れる）
+            let bounce = Math.sin(walkProgress * 10 + c.animOffset) * 4;
+            
+            ctx.font = '32px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(c.emoji, c.targetX, currentY + bounce);
+            
+            // 吹き出しで人数表示
+            ctx.fillStyle = '#fff';
+            ctx.font = 'bold 12px sans-serif';
+            ctx.fillText(`お腹ぺこぺこ！`, c.targetX, currentY + bounce - 25);
+        });
+
+        // ピザを描画（待機中）
+        drawPizza();
+
+        if (walkProgress >= 1) {
+            gameState = 'SLICING';
+            document.getElementById('instructions').innerText = `✨ ${customerCount}人分にピザを切ってください！ (${cutLines.length}回カット)`;
+        } else {
+            animationFrameId = requestAnimationFrame(loop);
+            return;
+        }
+    }
+
+    // スライシング中 / 描画中
+    drawPizza();
+    drawCustomers();
+    drawCutLines();
+
+    if (gameState === 'SLICING' && currentCut) {
+        ctx.strokeStyle = '#ff3838';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.moveTo(currentCut.x1, currentCut.y1);
+        ctx.lineTo(currentCut.x2, currentCut.y2);
+        ctx.stroke();
+    }
+
+    if (gameState === 'SLICING' || gameState === 'WALK') {
+        animationFrameId = requestAnimationFrame(loop);
+    }
+}
+
+function drawPizza() {
+    const p = pizzaCenter;
+    
+    // ピザの耳（外周の縁）
+    ctx.fillStyle = '#d35400';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+    ctx.fill();
+
+    // ピザ本体（チーズ）
+    ctx.fillStyle = '#f1c40f';
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.radius - 8, 0, Math.PI * 2);
+    ctx.fill();
+
+    // トッピング（サラミやピーマン）
+    ctx.fillStyle = '#c0392b';
+    const toppings = [
+        {x: -0.3, y: -0.3}, {x: 0.4, y: -0.2}, {x: -0.2, y: 0.4},
+        {x: 0.3, y: 0.3}, {x: 0.0, y: -0.6}, {x: -0.5, y: 0.0}, {x: 0.6, y: 0.1}
+    ];
+    toppings.forEach(t => {
+        ctx.beginPath();
+        ctx.arc(p.x + t.x * p.radius * 0.7, p.y + t.y * p.radius * 0.7, 8, 0, Math.PI * 2);
+        ctx.fill();
+    });
+
+    // ピーマンの緑
+    ctx.fillStyle = '#27ae60';
+    ctx.fillRect(p.x - p.radius * 0.3 - 5, p.y + p.radius * 0.2, 10, 6);
+    ctx.fillRect(p.x + p.radius * 0.2 - 5, p.y - p.radius * 0.4, 10, 6);
+
+    // すでに切られたカット線を描画
+    ctx.strokeStyle = '#7f8c8d';
+    ctx.lineWidth = 3;
+    cutLines.forEach(line => {
+        ctx.beginPath();
+        ctx.moveTo(line.x1, line.y1);
+        ctx.lineTo(line.x2, line.y2);
+        ctx.stroke();
+    });
+}
+
+function drawCustomers() {
+    customers.forEach(c => {
+        ctx.font = '32px sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText(c.emoji, c.targetX, c.finalY);
+    });
+}
+
+function drawCutLines() {
+    ctx.strokeStyle = '#e74c3c';
+    ctx.lineWidth = 4;
+    ctx.lineCap = 'round';
+    cutLines.forEach(l => {
+        ctx.beginPath();
+        ctx.moveTo(l.x1, l.y1);
+        ctx.lineTo(l.x2, l.y2);
+        ctx.stroke();
+    });
+}
+
+// タッチ・マウス操作ハンドラ
+let isDragging = false;
+canvas.addEventListener('pointerdown', (e) => {
+    if (gameState !== 'SLICING') return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    isDragging = true;
+    currentCut = { x1: x, y1: y, x2: x, y2: y };
+});
+
+canvas.addEventListener('pointermove', (e) => {
+    if (!isDragging || gameState !== 'SLICING') return;
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    currentCut.x2 = x;
+    currentCut.y2 = y;
+});
+
+canvas.addEventListener('pointerup', (e) => {
+    if (!isDragging || gameState !== 'SLICING') return;
+    isDragging = false;
+    if (currentCut) {
+        // わずかすぎるドラッグは無効
+        const dist = Math.hypot(currentCut.x2 - currentCut.x1, currentCut.y2 - currentCut.y1);
+        if (dist > 30) {
+            cutLines.push({...currentCut});
+            playSound('cut');
+        }
+        currentCut = null;
+    }
+    document.getElementById('instructions').innerText = `✨ ${customerCount}人分にピザを切っています (${cutLines.length}回カット)\n💡 ピザの中心を通るように線を引くと綺麗に切れます。終わる時は下のボタンか一定時間で判定！`;
+});
+
+// 切断された破片の面積や角度をシミュレートして判定する
+function judgePizza() {
+    gameState = 'JUDGE';
+    
+    // カット回数が足りない場合
+    if (cutLines.length === 0) {
+        gameOver("ピザが切られていません！");
+        return;
+    }
+
+    // 簡易判定アルゴリズム：
+    // 切られた線の数から「いくつのピースに分かれたか」を大まかに推定しつつ、
+    // 「人数分（customerCount）」とどれくらい一致しているか、
+    // また「中心を通るバランスの良いカットか」を計算する。
+    
+    // 理論上、N本の直線（全て中心を通る場合）でピザは 2N ピース（またはNが偶数なら等分、奇数なら2N）に分かれる。
+    // プレイヤーの引いた線が中心（pizzaCenter）にどれだけ近いかを計算。
+    let totalCenterProximity = 0;
+    cutLines.forEach(l => {
+        // 直線と中心の距離を計算
+        const x0 = pizzaCenter.x, y0 = pizzaCenter.y;
+        const x1 = l.x1, y1 = l.y1;
+        const x2 = l.x2, y2 = l.y2;
+        const numerator = Math.abs((y2 - y1) * x0 - (x2 - x1) * y0 + x2 * y1 - y2 * x1);
+        const denominator = Math.hypot(y2 - y1, x2 - x1);
+        const d = denominator === 0 ? 999 : numerator / denominator;
+        
+        // 中心からの距離が近いほど高得点（半径の30%以内なら合格点）
+        let scoreRate = Math.max(0, 1 - (d / (pizzaCenter.radius * 0.5)));
+        totalCenterProximity += scoreRate;
+    });
+
+    const avgProximity = totalCenterProximity / cutLines.length;
+
+    // ピース数の推定（理想は customerCount 個のピース）
+    // 線の本数やバランスから算出
+    let estimatedPieces = 1;
+    cutLines.forEach(() => {
+        estimatedPieces += 1; // 簡易的にカット数+1 or 2倍など
+    });
+    // 直線がピザの円を横切っているかもチェック
+    let validCuts = 0;
+    cutLines.forEach(l => {
+        const d1 = Math.hypot(l.x1 - pizzaCenter.x, l.y1 - pizzaCenter.y);
+        const d2 = Math.hypot(l.x2 - pizzaCenter.x, l.y2 - pizzaCenter.y);
+        if (d1 < pizzaCenter.radius || d2 < pizzaCenter.radius || Math.min(d1, d2) < pizzaCenter.radius) {
+            validCuts++;
+        }
+    });
+
+    // 判定ロジック
+    // お客さんの人数に対して、カットが適切か
+    // 例: 3人なら3等分（3本の線で中心をまたぐ、またはきれいにスライス）
+    let diff = Math.abs(cutLines.length - (customerCount === 2 ? 1 : Math.ceil(customerCount / 2)));
+    
+    let success = false;
+    let msg = "";
+
+    if (validCuts === 0) {
+        msg = "ピザが全く切れていません！";
+    } else if (avgProximity < 0.4) {
+        msg = "中心からズレすぎてバラバラの大きさになりました…";
+    } else if (cutLines.length < Math.ceil(customerCount / 2) && customerCount > 2) {
+        msg = `カット数が足りません！（${customerCount}人に対して${cutLines.length}回）`;
+    } else {
+        success = true;
+    }
+
+    const panel = document.getElementById('result-panel');
+    panel.classList.remove('hidden');
+    
+    if (success) {
+        playSound('success');
+        score += customerCount * 100;
+        document.getElementById('result-title').innerText = "大成功！🎉";
+        document.getElementById('result-title').style.color = "#2ecc71";
+        document.getElementById('result-msg').innerHTML = `全員に均等にピザが行き渡りました！<br>客数: ${customerCount}人 / カット数: ${cutLines.length}回<br>+${customerCount * 100}ポイント`;
+        document.getElementById('next-btn').innerText = "次のオーダーへ";
+    } else {
+        playSound('fail');
+        lives--;
+        updateStats();
+        document.getElementById('result-title').innerText = "大失敗… 😭";
+        document.getElementById('result-title').style.color = "#e74c3c";
+        document.getElementById('result-msg').innerHTML = `${msg}<br>お客さんたちが怒って帰ってしまいました。`;
+        
+        if (lives <= 0) {
+            document.getElementById('next-btn').innerText = "ゲームオーバーへ";
+            document.getElementById('next-btn').onclick = showGameOver;
+            return;
+        } else {
+            document.getElementById('next-btn').innerText = "もう一度挑戦";
+            document.getElementById('next-btn').onclick = nextStage;
+        }
+    }
+    updateStats();
+}
+
+function nextStage() {
+    document.getElementById('result-panel').classList.add('hidden');
+    document.getElementById('next-btn').onclick = nextStage; // リセット
+    startRound();
+}
+
+function showGameOver() {
+    document.getElementById('result-panel').classList.add('hidden');
+    const startPanel = document.getElementById('start-panel');
+    startPanel.classList.remove('hidden');
+    startPanel.querySelector('h1').innerText = "ゲームオーバー 😢";
+    startPanel.querySelector('p').innerHTML = `最終スコア: <strong>${score}</strong>点<br>お疲れ様でした！`;
+    startPanel.querySelector('btn').innerText = "もう一度プレイ";
+}
+
+// 画面上に「判定ボタン」を配置するか、一定時間動かない or スワイプ後に完了ボタンがあると遊びやすいのでボタンを追加
+// スワイプ操作後に「カット完了！」ボタンを表示させる
+const container = document.getElementById('game-container');
+const doneBtn = document.createElement('button');
+doneBtn.className = 'btn';
+doneBtn.innerText = "🔪 カット完了！配膳する";
+doneBtn.style.position = 'absolute';
+doneBtn.style.bottom = '20px';
+doneBtn.style.padding = '10px 25px';
+doneBtn.style.fontSize = '16px';
+doneBtn.style.zIndex = '50';
+doneBtn.style.boxShadow = '0 4px 10px rgba(0,0,0,0.5)';
+doneBtn.style.display = 'none';
+container.appendChild(doneBtn);
+
+doneBtn.addEventListener('click', () => {
+    if (gameState === 'SLICING') {
+        doneBtn.style.display = 'none';
+        judgePizza();
+    }
+});
+
+// スライシング開始時にボタンを表示
+const originalStartRound = startRound;
+startRound = function() {
+    originalStartRound();
+    doneBtn.style.display = 'block';
+};
+
+const originalShowGameOver = showGameOver;
+showGameOver = function() {
+    doneBtn.style.display = 'none';
+    originalShowGameOver();
+};
+
+</script>
+</body>
+</html>
