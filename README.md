@@ -36,3 +36,4 @@ Deno/Web games collection.
 - [23. 16bitショート動画スワイプ評価バトル (Shorts Swipe Master)](./23/index.html)
 - [24. ピザパニック！人数分スワイプスライス (Pizza Panic Slice)](./24/index.html)
 - [25. 会話を楽しむ、さしすせそ (Sashisuseso Conversation Game)](./25/index.html)
+- [26. 魚偏漢字クイズ ～イルカのカイル君と学ぼう！～ (Fish Radical Kanji Quiz with Kyle)](./26/index.html)

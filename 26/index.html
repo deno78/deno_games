@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>魚偏漢字クイズ ～イルカのカイル君と学ぼう！～</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1c:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 50%, #7dd3fc 100%);
+            min-height: 100vh;
+        }
+        @keyframes float {
+            0%, 100% { transform: translateY(0px) rotate(0deg); }
+            50% { transform: translateY(-10px) rotate(2deg); }
+        }
+        .dolphin-float {
+            animation: float 3s ease-in-out infinite;
+        }
+        @keyframes bounce-short {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-6px); }
+        }
+        .animate-bounce-short {
+            animation: bounce-short 0.6s ease-in-out;
+        }
+        .bubble {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.6);
+            border-radius: 50%;
+            animation: rise 4s infinite ease-in;
+        }
+        @keyframes rise {
+            0% { transform: translateY(100vh) scale(0.5); opacity: 0; }
+            50% { opacity: 0.8; }
+            100% { transform: translateY(-50px) scale(1.2); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-between min-h-screen p-4 overflow-x-hidden relative">
+
+    <!-- 背景の泡 -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none z-0" id="bubble-container"></div>
+
+    <!-- ヘッダー -->
+    <header class="z-10 text-center mt-2 mb-4">
+        <h1 class="text-3xl md:text-4xl font-black text-sky-800 drop-shadow-sm flex items-center justify-center gap-2">
+            <span>🐟</span> 魚偏漢字クイズ <span>🐬</span>
+        </h1>
+        <p class="text-sky-700 font-bold text-sm md:text-base mt-1">イルカのカイル君と一緒に、お魚の漢字マスターになろう！</p>
+    </header>
+
+    <!-- メインコンテンツ -->
+    <main class="z-10 w-full max-w-2xl bg-white/90 backdrop-blur-md rounded-3xl shadow-2xl p-6 md:p-8 flex flex-col items-center relative border-4 border-sky-300">
+
+        <!-- ステータスバー -->
+        <div class="w-full flex justify-between items-center mb-6 text-sky-900 font-bold text-sm md:text-base bg-sky-100 px-4 py-2 rounded-2xl">
+            <span id="question-counter">もんだい 1 / 10</span>
+            <span id="score-display">スコア: 0点</span>
+        </div>
+
+        <!-- カイル君エリア -->
+        <div class="flex items-center gap-4 w-full mb-6 bg-gradient-to-r from-sky-50 to-blue-50 p-4 rounded-2xl border-2 border-sky-200 shadow-inner">
+            <!-- イルカのSVGアイコン -->
+            <div class="relative dolphin-float shrink-0 w-20 h-20 md:w-24 md:h-24 flex items-center justify-center bg-sky-200 rounded-full shadow-md border-2 border-white">
+                <svg viewBox="0 0 100 100" class="w-16 h-16 md:w-20 md:h-20 drop-shadow">
+                    <!-- イルカの体 -->
+                    <path d="M20 60 C 20 40, 50 30, 80 50 C 90 56, 95 65, 85 70 C 75 75, 60 65, 50 70 C 40 75, 30 85, 25 80 C 20 75, 20 70, 20 60 Z" fill="#0284c7" />
+                    <!-- お腹 -->
+                    <path d="M35 60 C 40 50, 60 48, 75 58 C 70 65, 50 68, 35 60 Z" fill="#e0f2fe" />
+                    <!-- 背びれ -->
+                    <path d="M50 40 L 58 25 L 62 42 Z" fill="#0284c7" />
+                    <!-- 尾びれ -->
+                    <path d="M80 50 L 95 40 L 90 55 L 98 70 L 82 60 Z" fill="#0284c7" />
+                    <!-- 目 -->
+                    <circle cx="35" cy="48" r="3" fill="#0f172a" />
+                    <!-- 口 (笑顔) -->
+                    <path d="M25 52 Q 30 57 38 53" stroke="#0f172a" stroke-width="2" fill="none" stroke-linecap="round" />
+                </svg>
+                <!-- ほっぺた -->
+                <div class="absolute bottom-4 left-5 w-3 h-3 bg-pink-300 rounded-full opacity-70"></div>
+            </div>
+
+            <!-- 吹き出し -->
+            <div class="relative bg-white border-2 border-sky-300 rounded-2xl p-3 md:p-4 shadow-sm flex-1 text-sky-900 font-bold text-sm md:text-base leading-relaxed">
+                <div id="kail-message">
+                    こんにちは！イルカのカイルだよ！<br>
+                    魚偏の「つくり」を当ててね！準備はいいかな？
+                </div>
+            </div>
+        </div>
+
+        <!-- クイズ表示エリア -->
+        <div id="quiz-container" class="w-full flex flex-col items-center">
+            <!-- 問題情報: 読み仮名と魚偏 -->
+            <div class="text-center mb-6">
+                <div class="text-xs md:text-sm font-bold text-sky-600 uppercase tracking-widest mb-1">よみかた</div>
+                <div id="quiz-yomi" class="text-3xl md:text-4xl font-black text-slate-800 mb-4 bg-white px-6 py-2 rounded-xl shadow-sm inline-block border-2 border-sky-100">
+                    さけ
+                </div>
+                <div class="flex items-center justify-center gap-3 text-4xl md:text-6xl font-black text-sky-700">
+                    <span class="bg-sky-100 px-4 py-2 rounded-2xl border-2 border-sky-300 shadow-sm">魚</span>
+                    <span class="text-slate-400">＋</span>
+                    <span class="bg-amber-100 text-amber-800 px-5 py-2 rounded-2xl border-2 border-amber-300 shadow-sm animate-pulse">？</span>
+                </div>
+                <div class="text-xs md:text-sm font-bold text-slate-500 mt-2">「？」に入るつくりを選んでね！</div>
+            </div>
+
+            <!-- 4択ボタンエリア -->
+            <div id="choices-container" class="grid grid-cols-2 gap-4 w-full max-w-md mb-4">
+                <!-- 動的に生成されます -->
+            </div>
+
+            <!-- 次へ進むボタン（正解/不正解後に表示） -->
+            <button id="next-btn" onclick="nextQuestion()" class="hidden mt-4 w-full max-w-xs bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white font-bold py-3 px-6 rounded-2xl shadow-lg transition-all transform hover:-translate-y-0.5 active:translate-y-0 text-lg">
+                つぎのもんだいへ ➔
+            </button>
+        </div>
+
+        <!-- 結果表示画面（最初は非表示） -->
+        <div id="result-container" class="hidden w-full flex flex-col items-center text-center py-6">
+            <div class="text-5xl mb-4">🎉</div>
+            <h2 class="text-2xl md:text-3xl font-black text-sky-900 mb-2">おつかれさまでした！</h2>
+            <p id="final-score-text" class="text-lg font-bold text-slate-700 mb-6">スコア: 100点 (10問中 10問正解)</p>
+            <div id="final-comment" class="bg-sky-50 border-2 border-sky-200 rounded-2xl p-4 text-sky-900 font-bold mb-6 w-full max-w-md">
+                きみはもう立派な「お魚漢字博士」だね！イルカのカイルもびっくりだよ！
+            </div>
+            <button onclick="restartGame()" class="bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-600 hover:to-teal-700 text-white font-bold py-3 px-8 rounded-2xl shadow-lg transition-all text-lg">
+                もういちど挑戦する 🔄
+            </button>
+        </div>
+
+    </main>
+
+    <!-- フッター -->
+    <footer class="z-10 text-center text-xs text-sky-800 font-bold mt-4 mb-2">
+        &copy; 2026 魚偏漢字クイズ with カイル君
+    </footer>
+
+    <!-- サウンド用簡易シンセサイザー (Web Audio API) -->
+    <script>
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (!audioCtx) return;
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+            if (type === 'correct') {
+                // 正解音: ピピッ♪ (高めの2音)
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, now); // D5
+                osc.frequency.setValueAtTime(880.00, now + 0.1); // A5
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } else if (type === 'wrong') {
+                // 不正解音: ブーッ (低めののこぎり波)
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.setValueAtTime(110, now + 0.15);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.35);
+                osc.start(now);
+                osc.stop(now + 0.35);
+            } else if (type === 'click') {
+                // クリック音
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
+                osc.start(now);
+                osc.stop(now + 0.08);
+            }
+        }
+
+        // 背景の泡生成
+        const bubbleContainer = document.getElementById('bubble-container');
+        for (let i = 0; i < 15; i++) {
+            const bubble = document.createElement('div');
+            bubble.classList.add('bubble');
+            const size = Math.random() * 30 + 10;
+            bubble.style.width = `${size}px`;
+            bubble.style.height = `${size}px`;
+            bubble.style.left = `${Math.random() * 100}%`;
+            bubble.style.animationDuration = `${Math.random() * 5 + 3}s`;
+            bubble.style.animationDelay = `${Math.random() * 5}s`;
+            bubbleContainer.appendChild(bubble);
+        }
+
+        // 問題データ (20問から毎回ランダムで10問出題)
+        const allQuestions = [
+            { kanji: '鮭', yomi: 'さけ', part: '圭', info: '「圭」は先端が尖った形。身が赤くシャケの切り身を表すよ。' },
+            { kanji: '鮪', yomi: 'まぐろ', part: '有', info: '「有」は肉を意味し、大きな赤身の肉が取れる魚だよ。' },
+            { kanji: '鯛', yomi: 'たい', part: '周', info: '「周」はまわりを取り囲む。お祝いの席に欠かせない高級魚！' },
+            { kanji: '鰹', yomi: 'かつお', part: '堅', info: '身がカチカチに硬い「鰹節（かつおぶし）」になることから！' },
+            { kanji: '鯵', yomi: 'あじ', part: '参', info: '「参」は美味しいので参ってしまう、という意味があるんだって。' },
+            { kanji: '鰯', yomi: 'いわし', part: '弱', info: '陸に上げるとすぐに弱ってしまうほど弱い魚だから。' },
+            { kanji: '鯖', yomi: 'さば', part: '青', info: '背中が青い光沢をしていることから「青い魚」でサバ！' },
+            { kanji: '鱈', yomi: 'たら', part: '雪', info: '冬の雪が降る寒い海でよく獲れる、身が雪のように白い魚。' },
+            { kanji: '鰻', yomi: 'うなぎ', part: '曼', info: '「曼」は長く続く様子。細長くてうねうねした姿から！' },
+            { kanji: '鮃', yomi: 'ひらめ', part: '平', info: '体が平べったい形をしていることから「平（ひら）」！' },
+            { kanji: '鰆', yomi: 'さわら', part: '春', info: '春になると沿岸にやってきて、春を告げる魚とされるよ。' },
+            { kanji: '鯉', yomi: 'こい', part: '里', info: '池や里の近くの川で昔から親しまれてきた魚。' },
+            { kanji: '鰤', yomi: 'ぶり', part: '師', info: '師走（12月）の頃に脂がのって一番美味しくなるから！' },
+            { kanji: '鮎', yomi: 'あゆ', part: '占', info: '昔、占いで吉凶を占うために使われたという言い伝えがあるよ。' },
+            { kanji: '鮫', yomi: 'さめ', part: '交', info: '肌がざらざらして交差しているような皮膚を持つ魚。' },
+            { kanji: '鱚', yomi: 'きす', part: '喜', info: '上品で喜ばれる美しい白身魚だから。' },
+            { kanji: '鰈', yomi: 'かれい', part: '葉', info: '木の葉のように平らで薄い形をしている魚。' },
+            { kanji: '鰒', yomi: 'ふぐ・あわび', part: '復', info: '貝の仲間（アワビ）も魚偏に「復」と書くことがあるよ！' },
+            { kanji: '鰡', yomi: 'ぼら', part: '留', info: '群れを作って同じ場所にとどまる習性がある魚。' },
+            { kanji: '鮠', yomi: 'はや', part: '回', info: '川でぐるぐると群れて泳ぐ小さな魚。' }
+        ];
+
+        let quizList = [];
+        let currentIndex = 0;
+        let score = 0;
+        let currentQuestion = null;
+        let isAnswered = false;
+
+        const kailMessages = {
+            start: [
+                "さあ、魚偏漢字クイズのはじまりだよ！全問正解できるかな？",
+                "カイルと一緒に楽しくお魚の漢字を覚えよう！",
+                "準備はOK？それじゃあ第1問スタート！"
+            ],
+            correct: [
+                "すごい！大正解だよ！よく知ってるね！",
+                "正解！お見事です！カイルもびっくり！",
+                "その調子！君はすっかりお魚博士だね！"
+            ],
+            wrong: [
+                "おっと、ざんねん！正解は別の漢字だったよ。",
+                "惜しい！次はがんばって当てようね！",
+                "ドンマイ！解説を読んで次へ進もう！"
+            ]
+        };
+
+        function getRandomMessages(type) {
+            const arr = kailMessages[type];
+            return arr[Math.floor(Math.random() * arr.length)];
+        }
+
+        function startGame() {
+            // 問題をシャッフルして10問選ぶ
+            quizList = [...allQuestions].sort(() => Math.random() - 0.5).slice(0, 10);
+            currentIndex = 0;
+            score = 0;
+            
+            document.getElementById('result-container').classList.add('hidden');
+            document.getElementById('quiz-container').classList.remove('hidden');
+            
+            setKailMessage(getRandomMessages('start'));
+            loadQuestion();
+        }
+
+        function setKailMessage(text) {
+            const el = document.getElementById('kail-message');
+            el.innerHTML = text;
+        }
+
+        function loadQuestion() {
+            isAnswered = false;
+            currentQuestion = quizList[currentIndex];
+            
+            document.getElementById('question-counter').innerText = `もんだい ${currentIndex + 1} / 10`;
+            document.getElementById('score-display').innerText = `スコア: ${score}点`;
+            document.getElementById('quiz-yomi').innerText = currentQuestion.yomi;
+            document.getElementById('next-btn').classList.add('hidden');
+
+            // 4択の作成 (正解1つ + ダミー3つ)
+            const correctPart = currentQuestion.part;
+            let dummyParts = allQuestions
+                .map(q => q.part)
+                .filter(p => p !== correctPart);
+            
+            // シャッフルして3つ選ぶ
+            dummyParts.sort(() => Math.random() - 0.5);
+            let choices = [correctPart, dummyParts[0], dummyParts[1], dummyParts[2]];
+            // さらにシャッフル
+            choices.sort(() => Math.random() - 0.5);
+
+            const choicesContainer = document.getElementById('choices-container');
+            choicesContainer.innerHTML = '';
+
+            choices.forEach(part => {
+                const btn = document.createElement('button');
+                btn.className = "bg-white hover:bg-sky-50 text-sky-900 font-black text-2xl py-4 rounded-2xl border-4 border-sky-300 shadow-md transition-all transform hover:-scale-105 active:scale-95 flex items-center justify-center";
+                btn.innerText = part;
+                btn.onclick = () => selectAnswer(part, btn);
+                choicesContainer.appendChild(btn);
+            });
+        }
+
+        function selectAnswer(selectedPart, btnElement) {
+            if (isAnswered) return;
+            isAnswered = true;
+
+            playSound('click');
+            const buttons = document.querySelectorAll('#choices-container button');
+
+            if (selectedPart === currentQuestion.part) {
+                // 正解
+                score += 10;
+                playSound('correct');
+                btnElement.classList.remove('bg-white', 'hover:bg-sky-50', 'border-sky-300');
+                btnElement.classList.add('bg-emerald-500', 'text-white', 'border-emerald-600', 'animate-bounce-short');
+                
+                setKailMessage(`🎉 <strong>正解！</strong> 「魚＋${currentQuestion.part}」で【${currentQuestion.kanji}（${currentQuestion.yomi}）】だよ！<br><span class="text-xs text-sky-700">${currentQuestion.info}</span>`);
+                
+                // 他のボタンを無効化
+                buttons.forEach(b => {
+                    if (b !== btnElement) b.style.opacity = '0.6';
+                });
+            } else {
+                // 不正解
+                playSound('wrong');
+                btnElement.classList.remove('bg-white', 'hover:bg-sky-50', 'border-sky-300');
+                btnElement.classList.add('bg-rose-500', 'text-white', 'border-rose-600');
+                
+                // 正解のボタンをハイライト
+                buttons.forEach(b => {
+                    if (b.innerText === currentQuestion.part) {
+                        b.classList.remove('bg-white', 'hover:bg-sky-50', 'border-sky-300');
+                        b.classList.add('bg-emerald-500', 'text-white', 'border-emerald-600');
+                    } else {
+                        b.style.opacity = '0.6';
+                    }
+                });
+
+                setKailMessage(`💧 <strong>ざんねん！</strong> 正解は「${currentQuestion.part}」でした！【${currentQuestion.kanji}（${currentQuestion.yomi}）】<br><span class="text-xs text-sky-700">${currentQuestion.info}</span>`);
+            }
+
+            document.getElementById('score-display').innerText = `スコア: ${score}点`;
+            document.getElementById('next-btn').classList.remove('hidden');
+        }
+
+        function nextQuestion() {
+            currentIndex++;
+            if (currentIndex < quizList.length) {
+                loadQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            document.getElementById('quiz-container').classList.add('hidden');
+            document.getElementById('result-container').classList.remove('hidden');
+
+            document.getElementById('final-score-text').innerText = `スコア: ${score}点 (10問中 ${score / 10}問正解)`;
+            
+            let comment = "";
+            if (score === 100) {
+                comment = "パーフェクト達成！君は間違いなく本物の「お魚漢字マスター」だね！イルカのカイルも感動しているよ！";
+                setKailMessage("やったね！パーフェクトおめでとう！");
+            } else if (score >= 70) {
+                comment = "すごい高得点！お魚の漢字にとても詳しいんだね！素晴らしい成績だよ！";
+                setKailMessage("すごいすごい！よくがんばったね！");
+            } else if (score >= 40) {
+                comment = "よくがんばりました！魚偏の漢字は難しいものも多いけど、だいぶ覚られたね！";
+                setKailMessage("おつかれさま！楽しかったね！");
+            } else {
+                comment = "もう少しだったね！何度も挑戦して、お魚漢字博士を目指そう！";
+                setKailMessage("どんまい！またあそびにきてね！");
+            }
+            document.getElementById('final-comment').innerText = comment;
+        }
+
+        function restartGame() {
+            startGame();
+        }
+
+        // ゲーム初期化
+        window.onload = () => {
+            startGame();
+        };
+    </script>
+</body>
+</html>
