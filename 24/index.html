@@ -482,11 +482,27 @@ function judgePizza() {
     // 理想のカット本数: customerCountが偶数の場合 customerCount / 2 本（またはそれに近い）、奇数の場合 (customerCount+1)/2 本など、あるいは十分な回数切られているか。
     // ユーザーのご要望：「数が合ってたら、面積などは大目に見といて。数が割り切れたらOKということで」
     
+    // 判定ロジック（数が合っていればOK、面積は大目に見る）
     let validCuts = 0;
     cutLines.forEach(l => {
-        const d1 = Math.hypot(l.x1 - pizzaCenter.x, l.y1 - pizzaCenter.y);
-        const d2 = Math.hypot(l.x2 - pizzaCenter.x, l.y2 - pizzaCenter.y);
-        if (d1 < pizzaCenter.radius * 1.3 || d2 < pizzaCenter.radius * 1.3) {
+        // 線分 (x1, y1) - (x2, y2) がピザの円を横切っているか（または円と交差しているか）を判定
+        // 点と線分の最短距離がピザの半径以下であれば、線がピザを横切っているとみなす
+        const x0 = pizzaCenter.x, y0 = pizzaCenter.y;
+        const x1 = l.x1, y1 = l.y1;
+        const x2 = l.x2, y2 = l.y2;
+        
+        const lengthSq = (x2 - x1) * (x2 - x1) + (y2 - y1) * (y2 - y1);
+        let t = 0;
+        if (lengthSq > 0) {
+            t = ((x0 - x1) * (x2 - x1) + (y0 - y1) * (y2 - y1)) / lengthSq;
+            t = Math.max(0, Math.min(1, t));
+        }
+        const nearestX = x1 + t * (x2 - x1);
+        const nearestY = y1 + t * (y2 - y1);
+        const distToCenter = Math.hypot(nearestX - x0, nearestY - y0);
+
+        // 最短距離がピザの半径以内（あるいは少し余裕を持たせて半径＋α）であれば有効なカットとする
+        if (distToCenter <= pizzaCenter.radius * 1.1) {
             validCuts++;
         }
     });
