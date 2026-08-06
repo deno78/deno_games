@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>会話を楽しむ、さしすせそ</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=DotGothic16&display=swap');
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+
+        body {
+            background-color: #1a1a2e;
+            color: #fff;
+            font-family: 'DotGothic16', monospace;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 480px;
+            height: 100vh;
+            max-height: 850px;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            border: 4px solid #ffd700;
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 16px;
+            box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+            position: relative;
+        }
+
+        /* ヘッダー */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 10px 16px;
+            border: 2px solid #4ecca3;
+            border-radius: 8px;
+            font-size: 1.1rem;
+        }
+
+        .score-box, .combo-box, .life-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .label {
+            font-size: 0.75rem;
+            color: #a0aec0;
+        }
+
+        .value {
+            font-size: 1.2rem;
+            color: #ffd700;
+        }
+
+        /* メインステージ（おじさんと会話） */
+        .stage {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 10px 0;
+            position: relative;
+        }
+
+        /* 16bit風おじさんキャンバス */
+        .oji-canvas-container {
+            width: 160px;
+            height: 160px;
+            background: #111;
+            border: 4px solid #fff;
+            border-radius: 8px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 15px;
+            position: relative;
+        }
+
+        canvas {
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        /* 吹き出し */
+        .speech-bubble {
+            background: #fff;
+            color: #111;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 1rem;
+            max-width: 90%;
+            min-height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            position: relative;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            border: 3px solid #333;
+        }
+
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            top: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 0 10px 12px 10px;
+            border-style: solid;
+            border-color: transparent transparent #fff transparent;
+        }
+
+        /* タイマーバー */
+        .timer-container {
+            width: 100%;
+            height: 10px;
+            background: #333;
+            border-radius: 5px;
+            overflow: hidden;
+            margin-bottom: 15px;
+            border: 1px solid #718096;
+        }
+
+        .timer-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #48bb78, #ecc94b, #f56565);
+            transition: width 0.1s linear;
+        }
+
+        /* 選択肢ボタンエリア */
+        .buttons-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 6px;
+            margin-bottom: 10px;
+        }
+
+        .choice-btn {
+            background: #2d3748;
+            color: #fff;
+            border: 3px solid #4a5568;
+            border-radius: 8px;
+            padding: 10px 2px;
+            font-family: 'DotGothic16', monospace;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.1s ease;
+            height: 75px;
+            position: relative;
+        }
+
+        .choice-btn:hover:not(.hidden) {
+            background: #4a5568;
+            border-color: #cbd5e0;
+            transform: translateY(-2px);
+        }
+
+        .choice-btn:active:not(.hidden) {
+            transform: translateY(1px);
+        }
+
+        .choice-btn .key {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ffd700;
+            margin-bottom: 4px;
+        }
+
+        .choice-btn .desc {
+            font-size: 0.6rem;
+            color: #cbd5e0;
+            text-align: center;
+            line-height: 1.1;
+        }
+
+        /* 不正解で消去されたボタン */
+        .choice-btn.hidden {
+            opacity: 0.15;
+            background: #1a202c;
+            border-color: #2d3748;
+            pointer-events: none;
+            transform: scale(0.95);
+        }
+
+        .choice-btn.hidden .desc, .choice-btn.hidden .key {
+            color: #4a5568;
+        }
+
+        /* モーダル・画面切り替え */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 12, 41, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            padding: 20px;
+            text-align: center;
+            border-radius: 12px;
+        }
+
+        .screen.hidden {
+            display: none;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            color: #ffd700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px #ff4500;
+        }
+
+        p {
+            font-size: 1rem;
+            line-height: 1.5;
+            color: #e2e8f0;
+            margin-bottom: 20px;
+        }
+
+        .btn-primary {
+            background: #ff4500;
+            color: #fff;
+            border: 3px solid #ffd700;
+            padding: 12px 28px;
+            font-size: 1.2rem;
+            font-family: 'DotGothic16', monospace;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #b22222;
+            transition: all 0.1s;
+        }
+
+        .btn-primary:hover {
+            background: #ff6347;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 0 #b22222;
+        }
+
+        .btn-primary:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #b22222;
+        }
+
+        .rule-box {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 12px;
+            border-radius: 8px;
+            text-align: left;
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+            border: 1px dashed #ffd700;
+        }
+
+        .rule-box ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+
+        .rule-box li {
+            margin-bottom: 4px;
+        }
+
+        /* フィードバック表示 */
+        .feedback-popup {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 2.5rem;
+            font-weight: bold;
+            z-index: 5;
+            pointer-events: none;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275), opacity 0.2s;
+            opacity: 0;
+            text-shadow: 3px 3px #000;
+        }
+
+        .feedback-popup.show {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+
+        .feedback-popup.good { color: #48bb78; }
+        .feedback-popup.bad { color: #f56565; }
+
+        /* レスポンシブ調整 */
+        @media(max-width: 480px) {
+            .choice-btn {
+                font-size: 0.75rem;
+                padding: 8px 1px;
+                height: 70px;
+            }
+            .choice-btn .key {
+                font-size: 1rem;
+            }
+            .choice-btn .desc {
+                font-size: 0.55rem;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <!-- ヘッダー -->
+        <div class="header">
+            <div class="score-box">
+                <span class="label">スコア</span>
+                <span id="score" class="value">0</span>
+            </div>
+            <div class="combo-box">
+                <span class="label">コンボ</span>
+                <span id="combo" class="value">0</span>
+            </div>
+            <div class="life-box">
+                <span class="label">ライフ</span>
+                <span id="life" class="value">❤️❤️❤️</span>
+            </div>
+        </div>
+
+        <!-- メインステージ -->
+        <div class="stage">
+            <div class="oji-canvas-container">
+                <canvas id="ojiCanvas" width="80" height="80"></canvas>
+            </div>
+            <div id="speechBubble" class="speech-bubble">
+                おじさんのセリフがここに表示されます。会話を楽しもう！
+            </div>
+        </div>
+
+        <!-- タイマーバー -->
+        <div class="timer-container">
+            <div id="timerBar" class="timer-bar"></div>
+        </div>
+
+        <!-- ボタンエリア（さしすせそ） -->
+        <div class="buttons-grid">
+            <button class="choice-btn" onclick="answer('さ')">
+                <span class="key">さ</span>
+                <span class="desc">さ さすがです</span>
+            </button>
+            <button class="choice-btn" onclick="answer('し')">
+                <span class="key">し</span>
+                <span class="desc">し 知らなかった！</span>
+            </button>
+            <button class="choice-btn" onclick="answer('す')">
+                <span class="key">す</span>
+                <span class="desc">す 凄いですね！</span>
+            </button>
+            <button class="choice-btn" onclick="answer('せ')">
+                <span class="key">せ</span>
+                <span class="desc">せ センスがいい！</span>
+            </button>
+            <button class="choice-btn" onclick="answer('そ')">
+                <span class="key">そ</span>
+                <span class="desc">そ そうなんですね</span>
+            </button>
+        </div>
+
+        <!-- フィードバックポップアップ -->
+        <div id="feedbackPopup" class="feedback-popup">正解！</div>
+
+        <!-- スタート画面 -->
+        <div id="startScreen" class="screen">
+            <h1>会話を楽しむ<br>「さしすせそ」</h1>
+            <p>相手（おじさん）の話の内容に合わせて、最適な「さしすせそ」で相槌を打とう！</p>
+            
+            <div class="rule-box">
+                <ul>
+                    <li><strong>さ</strong>：仕事・スキル自慢（さすがです）</li>
+                    <li><strong>し</strong>：蘊蓄・豆知識（知らなかった！）</li>
+                    <li><strong>す</strong>：持ち物自慢（凄いですね！）</li>
+                    <li><strong>せ</strong>：お洒落・センス（センスがいいですね！）</li>
+                    <li><strong>そ</strong>：その他・日常・愚痴（そうなんですね）</li>
+                </ul>
+                <p style="margin: 8px 0 0 0; font-size: 0.8rem; color: #ffd700;">
+                    💡ヒント：1秒経つごとに不正解が1つずつ消え、5秒経つと正解のみになります！早く押すほど高得点！
+                </p>
+            </div>
+
+            <button class="btn-primary" onclick="startGame()">ゲームスタート</button>
+        </div>
+
+        <!-- ゲームオーバー画面 -->
+        <div id="gameOverScreen" class="screen hidden">
+            <h1>ゲームオーバー</h1>
+            <p>おじさんとの会話がかみ合わなくなってしまいました…。</p>
+            <p style="font-size: 1.2rem; color: #ffd700;">最終スコア: <span id="finalScore">0</span></p>
+            <button class="btn-primary" onclick="startGame()">もう一度プレイ</button>
+        </div>
+    </div>
+
+    <script>
+        // 音声合成 (Web Audio API)
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                const now = audioCtx.currentTime;
+
+                if (type === 'correct') {
+                    osc.type = 'sine';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.08); // E5
+                    osc.frequency.setValueAtTime(783.99, now + 0.16); // G5
+                    gain.gain.setValueAtTime(0.15, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.setValueAtTime(100, now + 0.15);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                } else if (type === 'click') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(400, now);
+                    gain.gain.setValueAtTime(0.05, now);
+                    gain.gain.exponentialRampToValueAtTime(0.01, now + 0.05);
+                    osc.start(now);
+                    osc.stop(now + 0.05);
+                }
+            } catch(e) {}
+        }
+
+        // おじさんのセリフデータ
+        const questions = [
+            // さ (さすがです: 仕事・スキル自慢)
+            { text: "今日ゴルフのコンペで100出したんだよね、すごくない？", type: "さ" },
+            { text: "先週の大きなシステム障害、俺が一晩で直したんだぜ。", type: "さ" },
+            { text: "部下の面倒を熱心に見てたら、社長から直接ほめられちゃってさ。", type: "さ" },
+            { text: "外国人のクライアントと英語で堂々と交渉して契約取ってきたわ。", type: "さ" },
+
+            // し (知らなかった: 蘊蓄系)
+            { text: "実は白って256種類もあるんだぜ、知ってたか？", type: "し" },
+            { text: "鳥って唐辛子の辛さを感じない生き物らしいぞ。", type: "し" },
+            { text: "昔のエジプトのピラミッドって、真っ白な石灰岩で覆われてたんだってさ。", type: "し" },
+            { text: "ペンギンの膝って、実は体の中にちゃんと曲がった関節があるんだぞ。", type: "し" },
+
+            // す (凄いですね: 持ち物自慢)
+            { text: "この時計、スイス製の特注品で100万円するんだぞ！", type: "す" },
+            { text: "この財布さ、職人が手縫いした最高級の本革なんだぜ。", type: "す" },
+            { text: "最近買ったこの万年筆、50万したんだけど書き味が別世界なんだわ。", type: "す" },
+            { text: "このサングラス、有名ハリウッドスターと同じ限定モデルなんだ。", type: "す" },
+
+            // せ (センスがいいですね: お洒落自慢)
+            { text: "このジャケット、パリの有名ブランドの最新作なんだよね。", type: "せ" },
+            { text: "俺って服のコーディネートは全部自分のこだわりでスタイリングしてるんだ。", type: "せ" },
+            { text: "この革靴、イタリアから取り寄せた特注の一点物さ。", type: "せ" },
+            { text: "香水はいつもフランス製の高級なやつしか使わない主義なんだ。", type: "せ" },
+
+            // そ (そうなんですね: その他・日常・愚痴など)
+            { text: "昨日のテレビドラマ、最後の展開にはちょっとびっくりしたよ。", type: "そ" },
+            { text: "最近、近所のスーパーで買った特売の肉が硬くてさあ。", type: "そ" },
+            { text: "駅前の新しいラーメン屋、いつも長蛇の列ができてるんだよな。", type: "そ" },
+            { text: "今朝の満員電車で、足を踏まれてめちゃくちゃ痛かったわ。", type: "そ" }
+        ];
+
+        // ゲーム状態
+        let score = 0;
+        let combo = 0;
+        let life = 3;
+        let currentQuestion = null;
+        let timer = null;
+        let timeLeft = 6.0; // 6秒制限
+        const maxTime = 6.0;
+        let gameActive = false;
+        let hiddenWrongOptions = []; // 消された不正解のキーリスト
+        let wrongOptionsPool = [];
+
+        // おじさんのドット絵描画 (Canvas 16bit風)
+        const canvas = document.getElementById('ojiCanvas');
+        const ctx = canvas.getContext('2d');
+
+        function drawOji(mood = 'normal') {
+            ctx.fillStyle = '#1e1e2f';
+            ctx.fillRect(0, 0, 80, 80);
+
+            // ピクセルサイズ (8x8 or 16x16 grid scaled)
+            // 簡単な16bit風おじさんドット絵ピクセルグリッド (16x16)
+            const p = 5; // 1ピクセルのサイズ (16 * 5 = 80)
+            
+            // カラーパレット
+            const skin = '#fcd0a1';
+            const hair = mood === 'angry' ? '#ff4500' : '#4a5568'; // 白髪・ハゲ・黒髪など
+            const suit = '#2b6cb0';
+            const shirt = '#edf2f7';
+            const tie = '#e53e3e';
+            const eyeColor = '#1a202c';
+            const mouthColor = '#742a2a';
+
+            // おじさんの顔を描画する簡易ピクセルマトリックス
+            // 16行16列のデータ
+            const grid = [
+                "................",
+                "....HHHHHH......",
+                "...HHHHHHHH.....",
+                "...HSSSHSSH.....",
+                "...SSEESSEE.....",
+                "...SSSSSSSS.....",
+                "....SSNSS.......",
+                ".....MMM........",
+                "....TTTTTT......",
+                "...SSSSSSSS.....",
+                "..SSSSSSSSSS....",
+                "..CCSSZZSSCC....",
+                "..CCSSSSSSCC....",
+                "...CCCCCCCC.....",
+                "................",
+                "................"
+            ];
+
+            // 表情による変更
+            let activeGrid = [...grid];
+            if (mood === 'happy') {
+                activeGrid[7] = ".....MWM........"; // 笑顔
+            } else if (mood === 'proud') {
+                activeGrid[7] = ".....WWM........"; // ニヤリ
+            } else if (mood === 'angry') {
+                activeGrid[7] = ".....WWW........"; // 不満
+            }
+
+            for (let y = 0; y < 16; y++) {
+                for (let x = 0; x < 16; x++) {
+                    const char = activeGrid[y][x];
+                    let color = null;
+                    if (char === 'H') color = hair;
+                    else if (char === 'S') color = skin;
+                    else if (char === 'E') color = eyeColor;
+                    else if (char === 'N') color = '#e2a068'; // 鼻
+                    else if (char === 'M') color = mouthColor;
+                    else if (char === 'W') color = '#fff'; // 歯・口の中
+                    else if (char === 'T') color = tie;
+                    else if (char === 'C') color = suit;
+
+                    if (color) {
+                        ctx.fillStyle = color;
+                        ctx.fillRect(x * p, y * p, p, p);
+                    }
+                }
+            }
+        }
+
+        function startGame() {
+            initAudio();
+            document.getElementById('startScreen').classList.add('hidden');
+            document.getElementById('gameOverScreen').classList.add('hidden');
+            score = 0;
+            combo = 0;
+            life = 3;
+            updateHUD();
+            nextQuestion();
+        }
+
+        function updateHUD() {
+            document.getElementById('score').innerText = score;
+            document.getElementById('combo').innerText = combo;
+            let hearts = '';
+            for (let i = 0; i < life; i++) hearts += '❤️';
+            document.getElementById('life').innerText = hearts;
+        }
+
+        function nextQuestion() {
+            if (life <= 0) return;
+            gameActive = true;
+            timeLeft = maxTime;
+            hiddenWrongOptions = [];
+
+            // ランダムに問題を選ぶ
+            const qIndex = Math.floor(Math.random() * questions.length);
+            currentQuestion = questions[qIndex];
+
+            document.getElementById('speechBubbleinnerText') || (document.getElementById('speechBubble').innerText = currentQuestion.text);
+            
+            // 不正解の選択肢プールを作成
+            const allKeys = ['さ', 'し', 'す', 'せ', 'そ'];
+            wrongOptionsPool = allKeys.filter(k => k !== currentQuestion.type);
+            // シャッフル
+            wrongOptionsPool.sort(() => Math.random() - 0.5);
+
+            // ボタンの表示状態をリセット
+            allKeys.forEach(k => {
+                const btn = getButtonByKey(k);
+                btn.classList.remove('hidden');
+            });
+
+            drawOji('proud');
+
+            // タイマー開始
+            if (timer) clearInterval(timer);
+            const startTime = Date.now();
+            
+            timer = setInterval(() => {
+                const elapsed = (Date.now() - startTime) / 1000;
+                timeLeft = Math.max(0, maxTime - elapsed);
+
+                // タイマーバー更新
+                const percentage = (timeLeft / maxTime) * 100;
+                document.getElementById('timerBar').style.width = percentage + '%';
+
+                // 1秒経つごとに不正解が消えていく (1s, 2s, 3s, 4sで1個ずつ消す)
+                // 5秒経つと正解のみになる
+                const expectedHiddenCount = Math.min(4, Math.floor(elapsed));
+                while (hiddenWrongOptions.length < expectedHiddenCount && wrongOptionsPool.length > 0) {
+                    const toHide = wrongOptionsPool.pop();
+                    hiddenWrongOptions.push(toHide);
+                    const btn = getButtonByKey(toHide);
+                    btn.classList.add('hidden');
+                    playSound('click');
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    handleTimeOut();
+                }
+            }, 50);
+        }
+
+        function getButtonByKey(key) {
+            const buttons = document.querySelectorAll('.choice-btn');
+            for (let btn of buttons) {
+                if (btn.querySelector('.key').innerText === key) {
+                    return btn;
+                }
+            }
+            return null;
+        }
+
+        function answer(selectedKey) {
+            if (!gameActive) return;
+            gameActive = false;
+            clearInterval(timer);
+
+            const isCorrect = (selectedKey === currentQuestion.type);
+            
+            if (isCorrect) {
+                playSound('correct');
+                combo++;
+                // 残り時間や消えた数に応じたスコア計算 (早く答えるほど高得点)
+                const timeBonus = Math.floor(timeLeft * 100);
+                const comboBonus = combo * 50;
+                const earned = 200 + timeBonus + comboBonus;
+                score += earned;
+
+                showFeedback('正解！', 'good');
+                drawOji('happy');
+            } else {
+                playSound('wrong');
+                combo = 0;
+                life--;
+                showFeedback('不正解…', 'bad');
+                drawOji('angry');
+            }
+
+            updateHUD();
+
+            setTimeout(() => {
+                if (life <= 0) {
+                    gameOver();
+                } else {
+                    nextQuestion();
+                }
+            }, 1000);
+        }
+
+        function handleTimeOut() {
+            if (!gameActive) return;
+            gameActive = false;
+            playSound('wrong');
+            combo = 0;
+            life--;
+            showFeedback('タイムアップ！', 'bad');
+            drawOji('angry');
+            updateHUD();
+
+            setTimeout(() => {
+                if (life <= 0) {
+                    gameOver();
+                } else {
+                    nextQuestion();
+                }
+            }, 1000);
+        }
+
+        function showFeedback(text, type) {
+            const popup = document.getElementById('feedbackPopup');
+            popup.innerText = text;
+            popup.className = `feedback-popup ${type} show`;
+            setTimeout(() => {
+                popup.classList.remove('show');
+            }, 800);
+        }
+
+        function gameOver() {
+            gameActive = false;
+            if (timer) clearInterval(timer);
+            document.getElementById('finalScore').innerText = score;
+            document.getElementById('gameOverScreen').classList.remove('hidden');
+            drawOji('angry');
+        }
+
+        // 初期描画
+        drawOji('normal');
+    </script>
+</body>
+</html>

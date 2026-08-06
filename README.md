@@ -35,3 +35,4 @@ Deno/Web games collection.
 - [22. スマホ横持ち2人用ピンポン (Dual Ping Pong Timing Battle)](./22/index.html)
 - [23. 16bitショート動画スワイプ評価バトル (Shorts Swipe Master)](./23/index.html)
 - [24. ピザパニック！人数分スワイプスライス (Pizza Panic Slice)](./24/index.html)
+- [25. 会話を楽しむ、さしすせそ (Sashisuseso Conversation Game)](./25/index.html)
