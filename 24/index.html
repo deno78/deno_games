@@ -486,7 +486,7 @@ function judgePizza() {
     cutLines.forEach(l => {
         const d1 = Math.hypot(l.x1 - pizzaCenter.x, l.y1 - pizzaCenter.y);
         const d2 = Math.hypot(l.x2 - pizzaCenter.x, l.y2 - pizzaCenter.y);
-        if (d1 < pizzaCenter.radius || d2 < pizzaCenter.radius) {
+        if (d1 < pizzaCenter.radius * 1.3 || d2 < pizzaCenter.radius * 1.3) {
             validCuts++;
         }
     });
@@ -504,6 +504,7 @@ function judgePizza() {
         // 例: 3人なら1〜2本以上の有効なカット、4人なら2本以上など
         let requiredCuts = Math.max(1, Math.floor(customerCount / 2));
         if (customerCount === 3) requiredCuts = 2; // 3人の場合は2本以上クロスするなど
+        if (customerCount === 2) requiredCuts = 1; // 2人の場合は1本でOK
         
         if (validCuts >= requiredCuts || cutLines.length >= Math.ceil(customerCount / 2)) {
             success = true;
