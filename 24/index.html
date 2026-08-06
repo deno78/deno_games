@@ -477,22 +477,6 @@ function judgePizza() {
 
     const avgProximity = totalCenterProximity / cutLines.length;
 
-    // ピース数の推定（理想は customerCount 個のピース）
-    // 線の本数やバランスから算出
-    let estimatedPieces = 1;
-    cutLines.forEach(() => {
-        estimatedPieces += 1; // 簡易的にカット数+1 or 2倍など
-    });
-    // 直線がピザの円を横切っているかもチェック
-    let validCuts = 0;
-    cutLines.forEach(l => {
-        const d1 = Math.hypot(l.x1 - pizzaCenter.x, l.y1 - pizzaCenter.y);
-        const d2 = Math.hypot(l.x2 - pizzaCenter.x, l.y2 - pizzaCenter.y);
-        if (d1 < pizzaCenter.radius || d2 < pizzaCenter.radius || Math.min(d1, d2) < pizzaCenter.radius) {
-            validCuts++;
-        }
-    });
-
     // 判定ロジック（数が合っていればOK、面積は大目に見る）
     // 直線によって切られた回数が、お客さんの人数に対して適切かどうかをチェック
     // 理想のカット本数: customerCountが偶数の場合 customerCount / 2 本（またはそれに近い）、奇数の場合 (customerCount+1)/2 本など、あるいは十分な回数切られているか。
