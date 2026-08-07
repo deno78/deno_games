@@ -31,58 +31,60 @@
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-between p-2 md:p-4">
+<body class="min-h-screen flex flex-col items-center justify-between p-2">
 
     <!-- ヘッダー -->
     <header class="text-center my-1">
-        <h1 class="text-2xl md:text-4xl font-bold tracking-wider text-yellow-400 drop-shadow-[2px_2px_0px_#e94560]">
+        <h1 class="text-2xl md:text-3xl font-bold tracking-wider text-yellow-400 drop-shadow-[2px_2px_0px_#e94560]">
             漫画次巻発行日当てゲーム
         </h1>
-        <p class="text-xs md:text-sm text-gray-300">～次の一冊が出るまでどれだけ待った！？～</p>
+        <p class="text-xs text-gray-300">～次の一冊が出るまでどれだけ待った！？～</p>
     </header>
 
     <!-- メインコンテンツ -->
-    <main class="w-full max-w-xl bg-[#16213e] p-4 rounded-none pixel-border flex flex-col items-center relative">
+    <main class="w-full max-w-md bg-[#16213e] p-3 rounded-none pixel-border flex flex-col items-center relative">
 
-        <!-- ステータス表示 -->
-        <div class="w-full flex justify-between items-center bg-[#0f3460] p-2 mb-3 border border-yellow-500 text-xs md:text-base text-yellow-300">
-            <div id="manga-title-display" class="font-bold truncate max-w-[180px] md:max-w-xs">作品: 選択中...</div>
-            <div id="progress-display" class="font-bold">巻数: 1 / --</div>
-            <div id="lives-display" class="text-red-400">💖💖💖</div>
+        <!-- ステータス表示 (スマホで崩れないよう2段構成) -->
+        <div class="w-full flex flex-col bg-[#0f3460] p-2 mb-2 border border-yellow-500 text-xs text-yellow-300 gap-1">
+            <div id="manga-title-display" class="font-bold truncate w-full text-center">作品: 選択中...</div>
+            <div class="flex justify-between items-center w-full px-2">
+                <div id="progress-display" class="font-bold">巻数: 1 / --</div>
+                <div id="lives-display" class="text-red-400">💖💖💖</div>
+            </div>
         </div>
 
-        <!-- ドット絵アニメーションキャンバス (高さ半分 90px) -->
-        <div class="w-full bg-black mb-3 border-2 border-gray-700 flex justify-center items-center overflow-hidden relative" style="height: 90px;">
-            <canvas id="animCanvas" width="400" height="90" class="w-full max-w-[400px] h-[90px] image-rendering-pixelated"></canvas>
-            <div id="reading-status" class="absolute bottom-1 right-1 text-[10px] text-green-400 bg-black/80 px-1.5 py-0.5 border border-green-500">
+        <!-- ドット絵アニメーションキャンバス (高さ 80px) -->
+        <div class="w-full bg-black mb-2 border-2 border-gray-700 flex justify-center items-center overflow-hidden relative" style="height: 80px;">
+            <canvas id="animCanvas" width="360" height="80" class="w-full max-w-[360px] h-[80px] image-rendering-pixelated"></canvas>
+            <div id="reading-status" class="absolute bottom-1 right-1 text-[9px] text-green-400 bg-black/80 px-1 py-0.5 border border-green-500">
                 読書中... 📖
             </div>
         </div>
 
-        <!-- クイズエリア (メッセージ部分の高さを固定) -->
+        <!-- クイズエリア (メッセージ部分の高さを確保して崩れ防止) -->
         <div id="quiz-container" class="w-full text-center">
-            <div id="question-text" class="h-[75px] md:h-[65px] flex flex-col justify-center items-center text-sm md:text-base mb-3 text-white leading-tight px-1">
+            <div id="question-text" class="min-h-[70px] flex flex-col justify-center items-center text-xs md:text-sm mb-2 text-white leading-snug px-1 bg-black/30 p-1.5 border border-gray-800">
                 ゲームスタートを押してください
             </div>
 
-            <!-- 選択肢 (常に固定の5つ・位置固定) -->
-            <div id="choices-container" class="grid grid-cols-2 sm:grid-cols-3 gap-2 w-full">
-                <!-- 動的生成または固定描画 -->
+            <!-- 選択肢 (2列レイアウト、最後は全幅で固定配置) -->
+            <div id="choices-container" class="grid grid-cols-2 gap-2 w-full">
+                <!-- 動的生成 -->
             </div>
         </div>
 
         <!-- スタート / リスタート画面 -->
         <div id="start-screen" class="absolute inset-0 bg-[#16213e]/95 flex flex-col items-center justify-center p-4 z-10">
-            <h2 class="text-xl md:text-2xl text-yellow-400 mb-3 font-bold">挑戦するモードを選べ！</h2>
-            <p class="text-xs md:text-sm text-gray-300 mb-4 text-center leading-relaxed">
+            <h2 class="text-lg text-yellow-400 mb-2 font-bold">挑戦するモードを選べ！</h2>
+            <p class="text-xs text-gray-300 mb-4 text-center leading-relaxed">
                 名作漫画の「次巻が出るまでの期間」を当てろ！<br>
-                ボタン位置は固定・ミスは3回まで。
+                ボタン位置固定・ミスは3回まで。
             </p>
             <div class="flex flex-col gap-2 w-full max-w-xs">
-                <button onclick="startGame('all')" class="pixel-btn bg-yellow-500 text-black font-bold py-2.5 px-4 text-base">
+                <button onclick="startGame('all')" class="pixel-btn bg-yellow-500 text-black font-bold py-2 px-4 text-sm">
                     📚 全作制覇モード (全14作品)
                 </button>
-                <button onclick="startGame('random')" class="pixel-btn bg-blue-500 text-white font-bold py-2.5 px-4 text-base">
+                <button onclick="startGame('random')" class="pixel-btn bg-blue-500 text-white font-bold py-2 px-4 text-sm">
                     🎲 ランダム単発モード
                 </button>
             </div>
@@ -90,10 +92,10 @@
 
         <!-- 結果 / ゲームオーバー画面 -->
         <div id="result-screen" class="absolute inset-0 bg-[#16213e]/95 hidden flex flex-col items-center justify-center p-4 z-10 text-center">
-            <h2 id="result-title" class="text-2xl md:text-3xl font-bold mb-3">結果</h2>
-            <div id="result-message" class="text-base text-white mb-4"></div>
-            <div id="masked-title-reveal" class="text-lg text-yellow-400 font-bold mb-4 bg-black/50 p-2.5 border border-yellow-500 w-full"></div>
-            <button onclick="resetToTitle()" class="pixel-btn bg-green-500 text-black font-bold py-2.5 px-6 text-base">
+            <h2 id="result-title" class="text-2xl font-bold mb-2">結果</h2>
+            <div id="result-message" class="text-sm text-white mb-3"></div>
+            <div id="masked-title-reveal" class="text-base text-yellow-400 font-bold mb-3 bg-black/50 p-2 border border-yellow-500 w-full"></div>
+            <button onclick="resetToTitle()" class="pixel-btn bg-green-500 text-black font-bold py-2 px-6 text-sm">
                 タイトルに戻る
             </button>
         </div>
@@ -101,114 +103,28 @@
     </main>
 
     <!-- フッター -->
-    <footer class="text-[10px] md:text-xs text-gray-400 mt-2 text-center">
+    <footer class="text-[9px] text-gray-400 mt-1 text-center">
         <p>※発行時期・間隔は作品の歴史や休載状況に基づく概算データを含みます。</p>
     </footer>
 
     <script>
-        // 漫画データベース (14作品)
         const mangaDatabase = [
-            {
-                name: "北斗の拳",
-                masked: "北〇の拳",
-                hint: "1980年代を駆け抜けた世紀末バトル漫画の金字塔",
-                totalVol: 27,
-                getInterval: (vol) => 3
-            },
-            {
-                name: "キン肉マン",
-                masked: "キ◯肉マン",
-                hint: "友情・努力・勝利！平成・令和編も大熱狂の超人プロレス",
-                totalVol: 85,
-                getInterval: (vol) => vol > 40 ? (vol % 5 === 0 ? 12 : 6) : 3
-            },
-            {
-                name: "ONE PIECE",
-                masked: "〇ンピース",
-                hint: "海賊王を目指す少年と仲間たちの大航海ロマン",
-                totalVol: 111,
-                getInterval: (vol) => 3
-            },
-            {
-                name: "ドラゴンボール",
-                masked: "ドラ〇ンボール",
-                hint: "世界中が夢中になった神龍と7つの球を巡る冒険",
-                totalVol: 42,
-                getInterval: (vol) => 3
-            },
-            {
-                name: "こちら葛飾区亀有公園前派出所",
-                masked: "こち◯め",
-                hint: "東京の下町を舞台にした両さんのお騒がせ日常",
-                totalVol: 200,
-                getInterval: (vol) => 3
-            },
-            {
-                name: "BASTARD!! -暗黒の破壊神-",
-                masked: "バスタ◯ド",
-                hint: "ダークファンタジーの傑作だが、後半は伝説の超スローペース",
-                totalVol: 27,
-                getInterval: (vol) => vol > 24 ? 120 : (vol > 20 ? 36 : 6)
-            },
-            {
-                name: "強殖装甲ガイバー",
-                masked: "ガイバ◯",
-                hint: "降臨者の遺産「ユニット」を纏った少年のSFバイオアクション",
-                totalVol: 32,
-                getInterval: (vol) => vol > 25 ? 60 : 12
-            },
-            {
-                name: "ファイブスター物語",
-                masked: "F〇S",
-                hint: "永野護が描く圧倒的スケールのロボット＆星団史",
-                totalVol: 18,
-                getInterval: (vol) => 36
-            },
-            {
-                name: "DEATH NOTE",
-                masked: "デスノ◯ト",
-                hint: "名前を書かれた人間が死ぬノートを巡る頭脳戦サスペンス",
-                totalVol: 12,
-                getInterval: (vol) => 3
-            },
-            {
-                name: "鬼滅の刃",
-                masked: "鬼◯の刃",
-                hint: "家族を殺した鬼を討つため、炭治郎が剣士の道を歩む",
-                totalVol: 23,
-                getInterval: (vol) => 3
-            },
-            {
-                name: "彼方のアストラ",
-                masked: "彼方のアス◯ラ",
-                hint: "宇宙旅行に出発した少年少女たちが体験する驚愕のSFサバイバル",
-                totalVol: 5,
-                getInterval: (vol) => 3
-            },
-            {
-                name: "ガラスの仮面",
-                masked: "ガラスの仮○",
-                hint: "演劇の天才・北島マヤの執念と「紅天女」への道のり",
-                totalVol: 49,
-                getInterval: (vol) => 60
-            },
-            {
-                name: "名探偵コナン",
-                masked: "名探偵コ◯ン",
-                hint: "見た目は子供、頭脳は大人！黒ずくの組織を追う推理漫画",
-                totalVol: 105,
-                getInterval: (vol) => 6
-            },
-            {
-                name: "ゴルゴ13",
-                masked: "ゴルゴ1◯",
-                hint: "超A級スナイパー・デューク東郷のハードボイルド劇画",
-                totalVol: 215,
-                getInterval: (vol) => 3
-            }
+            { name: "北斗の拳", masked: "北〇の拳", hint: "1980年代を駆け抜けた世紀末バトル漫画の金字塔", totalVol: 27, getInterval: (vol) => 3 },
+            { name: "キン肉マン", masked: "キ◯肉マン", hint: "友情・努力・勝利！平成・令和編も大熱狂の超人プロレス", totalVol: 85, getInterval: (vol) => vol > 40 ? (vol % 5 === 0 ? 12 : 6) : 3 },
+            { name: "ONE PIECE", masked: "〇ンピース", hint: "海賊王を目指す少年と仲間たちの大航海ロマン", totalVol: 111, getInterval: (vol) => 3 },
+            { name: "ドラゴンボール", masked: "ドラ〇ンボール", hint: "世界中が夢中になった神龍と7つの球を巡る冒険", totalVol: 42, getInterval: (vol) => 3 },
+            { name: "こちら葛飾区亀有公園前派出所", masked: "こち◯め", hint: "東京の下町を舞台にした両さんのお騒がせ日常", totalVol: 200, getInterval: (vol) => 3 },
+            { name: "BASTARD!! -暗黒の破壊神-", masked: "バスタ◯ド", hint: "ダークファンタジーの傑作だが、後半は伝説の超スローペース", totalVol: 27, getInterval: (vol) => vol > 24 ? 120 : (vol > 20 ? 36 : 6) },
+            { name: "強殖装甲ガイバー", masked: "ガイバ◯", hint: "降臨者の遺産「ユニット」を纏った少年のSFバイオアクション", totalVol: 32, getInterval: (vol) => vol > 25 ? 60 : 12 },
+            { name: "ファイブスター物語", masked: "F〇S", hint: "永野護が描く圧倒的スケールのロボット＆星団史", totalVol: 18, getInterval: (vol) => 36 },
+            { name: "DEATH NOTE", masked: "デスノ◯ト", hint: "名前を書かれた人間が死ぬノートを巡る頭脳戦サスペンス", totalVol: 12, getInterval: (vol) => 3 },
+            { name: "鬼滅の刃", masked: "鬼◯の刃", hint: "家族を殺した鬼を討つため、炭治郎が剣士の道を歩む", totalVol: 23, getInterval: (vol) => 3 },
+            { name: "彼方のアストラ", masked: "彼方のアス◯ラ", hint: "宇宙旅行に出発した少年少女たちが体験する驚愕のSFサバイバル", totalVol: 5, getInterval: (vol) => 3 },
+            { name: "ガラスの仮面", masked: "ガラスの仮○", hint: "演劇の天才・北島マヤの執念と「紅天女」への道のり", totalVol: 49, getInterval: (vol) => 60 },
+            { name: "名探偵コナン", masked: "名探偵コ◯ン", hint: "見た目は子供、頭脳は大人！黒ずくの組織を推理", totalVol: 105, getInterval: (vol) => 6 },
+            { name: "ゴルゴ13", masked: "ゴルゴ1◯", hint: "超A級スナイパー・デューク東郷のハードボイルド劇画", totalVol: 215, getInterval: (vol) => 3 }
         ];
 
-        // 選択肢の定義 (常に固定の順番: 3カ月, 6カ月, 1年, 3年, 10年)
         const choicesConfig = [
             { months: 3, label: "3カ月" },
             { months: 6, label: "6カ月" },
@@ -226,7 +142,6 @@
         let score = 0;
         let correctAnswerMonths = 3;
 
-        // ドット絵アニメーション用キャンバス (高さ90px用)
         const canvas = document.getElementById('animCanvas');
         const ctx = canvas.getContext('2d');
         let animFrame = 0;
@@ -235,49 +150,39 @@
             ctx.fillStyle = '#0f3460';
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            // 部屋の背景（本棚と机）
             ctx.fillStyle = '#16213e';
-            ctx.fillRect(10, 10, 380, 70);
+            ctx.fillRect(10, 5, 340, 65);
 
-            // 本棚の背表紙
             for(let i=0; i<12; i++) {
                 ctx.fillStyle = (i % 2 === 0) ? '#e94560' : '#f0a500';
-                ctx.fillRect(20 + i * 30, 15, 22, 25);
+                ctx.fillRect(18 + i * 28, 10, 20, 22);
             }
 
-            // 机
             ctx.fillStyle = '#b8860b';
-            ctx.fillRect(100, 65, 200, 10);
-            ctx.fillRect(120, 75, 15, 15);
-            ctx.fillRect(265, 75, 15, 15);
+            ctx.fillRect(90, 58, 180, 8);
+            ctx.fillRect(105, 66, 12, 12);
+            ctx.fillRect(243, 66, 12, 12);
 
-            // キャラクター（読書男 / ドット絵風）
             let bounce = Math.floor(animFrame / 15) % 2;
             
-            // 体
             ctx.fillStyle = '#3b82f6';
-            ctx.fillRect(170, 48 - bounce, 50, 20);
-            // 頭
+            ctx.fillRect(155, 42 - bounce, 45, 18);
             ctx.fillStyle = '#fcd34d';
-            ctx.fillRect(180, 32 - bounce, 30, 20);
-            // 髪
+            ctx.fillRect(163, 28 - bounce, 28, 18);
             ctx.fillStyle = '#1f2937';
-            ctx.fillRect(180, 30 - bounce, 30, 6);
-            // 目
+            ctx.fillRect(163, 26 - bounce, 28, 5);
             ctx.fillStyle = '#000';
-            ctx.fillRect(188, 38 - bounce, 3, 3);
-            ctx.fillRect(198, 38 - bounce, 3, 3);
+            ctx.fillRect(170, 34 - bounce, 3, 3);
+            ctx.fillRect(180, 34 - bounce, 3, 3);
 
-            // 開いた本
             ctx.fillStyle = '#fff';
-            ctx.fillRect(175, 55 - bounce, 40, 12);
+            ctx.fillRect(158, 48 - bounce, 36, 10);
             ctx.fillStyle = '#d1d5db';
-            ctx.fillRect(194, 55 - bounce, 2, 12);
+            ctx.fillRect(175, 48 - bounce, 2, 10);
 
-            // パラパラめくるアニメーション効果
             if (Math.floor(animFrame / 30) % 2 === 0) {
                 ctx.fillStyle = '#fff';
-                ctx.fillRect(220, 45 - bounce, 10, 10);
+                ctx.fillRect(200, 38 - bounce, 8, 8);
             }
 
             animFrame++;
@@ -304,15 +209,18 @@
             initChoicesUI();
         }
 
-        // 初期化時にボタンを固定配置で生成しておく
         function initChoicesUI() {
             const choicesDiv = document.getElementById('choices-container');
             choicesDiv.innerHTML = '';
-            choicesConfig.forEach(choice => {
+            choicesConfig.forEach((choice, idx) => {
                 const btn = document.createElement('button');
-                btn.className = 'pixel-btn bg-[#0f3460] hover:bg-[#e94560] text-white font-bold py-2.5 px-3 rounded text-sm md:text-base border border-yellow-500 transition-colors';
+                // 5番目のボタン（10年）は col-span-2 で中央に全幅配置
+                if (idx === 4) {
+                    btn.className = 'pixel-btn bg-[#0f3460] hover:bg-[#e94560] text-white font-bold py-2 px-3 rounded text-sm border border-yellow-500 col-span-2 transition-colors';
+                } else {
+                    btn.className = 'pixel-btn bg-[#0f3460] hover:bg-[#e94560] text-white font-bold py-2 px-3 rounded text-sm border border-yellow-500 transition-colors';
+                }
                 btn.innerText = choice.label;
-                btn.id = `choice-btn-${choice.months}`;
                 btn.onclick = () => checkAnswer(choice.months);
                 choicesDiv.appendChild(btn);
             });
@@ -341,17 +249,14 @@
                 return;
             }
 
-            // ステータス更新
-            document.getElementById('manga-title-display').innerText = `作品: 読書中... (ヒント: ${currentManga.hint.substring(0, 12)}...)`;
+            document.getElementById('manga-title-display').innerText = `作品: 読書中... (ヒント: ${currentManga.hint.substring(0, 10)}...)`;
             document.getElementById('progress-display').innerText = `巻数: ${currentVol}巻 ➔ ${currentVol + 1}巻`;
             document.getElementById('lives-display').innerText = '💖'.repeat(lives);
 
-            // 問題文の設定 (高さを固定したエリア内で表示)
             document.getElementById('question-text').innerHTML = 
                 `この作品の <span class="text-yellow-400">第${currentVol}巻</span> ➔ <span class="text-yellow-400">第${currentVol + 1}巻</span> の発行間隔は？<br>` +
-                `<span class="text-[11px] text-gray-400">ヒント: ${currentManga.hint}</span>`;
+                `<span class="text-[10px] text-gray-400">ヒント: ${currentManga.hint}</span>`;
 
-            // 正解の間隔を算出
             const rawMonths = currentManga.getInterval(currentVol + 1);
             let closest = choicesConfig[0];
             let minDiff = Math.abs(choicesConfig[0].months - rawMonths);
@@ -399,7 +304,7 @@
 
         function showToast(text, colorClass) {
             const qText = document.getElementById('question-text');
-            qText.innerHTML = `<span class="${colorClass} font-bold text-base md:text-lg">${text}</span>`;
+            qText.innerHTML = `<span class="${colorClass} font-bold text-sm md:text-base">${text}</span>`;
         }
 
         function endGame(isClear, message) {
@@ -410,18 +315,20 @@
 
             if (isClear) {
                 resultTitle.innerText = "🎉 GAME CLEAR! 🎉";
-                resultTitle.className = "text-2xl md:text-3xl font-bold mb-3 text-green-400";
+                resultTitle.className = "text-xl font-bold mb-2 text-green-400";
             } else {
                 resultTitle.innerText = "💀 GAME OVER 💀";
-                resultTitle.className = "text-2xl md:text-3xl font-bold mb-3 text-red-500";
+                resultTitle.className = "text-xl font-bold mb-2 text-red-500";
             }
 
             resultMsg.innerHTML = `${message}<br>スコア: ${score}点`;
-            maskedReveal.innerHTML = `挑戦した作品:<br><span class="text-xl text-yellow-300 font-bold">${currentManga ? currentManga.masked : "不明"}</span><br><span class="text-xs text-gray-300">(正解タイトル: ${currentManga ? currentManga.name : ""})</span>`;
+            maskedReveal.innerHTML = `挑戦した作品:<br><span class="text-lg text-yellow-300 font-bold">${currentManga ? currentManga.masked : "不明"}</span><br><span class="text-[11px] text-gray-300">(正解タイトル: ${currentManga ? currentManga.name : ""})</span>`;
         }
 
         function resetToTitle() {
             document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('start-screen').classList.add('hidden'); // Fix start screen toggle
+            // Show start screen explicitly
             document.getElementById('start-screen').classList.remove('hidden');
         }
     </script>
