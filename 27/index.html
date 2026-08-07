@@ -466,29 +466,210 @@
             }
         },
         {
-            name: "バイオリン",
-            soundType: "violin",
-            pitch: 440, // A4
-            flavor: "高音域で美しい旋律を奏でる、クラシックの女王と呼ばれる小型の弦楽器。",
+            name: "チェロ",
+            soundType: "cello",
+            pitch: 146, // D3
+            flavor: "座って演奏する中型の低音弦楽器。人の声に近い豊かな響きを持つ。",
             draw: function(ctx) {
                 ctx.fillStyle = '#0d0d15';
                 ctx.fillRect(0, 0, 24, 24);
 
-                ctx.fillStyle = '#654321';
-                ctx.fillRect(11, 1, 2, 4);
-                ctx.fillStyle = '#d2b48c';
-                ctx.fillRect(11, 5, 2, 4);
+                ctx.fillStyle = '#5c4033';
+                ctx.fillRect(11, 2, 2, 7);
+                ctx.fillStyle = '#3d2817';
+                ctx.fillRect(10, 1, 4, 2);
 
-                ctx.fillStyle = '#a0522d';
+                ctx.fillStyle = '#8b4513';
                 for (let y = 9; y <= 21; y++) {
                     let w = 0;
                     if (y === 9 || y === 21) w = 3;
                     else if (y >= 10 && y <= 12) w = 5;
-                    else if (y >= 13 && y <= 14) w = 3;
-                    else if (y >= 15 && y <= 19) w = 6;
-                    else w = 4;
+                    else if (y === 13 || y === 14) w = 3;
+                    else if (y >= 15 && y <= 20) w = 7;
                     ctx.fillRect(12 - w, y, w * 2 + 1, 1);
                 }
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(11, 22, 1, 2);
+
+                ctx.fillStyle = '#ccc';
+                ctx.fillRect(11, 1, 1, 21);
+                ctx.fillRect(12, 1, 1, 21);
+            }
+        },
+        {
+            name: "リュート",
+            soundType: "guitar",
+            pitch: 220,
+            flavor: "洋ナシ形のボディと後方に折れ曲がったペグボックスを持つ伝統的弦楽器。",
+            draw: function(ctx) {
+                ctx.fillStyle = '#0d0d15';
+                ctx.fillRect(0, 0, 24, 24);
+                ctx.fillStyle = '#d2b48c';
+                ctx.fillRect(11, 3, 2, 9);
+                ctx.fillStyle = '#8b4513';
+                ctx.fillRect(8, 1, 5, 3);
+                ctx.fillStyle = '#deb887';
+                for (let y = 12; y <= 22; y++) {
+                    let w = 0;
+                    if (y === 12 || y === 22) w = 2;
+                    else if (y === 13 || y === 21) w = 5;
+                    else w = 7;
+                    ctx.fillRect(12 - w, y, w * 2 + 1, 1);
+                }
+                ctx.fillStyle = '#222';
+                ctx.fillRect(11, 17, 2, 2);
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(11, 1, 1, 21);
+                ctx.fillRect(12, 1, 1, 21);
+            }
+        },
+        {
+            name: "琵琶",
+            soundType: "shamisen",
+            pitch: 165,
+            flavor: "日本の伝統的な撥弦楽器。洋ナシ型でバチを使って力強く奏でる。",
+            draw: function(ctx) {
+                ctx.fillStyle = '#0d0d15';
+                ctx.fillRect(0, 0, 24, 24);
+                ctx.fillStyle = '#5c4033';
+                ctx.fillRect(11, 1, 2, 9);
+                ctx.fillStyle = '#3d2817';
+                ctx.fillRect(10, 0, 4, 2);
+                ctx.fillStyle = '#cd853f';
+                for (let y = 10; y <= 22; y++) {
+                    let w = 0;
+                    if (y === 10) w = 3;
+                    else if (y >= 11 && y <= 13) w = 6;
+                    else if (y >= 14 && y <= 20) w = 8;
+                    else w = 6;
+                    ctx.fillRect(12 - w, y, w * 2 + 1, 1);
+                }
+                ctx.fillStyle = '#111';
+                ctx.fillRect(10, 16, 4, 3);
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(11, 1, 1, 21);
+                ctx.fillRect(12, 1, 1, 21);
+            }
+        },
+        {
+            name: "馬頭琴",
+            soundType: "cello",
+            pitch: 130,
+            flavor: "モンゴル国の伝統的な弦楽器。棹の先端に馬の彫刻があるのが特徴。",
+            draw: function(ctx) {
+                ctx.fillStyle = '#0d0d15';
+                ctx.fillRect(0, 0, 24, 24);
+                ctx.fillStyle = '#8b4513';
+                ctx.fillRect(11, 2, 2, 11);
+                ctx.fillStyle = '#deb887';
+                ctx.fillRect(9, 0, 6, 3);
+                ctx.fillStyle = '#d2691e';
+                for (let y = 13; y <= 22; y++) {
+                    let w = 0;
+                    if (y >= 13 && y <= 15) w = 5 + (y - 13);
+                    else if (y >= 16 && y <= 22) w = 7;
+                    ctx.fillRect(12 - w, y, w * 2 + 1, 1);
+                }
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(11, 2, 1, 20);
+                ctx.fillRect(12, 2, 1, 20);
+            }
+        },
+        {
+            name: "バンジョー",
+            soundType: "guitar",
+            pitch: 349,
+            flavor: "太鼓のような円形のボディに膜が張られた、カントリー音楽で大人気の楽器。",
+            draw: function(ctx) {
+                ctx.fillStyle = '#0d0d15';
+                ctx.fillRect(0, 0, 24, 24);
+                ctx.fillStyle = '#deb887';
+                ctx.fillRect(11, 1, 2, 11);
+                ctx.fillStyle = '#b5651d';
+                ctx.fillRect(10, 0, 4, 2);
+                ctx.fillStyle = '#f5deb3';
+                for (let y = 12; y <= 22; y++) {
+                    let w = 0;
+                    if (y === 12 || y === 22) w = 3;
+                    else if (y === 13 || y === 21) w = 6;
+                    else w = 7;
+                    ctx.fillRect(12 - w, y, w * 2 + 1, 1);
+                }
+                ctx.fillStyle = '#888';
+                ctx.fillRect(10, 15, 4, 4);
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(11, 1, 1, 21);
+                ctx.fillRect(12, 1, 1, 21);
+            }
+        },
+        {
+            name: "シタール",
+            soundType: "viola",
+            pitch: 261,
+            flavor: "インドの伝統的な弦楽器。たくさんの共鳴弦を持ち、独特の響きを奏でる。",
+            draw: function(ctx) {
+                ctx.fillStyle = '#0d0d15';
+                ctx.fillRect(0, 0, 24, 24);
+                ctx.fillStyle = '#deb887';
+                ctx.fillRect(10, 0, 4, 15);
+                ctx.fillStyle = '#cd853f';
+                for (let y = 16; y <= 22; y++) {
+                    let w = 0;
+                    if (y === 16 || y === 22) w = 3;
+                    else if (y >= 17 && y <= 19) w = 6;
+                    else w = 5;
+                    ctx.fillRect(12 - w, y, w * 2 + 1, 1);
+                }
+                ctx.fillStyle = '#ffd700';
+                ctx.fillRect(10, 0, 4, 1);
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(11, 0, 1, 22);
+                ctx.fillRect(12, 0, 1, 22);
+            }
+        },
+        {
+            name: "三線",
+            soundType: "shamisen",
+            pitch: 247,
+            flavor: "沖縄の伝統的な3弦楽器。蛇の皮が張られており、明るい音色が特徴。",
+            draw: function(ctx) {
+                ctx.fillStyle = '#0d0d15';
+                ctx.fillRect(0, 0, 24, 24);
+                ctx.fillStyle = '#8b4513';
+                ctx.fillRect(11, 2, 2, 13);
+                ctx.fillStyle = '#5c4033';
+                ctx.fillRect(10, 1, 4, 2);
+                ctx.fillStyle = '#e0a96d';
+                ctx.fillRect(8, 15, 8, 7);
+                ctx.fillStyle = '#5c4033';
+                ctx.fillRect(8, 14, 8, 1);
+                ctx.fillRect(8, 22, 8, 1);
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(11, 2, 1, 20);
+                ctx.fillRect(12, 2, 1, 20);
+            }
+        },
+        {
+            name: "二胡",
+            soundType: "violin",
+            pitch: 349,
+            flavor: "中国の伝統的な2弦の拉弦楽器。人間の歌声のように豊かな音色。",
+            draw: function(ctx) {
+                ctx.fillStyle = '#0d0d15';
+                ctx.fillRect(0, 0, 24, 24);
+                ctx.fillStyle = '#654321';
+                ctx.fillRect(11, 1, 2, 14);
+                ctx.fillStyle = '#3d2817';
+                ctx.fillRect(10, 0, 4, 2);
+                ctx.fillStyle = '#8b4513';
+                ctx.fillRect(9, 15, 6, 6);
+                ctx.fillStyle = '#d2b48c';
+                ctx.fillRect(10, 16, 4, 4);
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(11, 1, 1, 20);
+                ctx.fillRect(12, 1, 1, 20);
+            }
+        }
                 ctx.fillStyle = '#111';
                 ctx.fillRect(10, 16, 1, 3);
                 ctx.fillRect(13, 16, 1, 3);
