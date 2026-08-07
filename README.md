@@ -38,3 +38,4 @@ Deno/Web games collection.
 - [25. 会話を楽しむ、さしすせそ (Sashisuseso Conversation Game)](./25/index.html)
 - [26. 魚偏漢字クイズ ～イルカのカイル君と学ぼう！～ (Fish Radical Kanji Quiz with Kyle)](./26/index.html)
 - [27. 16bit ドット絵 弦楽器クイズ (16-bit String Instrument Pixel Quiz)](./27/index.html)
+- [28. 漫画次巻発行日当てゲーム ～最新刊はいつ出る！？～ (Manga Next Volume Release Date Quiz)](./28/index.html)
