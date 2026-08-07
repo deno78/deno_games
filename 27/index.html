@@ -274,7 +274,6 @@
         gain.connect(audioCtx.destination);
 
         if (type === 'guitar') {
-            // アコースティックギター風（プラック音：高調波を多めに、減衰を早めに）
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime(pitch, now);
             gain.gain.setValueAtTime(0.3, now);
@@ -282,7 +281,6 @@
             osc.start(now);
             osc.stop(now + 1.2);
         } else if (type === 'contrabass') {
-            // コントラバス（重厚な低音：三角波で太く）
             osc.type = 'triangle';
             osc.frequency.setValueAtTime(pitch * 0.5, now);
             gain.gain.setValueAtTime(0.4, now);
@@ -290,7 +288,6 @@
             osc.start(now);
             osc.stop(now + 1.8);
         } else if (type === 'viola') {
-            // ビエラ / 古楽風（矩形波で柔らかく豊かな中音）
             osc.type = 'square';
             osc.frequency.setValueAtTime(pitch * 1.2, now);
             gain.gain.setValueAtTime(0.2, now);
@@ -298,10 +295,8 @@
             osc.start(now);
             osc.stop(now + 1.5);
         } else if (type === 'violin') {
-            // バイオリン（伸びやかな高音バイオリン風・サイン+のこぎり波）
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime(pitch * 2, now);
-            // ビブラート効果
             const vibrato = audioCtx.createOscillator();
             const vibratoGain = audioCtx.createGain();
             vibrato.frequency.value = 6;
@@ -315,7 +310,6 @@
             osc.start(now);
             osc.stop(now + 1.5);
         } else if (type === 'mandolin') {
-            // マンドリン（トレモロ感のある軽快な音）
             osc.type = 'triangle';
             osc.frequency.setValueAtTime(pitch * 1.5, now);
             gain.gain.setValueAtTime(0.3, now);
@@ -323,7 +317,6 @@
             osc.start(now);
             osc.stop(now + 0.9);
         } else if (type === 'shamisen') {
-            // 三味線（バチで弾く乾いたパーカッシブな和音色）
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime(pitch * 1.25, now);
             gain.gain.setValueAtTime(0.35, now);
@@ -331,7 +324,6 @@
             osc.start(now);
             osc.stop(now + 0.7);
         } else if (type === 'ukulele') {
-            // ウクレレ（ポロロンと軽やかで短い減衰）
             osc.type = 'sine';
             osc.frequency.setValueAtTime(pitch * 2.5, now);
             gain.gain.setValueAtTime(0.3, now);
@@ -339,7 +331,6 @@
             osc.start(now);
             osc.stop(now + 0.8);
         } else if (type === 'cello') {
-            // チェロ（深みのあるチェロの響き）
             osc.type = 'sawtooth';
             osc.frequency.setValueAtTime(pitch * 0.75, now);
             gain.gain.setValueAtTime(0.35, now);
@@ -347,7 +338,6 @@
             osc.start(now);
             osc.stop(now + 1.6);
         } else {
-            // デフォルト
             osc.type = 'sine';
             osc.frequency.setValueAtTime(pitch, now);
             gain.gain.setValueAtTime(0.3, now);
@@ -357,17 +347,16 @@
         }
     }
 
-    // 楽器データ定義 (全6種類以上を用意してランダムに出題)
+    // 楽器データ定義 (全15種類)
     const instruments = [
         {
             name: "ギター",
             soundType: "guitar",
-            pitch: 196, // G3
+            pitch: 196,
             flavor: "ポピュラーな6弦の弦楽器。ロックからクラシックまで幅広い！",
             draw: function(ctx) {
                 ctx.fillStyle = '#0d0d15';
                 ctx.fillRect(0, 0, 24, 24);
-
                 ctx.fillStyle = '#b5651d';
                 ctx.fillRect(11, 2, 2, 12);
                 ctx.fillStyle = '#8b4513';
@@ -376,7 +365,6 @@
                 ctx.fillRect(11, 4, 2, 1);
                 ctx.fillRect(11, 7, 2, 1);
                 ctx.fillRect(11, 10, 2, 1);
-
                 ctx.fillStyle = '#d2691e';
                 for (let y = 13; y <= 21; y++) {
                     let w = 0;
@@ -394,7 +382,6 @@
                 }
                 ctx.fillStyle = '#111';
                 ctx.fillRect(11, 17, 2, 2);
-
                 ctx.fillStyle = '#fff';
                 ctx.fillRect(11, 2, 1, 20);
                 ctx.fillRect(12, 2, 1, 20);
@@ -403,17 +390,15 @@
         {
             name: "コントラバス",
             soundType: "contrabass",
-            pitch: 98, // G2
+            pitch: 98,
             flavor: "オーケストラで最も低音を奏でる大型の弦楽器。立って演奏するよ！",
             draw: function(ctx) {
                 ctx.fillStyle = '#0d0d15';
                 ctx.fillRect(0, 0, 24, 24);
-
                 ctx.fillStyle = '#5c4033';
                 ctx.fillRect(11, 1, 2, 8);
                 ctx.fillStyle = '#3d2817';
                 ctx.fillRect(10, 0, 4, 2);
-
                 ctx.fillStyle = '#8b5a2b';
                 for (let y = 9; y <= 22; y++) {
                     let w = 0;
@@ -428,7 +413,6 @@
                 ctx.fillStyle = '#222';
                 ctx.fillRect(9, 17, 1, 3);
                 ctx.fillRect(14, 17, 1, 3);
-
                 ctx.fillStyle = '#ccc';
                 ctx.fillRect(11, 1, 1, 21);
                 ctx.fillRect(12, 1, 1, 21);
@@ -437,17 +421,15 @@
         {
             name: "ビエラ",
             soundType: "viola",
-            pitch: 293, // D4
+            pitch: 293,
             flavor: "中世・ルネサンス期に愛された、ギターやリュートの先祖にあたる弦楽器。",
             draw: function(ctx) {
                 ctx.fillStyle = '#0d0d15';
                 ctx.fillRect(0, 0, 24, 24);
-
                 ctx.fillStyle = '#deb887';
                 ctx.fillRect(11, 3, 2, 8);
                 ctx.fillStyle = '#cd853f';
                 ctx.fillRect(10, 1, 4, 3);
-
                 ctx.fillStyle = '#d2b48c';
                 for (let y = 11; y <= 22; y++) {
                     let w = 0;
@@ -459,26 +441,138 @@
                 }
                 ctx.fillStyle = '#331a00';
                 ctx.fillRect(11, 18, 2, 2);
-
                 ctx.fillStyle = '#fff';
                 ctx.fillRect(11, 1, 1, 21);
                 ctx.fillRect(12, 1, 1, 21);
             }
         },
         {
+            name: "バイオリン",
+            soundType: "violin",
+            pitch: 440,
+            flavor: "高音域で美しい旋律を奏でる、クラシックの女王と呼ばれる小型の弦楽器。",
+            draw: function(ctx) {
+                ctx.fillStyle = '#0d0d15';
+                ctx.fillRect(0, 0, 24, 24);
+                ctx.fillStyle = '#654321';
+                ctx.fillRect(11, 1, 2, 4);
+                ctx.fillStyle = '#d2b48c';
+                ctx.fillRect(11, 5, 2, 4);
+                ctx.fillStyle = '#a0522d';
+                for (let y = 9; y <= 21; y++) {
+                    let w = 0;
+                    if (y === 9 || y === 21) w = 3;
+                    else if (y >= 10 && y <= 12) w = 5;
+                    else if (y >= 13 && y <= 14) w = 3;
+                    else if (y >= 15 && y <= 19) w = 6;
+                    else w = 4;
+                    ctx.fillRect(12 - w, y, w * 2 + 1, 1);
+                }
+                ctx.fillStyle = '#111';
+                ctx.fillRect(10, 16, 1, 3);
+                ctx.fillRect(13, 16, 1, 3);
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(11, 1, 1, 18);
+                ctx.fillStyle = '#000';
+                ctx.fillRect(10, 19, 4, 2);
+            }
+        },
+        {
+            name: "マンドリン",
+            soundType: "mandolin",
+            pitch: 330,
+            flavor: "洋ナシを半分に割ったような丸い裏板が特徴。トレモロ奏法が有名！",
+            draw: function(ctx) {
+                ctx.fillStyle = '#0d0d15';
+                ctx.fillRect(0, 0, 24, 24);
+                ctx.fillStyle = '#deb887';
+                ctx.fillRect(11, 2, 2, 10);
+                ctx.fillStyle = '#cd853f';
+                ctx.fillRect(9, 0, 4, 3);
+                ctx.fillStyle = '#cd661d';
+                for (let y = 12; y <= 22; y++) {
+                    let w = 0;
+                    if (y === 12 || y === 22) w = 2;
+                    else if (y === 13 || y === 21) w = 5;
+                    else if (y >= 14 && y <= 19) w = 7;
+                    else w = 6;
+                    ctx.fillRect(12 - w, y, w * 2 + 1, 1);
+                }
+                ctx.fillStyle = '#111';
+                ctx.fillRect(11, 16, 2, 2);
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(11, 0, 1, 21);
+                ctx.fillRect(12, 0, 1, 21);
+            }
+        },
+        {
+            name: "三味線",
+            soundType: "shamisen",
+            pitch: 220,
+            flavor: "和の響きを伝える3本の弦の楽器。太棹・中棹・細棹などがあるよ！",
+            draw: function(ctx) {
+                ctx.fillStyle = '#0d0d15';
+                ctx.fillRect(0, 0, 24, 24);
+                ctx.fillStyle = '#8b5a2b';
+                ctx.fillRect(11, 0, 2, 13);
+                ctx.fillStyle = '#5c4033';
+                ctx.fillRect(9, 0, 6, 2);
+                ctx.fillRect(8, 3, 8, 1);
+                ctx.fillStyle = '#f5deb3';
+                ctx.fillRect(7, 14, 10, 8);
+                ctx.fillStyle = '#8b4513';
+                ctx.fillRect(7, 13, 10, 1);
+                ctx.fillRect(7, 22, 10, 1);
+                ctx.fillRect(6, 14, 1, 8);
+                ctx.fillRect(17, 14, 1, 8);
+                ctx.fillStyle = '#442211';
+                ctx.fillRect(11, 17, 2, 2);
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(11, 2, 1, 20);
+                ctx.fillRect(12, 2, 1, 20);
+                ctx.fillStyle = '#ccc';
+                ctx.fillRect(10, 2, 1, 20);
+            }
+        },
+        {
+            name: "ウクレレ",
+            soundType: "ukulele",
+            pitch: 392,
+            flavor: "ハワイを代表する小型の4弦楽器。コロコロと明るい音色が特徴！",
+            draw: function(ctx) {
+                ctx.fillStyle = '#0d0d15';
+                ctx.fillRect(0, 0, 24, 24);
+                ctx.fillStyle = '#d2b48c';
+                ctx.fillRect(11, 4, 2, 7);
+                ctx.fillStyle = '#a0522d';
+                ctx.fillRect(10, 2, 4, 3);
+                ctx.fillStyle = '#ff8c00';
+                for (let y = 11; y <= 21; y++) {
+                    let w = 0;
+                    if (y === 11 || y === 21) w = 3;
+                    else if (y === 12 || y === 20) w = 5;
+                    else w = 6;
+                    ctx.fillRect(12 - w, y, w * 2 + 1, 1);
+                }
+                ctx.fillStyle = '#111';
+                ctx.fillRect(11, 15, 2, 2);
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(11, 2, 1, 18);
+                ctx.fillRect(12, 2, 1, 18);
+            }
+        },
+        {
             name: "チェロ",
             soundType: "cello",
-            pitch: 146, // D3
+            pitch: 146,
             flavor: "座って演奏する中型の低音弦楽器。人の声に近い豊かな響きを持つ。",
             draw: function(ctx) {
                 ctx.fillStyle = '#0d0d15';
                 ctx.fillRect(0, 0, 24, 24);
-
                 ctx.fillStyle = '#5c4033';
                 ctx.fillRect(11, 2, 2, 7);
                 ctx.fillStyle = '#3d2817';
                 ctx.fillRect(10, 1, 4, 2);
-
                 ctx.fillStyle = '#8b4513';
                 for (let y = 9; y <= 21; y++) {
                     let w = 0;
@@ -490,7 +584,6 @@
                 }
                 ctx.fillStyle = '#fff';
                 ctx.fillRect(11, 22, 1, 2);
-
                 ctx.fillStyle = '#ccc';
                 ctx.fillRect(11, 1, 1, 21);
                 ctx.fillRect(12, 1, 1, 21);
@@ -500,7 +593,7 @@
             name: "リュート",
             soundType: "guitar",
             pitch: 220,
-            flavor: "洋ナシ形のボディと後方に折れ曲がったペグボックスを持つ伝統的弦楽器。",
+            flavor: "洋ナシ形のボディと後方に折れ曲가ったペグボックスを持つ伝統的弦楽器。",
             draw: function(ctx) {
                 ctx.fillStyle = '#0d0d15';
                 ctx.fillRect(0, 0, 24, 24);
@@ -670,141 +763,6 @@
                 ctx.fillRect(12, 1, 1, 20);
             }
         }
-                ctx.fillStyle = '#111';
-                ctx.fillRect(10, 16, 1, 3);
-                ctx.fillRect(13, 16, 1, 3);
-
-                ctx.fillStyle = '#fff';
-                ctx.fillRect(11, 1, 1, 18);
-                ctx.fillStyle = '#000';
-                ctx.fillRect(10, 19, 4, 2);
-            }
-        },
-        {
-            name: "マンドリン",
-            soundType: "mandolin",
-            pitch: 330, // E4
-            flavor: "洋ナシを半分に割ったような丸い裏板が特徴。トレモロ奏法が有名！",
-            draw: function(ctx) {
-                ctx.fillStyle = '#0d0d15';
-                ctx.fillRect(0, 0, 24, 24);
-
-                ctx.fillStyle = '#deb887';
-                ctx.fillRect(11, 2, 2, 10);
-                ctx.fillStyle = '#cd853f';
-                ctx.fillRect(9, 0, 4, 3);
-
-                ctx.fillStyle = '#cd661d';
-                for (let y = 12; y <= 22; y++) {
-                    let w = 0;
-                    if (y === 12 || y === 22) w = 2;
-                    else if (y === 13 || y === 21) w = 5;
-                    else if (y >= 14 && y <= 19) w = 7;
-                    else w = 6;
-                    ctx.fillRect(12 - w, y, w * 2 + 1, 1);
-                }
-                ctx.fillStyle = '#111';
-                ctx.fillRect(11, 16, 2, 2);
-
-                ctx.fillStyle = '#fff';
-                ctx.fillRect(11, 0, 1, 21);
-                ctx.fillRect(12, 0, 1, 21);
-            }
-        },
-        {
-            name: "三味線",
-            soundType: "shamisen",
-            pitch: 220, // A3
-            flavor: "和の響きを伝える3本の弦の楽器。太棹・中棹・細棹などがあるよ！",
-            draw: function(ctx) {
-                ctx.fillStyle = '#0d0d15';
-                ctx.fillRect(0, 0, 24, 24);
-
-                ctx.fillStyle = '#8b5a2b';
-                ctx.fillRect(11, 0, 2, 13);
-                ctx.fillStyle = '#5c4033';
-                ctx.fillRect(9, 0, 6, 2);
-                ctx.fillRect(8, 3, 8, 1);
-
-                ctx.fillStyle = '#f5deb3';
-                ctx.fillRect(7, 14, 10, 8);
-                ctx.fillStyle = '#8b4513';
-                ctx.fillRect(7, 13, 10, 1);
-                ctx.fillRect(7, 22, 10, 1);
-                ctx.fillRect(6, 14, 1, 8);
-                ctx.fillRect(17, 14, 1, 8);
-
-                ctx.fillStyle = '#442211';
-                ctx.fillRect(11, 17, 2, 2);
-
-                ctx.fillStyle = '#fff';
-                ctx.fillRect(11, 2, 1, 20);
-                ctx.fillRect(12, 2, 1, 20);
-                ctx.fillStyle = '#ccc';
-                ctx.fillRect(10, 2, 1, 20);
-            }
-        },
-        {
-            name: "ウクレレ",
-            soundType: "ukulele",
-            pitch: 392, // G4
-            flavor: "ハワイを代表する小型の4弦楽器。コロコロと明るい音色が特徴！",
-            draw: function(ctx) {
-                ctx.fillStyle = '#0d0d15';
-                ctx.fillRect(0, 0, 24, 24);
-
-                ctx.fillStyle = '#d2b48c';
-                ctx.fillRect(11, 4, 2, 7);
-                ctx.fillStyle = '#a0522d';
-                ctx.fillRect(10, 2, 4, 3);
-
-                ctx.fillStyle = '#ff8c00';
-                for (let y = 11; y <= 21; y++) {
-                    let w = 0;
-                    if (y === 11 || y === 21) w = 3;
-                    else if (y === 12 || y === 20) w = 5;
-                    else w = 6;
-                    ctx.fillRect(12 - w, y, w * 2 + 1, 1);
-                }
-                ctx.fillStyle = '#111';
-                ctx.fillRect(11, 15, 2, 2);
-
-                ctx.fillStyle = '#fff';
-                ctx.fillRect(11, 2, 1, 18);
-                ctx.fillRect(12, 2, 1, 18);
-            }
-        },
-        {
-            name: "チェロ",
-            soundType: "cello",
-            pitch: 146, // D3
-            flavor: "座って演奏する中型の低音弦楽器。人の声に近い豊かな響きを持つ。",
-            draw: function(ctx) {
-                ctx.fillStyle = '#0d0d15';
-                ctx.fillRect(0, 0, 24, 24);
-
-                ctx.fillStyle = '#5c4033';
-                ctx.fillRect(11, 2, 2, 7);
-                ctx.fillStyle = '#3d2817';
-                ctx.fillRect(10, 1, 4, 2);
-
-                ctx.fillStyle = '#8b4513';
-                for (let y = 9; y <= 21; y++) {
-                    let w = 0;
-                    if (y === 9 || y === 21) w = 3;
-                    else if (y >= 10 && y <= 12) w = 5;
-                    else if (y === 13 || y === 14) w = 3;
-                    else if (y >= 15 && y <= 20) w = 7;
-                    ctx.fillRect(12 - w, y, w * 2 + 1, 1);
-                }
-                ctx.fillStyle = '#fff';
-                ctx.fillRect(11, 22, 1, 2);
-
-                ctx.fillStyle = '#ccc';
-                ctx.fillRect(11, 1, 1, 21);
-                ctx.fillRect(12, 1, 1, 21);
-            }
-        }
     ];
 
     let currentQuestions = [];
@@ -846,7 +804,6 @@
         document.getElementById('flavor-text').innerText = "この楽器の名前はな～んだ？（4択から選んでね）";
 
         q.draw(ctx);
-        // 問題表示時に自動で一度それらしい音色を演奏する
         playCurrentInstrumentSound();
 
         let choices = [q.name];
@@ -890,10 +847,10 @@
             score += 20;
             document.getElementById('score-count').innerText = `スコア: ${score}pt`;
             flavorBox.innerHTML = `<span style="color: #66bb6a; font-weight: bold;">【正解！】</span><br>${q.flavor}`;
-            playSound('violin', 523); // 正解音 (高めのC)
+            playSound('violin', 523);
         } else {
             flavorBox.innerHTML = `<span style="color: #ef5350; font-weight: bold;">【不正解…】正解は「${correct}」だよ！</span><br>${q.flavor}`;
-            playSound('contrabass', 110); // 不正解音 (低音)
+            playSound('contrabass', 110);
         }
 
         const nextBtn = document.getElementById('next-btn');
