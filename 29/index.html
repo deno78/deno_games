@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>消失オセロ (Vanishing Reversi)</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: #1e293b;
+            --text-color: #f8fafc;
+            --accent-color: #3b82f6;
+            --board-bg: #166534;
+            --cell-border: #14532d;
+            --hover-color: #22c55e;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        h1 {
+            margin-bottom: 5px;
+            font-size: 1.8rem;
+            text-align: center;
+            background: linear-gradient(to right, #60a5fa, #34d399);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            font-size: 0.9rem;
+            color: #94a3b8;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+            background: var(--panel-bg);
+            padding: 25px;
+            border-radius: 16px;
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+            max-width: 500px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        .scoreboard {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            background: rgba(0, 0, 0, 0.2);
+            padding: 12px;
+            border-radius: 10px;
+            font-weight: bold;
+        }
+
+        .score-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .score-disc {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+        }
+
+        .score-disc.black { background: #000; border: 1px solid #555; }
+        .score-disc.white { background: #fff; }
+
+        .status {
+            font-size: 1.1rem;
+            font-weight: 600;
+            min-height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 3px;
+            background-color: var(--cell-border);
+            padding: 6px;
+            border-radius: 8px;
+            width: 100%;
+            aspect-ratio: 1;
+            box-sizing: border-box;
+        }
+
+        .cell {
+            background-color: var(--board-bg);
+            aspect-ratio: 1;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            transition: background-color 0.2s;
+        }
+
+        .cell:hover {
+            background-color: #15803d;
+        }
+
+        .cell.valid-move::after {
+            content: '';
+            width: 30%;
+            height: 30%;
+            background-color: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            pointer-events: none;
+        }
+
+        .disc {
+            width: 80%;
+            height: 80%;
+            border-radius: 50%;
+            transition: transform 0.3s ease, background-color 0.3s ease;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+
+        .disc.black {
+            background: radial-gradient(circle at 30% 30%, #475569, #0f172a);
+            border: 1px solid #1e293b;
+        }
+
+        .disc.white {
+            background: radial-gradient(circle at 30% 30%, #ffffff, #cbd5e1);
+            border: 1px solid #94a3b8;
+        }
+
+        .disc.vanishing {
+            animation: vanish 0.5s forwards;
+        }
+
+        @keyframes vanish {
+            0% { transform: scale(1); opacity: 1; filter: brightness(1); }
+            50% { transform: scale(1.3); opacity: 0.8; filter: brightness(2) drop-shadow(0 0 10px #ef4444); }
+            100% { transform: scale(0); opacity: 0; }
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+
+        button {
+            flex: 1;
+            background-color: var(--accent-color);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background-color 0.2s, transform 0.1s;
+        }
+
+        button:hover {
+            background-color: #2563eb;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        button.secondary {
+            background-color: #475569;
+        }
+
+        button.secondary:hover {
+            background-color: #334155;
+        }
+
+        .log-box {
+            width: 100%;
+            height: 80px;
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            color: #cbd5e1;
+            overflow-y: auto;
+            box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>消失オセロ</h1>
+    <div class="subtitle">夾んだ間のコマが消滅するスリリングなオセロ（対CPU）</div>
+
+    <div class="game-container">
+        <div class="scoreboard">
+            <div class="score-item">
+                <div class="score-disc black"></div>
+                <span>あなた (黒): <span id="black-score">2</span></span>
+            </div>
+            <div class="score-item">
+                <div class="score-disc white"></div>
+                <span>CPU (白): <span id="white-score">2</span></span>
+            </div>
+        </div>
+
+        <div class="status" id="status">あなたのターンです</div>
+
+        <div class="board" id="board"></div>
+
+        <div class="log-box" id="log-box">
+            <div>ゲーム開始！コマを挟んで消滅させよう。</div>
+        </div>
+
+        <div class="controls">
+            <button onclick="resetGame()">リセット</button>
+            <button class="secondary" onclick="toggleHelp()">ルール説明</button>
+        </div>
+    </div>
+
+    <script>
+        const BLACK = 1;
+        const WHITE = 2;
+        let board = [];
+        let currentTurn = BLACK;
+        let gameOver = false;
+        let isAnimating = false;
+
+        const boardElement = document.getElementById('board');
+        const statusElement = document.getElementById('status');
+        const blackScoreElement = document.getElementById('black-score');
+        const whiteScoreElement = document.getElementById('white-score');
+        const logBox = document.getElementById('log-box');
+
+        function addLog(msg) {
+            const div = document.createElement('div');
+            div.textContent = msg;
+            logBox.appendChild(div);
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function initGame() {
+            board = Array(8).fill(null).map(() => Array(8).fill(0));
+            // 初期配置
+            board[3][3] = WHITE;
+            board[3][4] = BLACK;
+            board[4][3] = BLACK;
+            board[4][4] = WHITE;
+            currentTurn = BLACK;
+            gameOver = false;
+            isAnimating = false;
+            logBox.innerHTML = '';
+            addLog('ゲームが始まりました。あなたの番です。');
+            render();
+        }
+
+        function getDirections() {
+            return [
+                [-1, -1], [-1, 0], [-1, 1],
+                [0, -1],           [0, 1],
+                [1, -1],  [1, 0],  [1, 1]
+            ];
+        }
+
+        // 挟んだコマの位置を特定する（裏返さず、消滅させる対象）
+        function getVanishingDiscs(r, c, player, currentBoard) {
+            if (currentBoard[r][c] !== 0) return [];
+            const opponent = player === BLACK ? WHITE : BLACK;
+            let allVanishing = [];
+
+            for (let [dr, dc] of getDirections()) {
+                let temp = [];
+                let currR = r + dr;
+                let currC = c + dc;
+                let foundOpponent = false;
+
+                while (currR >= 0 && currR < 8 && currC >= 0 && currC < 8) {
+                    let val = currentBoard[currR][currC];
+                    if (val === opponent) {
+                        temp.push({r: currR, c: currC});
+                        foundOpponent = true;
+                    } else if (val === player) {
+                        if (foundOpponent) {
+                            allVanishing.push(...temp);
+                        }
+                        break;
+                    } else {
+                        break;
+                    }
+                    currR += dr;
+                    currC += dc;
+                }
+            }
+            return allVanishing;
+        }
+
+        function getValidMoves(player, currentBoard) {
+            let moves = [];
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    if (currentBoard[r][c] === 0) {
+                        let vanishing = getVanishingDiscs(r, c, player, currentBoard);
+                        if (vanishing.length > 0) {
+                            moves.push({r, c, vanishing});
+                        }
+                    }
+                }
+            }
+            return moves;
+        }
+
+        function render() {
+            boardElement.innerHTML = '';
+            let validMoves = (!gameOver && currentTurn === BLACK && !isAnimating) ? getValidMoves(BLACK, board) : [];
+            let validMap = {};
+            validMoves.forEach(m => validMap[`${m.r},${m.c}`] = true);
+
+            let blackCount = 0;
+            let whiteCount = 0;
+
+            for (let r = 0; r < 8; r++) {
+                for (let c = 0; c < 8; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    
+                    const val = board[r][c];
+                    if (val === BLACK) blackCount++;
+                    if (val === WHITE) whiteCount++;
+
+                    if (val !== 0) {
+                        const disc = document.createElement('div');
+                        disc.className = `disc ${val === BLACK ? 'black' : 'white'}`;
+                        cell.appendChild(disc);
+                    } else if (validMap[`${r},${c}`]) {
+                        cell.classList.add('valid-move');
+                        cell.addEventListener('click', () => handleCellClick(r, c));
+                    }
+
+                    boardElement.appendChild(cell);
+                }
+            }
+
+            blackScoreElement.textContent = blackCount;
+            whiteScoreElement.textContent = whiteCount;
+
+            if (!gameOver) {
+                if (currentTurn === BLACK) {
+                    statusElement.textContent = 'あなたのターン (黒)';
+                } else {
+                    statusElement.textContent = 'CPUのターン (白)...';
+                }
+            }
+        }
+
+        async function handleCellClick(r, c) {
+            if (gameOver || currentTurn !== BLACK || isAnimating) return;
+
+            let validMoves = getValidMoves(BLACK, board);
+            let move = validMoves.find(m => m.r === r && m.c === c);
+            if (!move) return;
+
+            isAnimating = true;
+            await executeMove(r, c, BLACK, move.vanishing);
+
+            if (!checkGameEnd()) {
+                currentTurn = WHITE;
+                render();
+                setTimeout(cpuTurn, 700);
+            }
+        }
+
+        async function executeMove(r, c, player, vanishing) {
+            board[r][c] = player;
+            render();
+
+            if (vanishing.length > 0) {
+                // アニメーション用に該当ゴマにクラス付与
+                await sleep(100);
+                let cells = boardElement.children;
+                vanishing.forEach(v => {
+                    let idx = v.r * 8 + v.c;
+                    let discEl = cells[idx].querySelector('.disc');
+                    if (discEl) discEl.classList.add('vanishing');
+                });
+
+                await sleep(500);
+                vanishing.forEach(v => {
+                    board[v.r][v.c] = 0;
+                });
+                
+                let playerName = player === BLACK ? 'あなた' : 'CPU';
+                addLog(`${playerName}が (${c+1}, ${r+1}) に置き、${vanishing.length}個のコマが消滅！`);
+            } else {
+                let playerName = player === BLACK ? 'あなた' : 'CPU';
+                addLog(`${playerName}が (${c+1}, ${r+1}) に置きました。`);
+            }
+
+            render();
+            await sleep(200);
+            isAnimating = false;
+        }
+
+        async function cpuTurn() {
+            if (gameOver) return;
+
+            isAnimating = true;
+            let validMoves = getValidMoves(WHITE, board);
+
+            if (validMoves.length === 0) {
+                addLog('CPUは置ける場所がありません。パスします。');
+                isAnimating = false;
+                if (!checkGameEnd()) {
+                    currentTurn = BLACK;
+                    render();
+                }
+                return;
+            }
+
+            // CPUの思考：消せる数が一番多い場所を選ぶ、なければランダム
+            validMoves.sort((a, b) => b.vanishing.length - a.vanishing.length);
+            // ランダム性を持たせるため、一番消せる候補の中から選ぶか、適当に
+            let bestMoves = validMoves.filter(m => m.vanishing.length === validMoves[0].vanishing.length);
+            let chosen = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+
+            await executeMove(chosen.r, chosen.c, WHITE, chosen.vanishing);
+
+            if (!checkGameEnd()) {
+                currentTurn = BLACK;
+                render();
+                // プレイヤーも置ける場所がないかチェック
+                let playerMoves = getValidMoves(BLACK, board);
+                if (playerMoves.length === 0) {
+                    addLog('あなたには置ける場所がありません。パスします。');
+                    currentTurn = WHITE;
+                    setTimeout(cpuTurn, 700);
+                }
+            }
+        }
+
+        function checkGameEnd() {
+            let blackMoves = getValidMoves(BLACK, board);
+            let whiteMoves = getValidMoves(WHITE, board);
+
+            let blackCount = 0;
+            let whiteCount = 0;
+            for(let r=0; r<8; r++) {
+                for(let c=0; c<8; c++) {
+                    if(board[r][c] === BLACK) blackCount++;
+                    if(board[r][c] === WHITE) whiteCount++;
+                }
+            }
+
+            // コマが両方とも存在しない、またはどちらも置けない場合
+            if (blackCount === 0 || whiteCount === 0 || (blackMoves.length === 0 && whiteMoves.length === 0)) {
+                gameOver = true;
+                isAnimating = false;
+                let resultMsg = '';
+                if (blackCount > whiteCount) {
+                    resultMsg = `ゲーム終了！ あなたの勝利！ (${blackCount} vs ${whiteCount})`;
+                } else if (whiteCount > blackCount) {
+                    resultMsg = `ゲーム終了！ CPUの勝利！ (${blackCount} vs ${whiteCount})`;
+                } else {
+                    resultMsg = `ゲーム終了！ 引き分け！ (${blackCount} vs ${whiteCount})`;
+                }
+                statusElement.textContent = resultMsg;
+                addLog(resultMsg);
+                render();
+                return true;
+            }
+            return false;
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function resetGame() {
+            initGame();
+        }
+
+        function toggleHelp() {
+            alert('【消失オセロのルール】\n\n1. 通常のオセロと同じように、自分のコマで相手のコマを挟みます。\n2. しかし、「裏返る」のではなく、挟まれたコマはすべて「消滅（ボードから消失）」します！\n3. コマを置いた場所には自分のコマが残ります。\n4. 盤面のコマがすべて消えるか、お互いに置けなくなったらゲーム終了。最終的にコマが多い方の勝ちです。\n\n※コマがどんどん消えるため、永遠に終わらないことはなく、ダイナミックに局面が変化します！');
+        }
+
+        // 初期化実行
+        initGame();
+    </script>
+</body>
+</html>
