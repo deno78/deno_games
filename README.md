@@ -40,3 +40,4 @@ Deno/Web games collection.
 - [27. 16bit ドット絵 弦楽器クイズ (16-bit String Instrument Pixel Quiz)](./27/index.html)
 - [28. 漫画次巻発行日当てゲーム ～最新刊はいつ出る！？～ (Manga Next Volume Release Date Quiz)](./28/index.html)
 - [29. 消失オセロ (Vanishing Reversi vs CPU)](./29/index.html)
+- [30. ドリームジャンボ宝くじシミュレーター (Dream Jumbo Lottery Simulator)](./30/index.html)

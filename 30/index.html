@@ -1,0 +1,625 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ドリームジャンボ宝くじシミュレーター</title>
+    <style>
+        :root {
+            --primary-color: #d97706;
+            --primary-dark: #b45309;
+            --accent-color: #ef4444;
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --text-color: #f8fafc;
+            --text-muted: #94a3b8;
+            --success-color: #22c55e;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        header {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #b45309, #d97706);
+            border-radius: 16px;
+            box-shadow: 0 10px 25px -5px rgba(217, 119, 6, 0.3);
+        }
+
+        header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        header p {
+            font-size: 0.95rem;
+            color: #fef3c7;
+        }
+
+        .dashboard {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 15px;
+        }
+
+        .card {
+            background-color: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0,0,0,0.2);
+            border: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .card h3 {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .card .value {
+            font-size: 1.6rem;
+            font-weight: bold;
+            color: var(--text-color);
+        }
+
+        .card .value.positive {
+            color: var(--success-color);
+        }
+
+        .card .value.negative {
+            color: var(--accent-color);
+        }
+
+        .control-panel {
+            background-color: var(--card-bg);
+            padding: 24px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .control-panel h2 {
+            font-size: 1.2rem;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+            padding-bottom: 10px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .input-group label {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .slider-container {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            accent-color: var(--primary-color);
+            height: 8px;
+            border-radius: 4px;
+            background: #334155;
+            outline: none;
+        }
+
+        .quick-buttons {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        .btn-quick {
+            background-color: #334155;
+            color: var(--text-color);
+            border: none;
+            padding: 8px 4px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-quick:hover {
+            background-color: #475569;
+        }
+
+        .btn-buy {
+            background: linear-gradient(135deg, #ef4444, #dc2626);
+            color: white;
+            border: none;
+            padding: 16px;
+            border-radius: 12px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+            transition: transform 0.1s, opacity 0.2s;
+        }
+
+        .btn-buy:hover:not(:disabled) {
+            opacity: 0.9;
+            transform: translateY(-2px);
+        }
+
+        .btn-buy:active:not(:disabled) {
+            transform: translateY(0);
+        }
+
+        .btn-buy:disabled {
+            background: #475569;
+            cursor: not-allowed;
+            box-shadow: none;
+            opacity: 0.5;
+        }
+
+        .result-section {
+            background-color: var(--card-bg);
+            padding: 24px;
+            border-radius: 16px;
+            border: 1px solid rgba(255,255,255,0.05);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .result-section h2 {
+            font-size: 1.2rem;
+            border-bottom: 2px solid rgba(255,255,255,0.1);
+            padding-bottom: 10px;
+        }
+
+        .result-summary {
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-align: center;
+            padding: 12px;
+            border-radius: 8px;
+            background: #334155;
+        }
+
+        .prize-table {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            max-height: 250px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+
+        .prize-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 14px;
+            background: rgba(255, 255, 255, 0.03);
+            border-radius: 8px;
+            font-size: 0.95rem;
+        }
+
+        .prize-row.hit {
+            background: rgba(34, 197, 94, 0.1);
+            border: 1px solid rgba(34, 197, 94, 0.3);
+        }
+
+        .prize-name {
+            font-weight: bold;
+        }
+
+        .prize-count {
+            color: var(--text-muted);
+        }
+
+        .prize-amount {
+            font-weight: bold;
+            color: var(--success-color);
+        }
+
+        /* Game Over Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal {
+            background: var(--card-bg);
+            padding: 40px;
+            border-radius: 20px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .modal h2 {
+            font-size: 2rem;
+            color: var(--accent-color);
+        }
+
+        .modal p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        .btn-restart {
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .btn-restart:hover {
+            background: var(--primary-dark);
+        }
+
+        .history-log {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            max-height: 120px;
+            overflow-y: auto;
+            background: rgba(0,0,0,0.2);
+            padding: 10px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: rgba(0,0,0,0.1);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #475569;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>ドリームジャンボ宝くじシミュレーター</h1>
+            <p>一攫千金か、破産か。夢の億万長者を目指せ！</p>
+        </header>
+
+        <div class="dashboard">
+            <div class="card">
+                <h3>所持金</h3>
+                <div class="value" id="balance">10,000,000 円</div>
+            </div>
+            <div class="card">
+                <h3>総収支</h3>
+                <div class="value" id="total-profit">0 円</div>
+            </div>
+            <div class="card">
+                <h3>購入総枚数</h3>
+                <div class="value" id="total-tickets">0 枚</div>
+            </div>
+        </div>
+
+        <div class="control-panel">
+            <h2>宝くじを購入する (1枚 300円)</h2>
+            <div class="input-group">
+                <label>
+                    <span>購入枚数: <strong id="ticket-count-label">10 枚</strong> (<strong id="ticket-cost-label">3,000</strong>円)</span>
+                    <span>最大 3,333枚 (100万円分)</span>
+                </label>
+                <div class="slider-container">
+                    <input type="range" id="ticket-slider" min="1" max="3333" value="10">
+                </div>
+            </div>
+
+            <div class="quick-buttons">
+                <button class="btn-quick" onclick="setCount(1)">1枚 (300円)</button>
+                <button class="btn-quick" onclick="setCount(10)">10枚 (3,000円)</button>
+                <button class="btn-quick" onclick="setCount(100)">100枚 (3万円)</button>
+                <button class="btn-quick" onclick="setCount(1000)">1000枚 (30万円)</button>
+                <button class="btn-quick" onclick="setCount(3333)">MAX (100万円)</button>
+            </div>
+
+            <button class="btn-buy" id="buy-btn" onclick="buyTickets()">宝くじを買う！</button>
+        </div>
+
+        <div class="result-section">
+            <h2>直近の抽選結果</h2>
+            <div class="result-summary" id="result-summary">購入ボタンを押して宝くじを引いてください</div>
+            
+            <div class="prize-table" id="prize-table">
+                <!-- 抽選結果の内訳がここに表示されます -->
+            </div>
+
+            <div class="history-log" id="history-log">
+                <div>[システム] ゲーム開始。資金1,000万円でスタートしました。</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Over Modal -->
+    <div class="modal-overlay" id="game-over-modal">
+        <div class="modal">
+            <h2>GAME OVER</h2>
+            <p>資金が尽きてしまいました。<br>あなたの夢はここで潰えました……。</p>
+            <button class="btn-restart" onclick="restartGame()">もう一度挑戦する</button>
+        </div>
+    </div>
+
+    <script>
+        // ドリームジャンボの確率データ（1ユニット10,000,000枚基準）
+        // 確率の分母 = 10,000,000
+        const PRIZES = [
+            { id: 1, name: "1等 (3億円)", amount: 300000000, countPerUnit: 1 },
+            { id: 2, name: "1等の前後賞 (1億円)", amount: 100000000, countPerUnit: 2 },
+            { id: 3, name: "2等 (1,000万円)", amount: 10000000, countPerUnit: 10 },
+            { id: 4, name: "3等 (100万円)", amount: 1000000, countPerUnit: 100 },
+            { id: 5, name: "4等 (10万円)", amount: 100000, countPerUnit: 2000 },
+            { id: 6, name: "5等 (1万円)", amount: 10000, countPerUnit: 20000 },
+            { id: 7, name: "6等 (3,000円)", amount: 3000, countPerUnit: 200000 },
+            { id: 8, name: "7等 (300円)", amount: 300, countPerUnit: 1000000 },
+        ];
+        const UNIT_TOTAL = 10000000;
+        const TICKET_PRICE = 300;
+
+        let state = {
+            balance: 10000000,
+            initialBalance: 10000000,
+            totalTickets: 0,
+            totalWon: 0,
+            totalSpent: 0
+        };
+
+        const slider = document.getElementById('ticket-slider');
+        const countLabel = document.getElementById('ticket-count-label');
+        const costLabel = document.getElementById('ticket-cost-label');
+        const balanceEl = document.getElementById('balance');
+        const totalProfitEl = document.getElementById('total-profit');
+        const totalTicketsEl = document.getElementById('total-tickets');
+        const buyBtn = document.getElementById('buy-btn');
+        const resultSummary = document.getElementById('result-summary');
+        const prizeTable = document.getElementById('prize-table');
+        const historyLog = document.getElementById('history-log');
+        const gameOverModal = document.getElementById('game-over-modal');
+
+        slider.addEventListener('input', (e) => {
+            updateSliderDisplay(parseInt(e.target.value));
+        });
+
+        function updateSliderDisplay(count) {
+            slider.value = count;
+            const cost = count * TICKET_PRICE;
+            countLabel.textContent = count.toLocaleString() + " 枚";
+            costLabel.textContent = cost.toLocaleString();
+
+            if (cost > state.balance) {
+                buyBtn.disabled = true;
+                buyBtn.textContent = "資金が足りません";
+            } else {
+                buyBtn.disabled = false;
+                buyBtn.textContent = count.toLocaleString() + "枚買う (" + cost.toLocaleString() + "円)";
+            }
+        }
+
+        function setCount(count) {
+            // 最大3333枚 (100万円分)
+            const maxAllowedByBalance = Math.floor(state.balance / TICKET_PRICE);
+            const targetCount = Math.min(count, 3333, maxAllowedByBalance > 0 ? maxAllowedByBalance : 1);
+            updateSliderDisplay(targetCount);
+        }
+
+        function formatMoney(num) {
+            return num.toLocaleString() + " 円";
+        }
+
+        function updateUI() {
+            balanceEl.textContent = formatMoney(state.balance);
+            const profit = state.totalWon - state.totalSpent;
+            totalProfitEl.textContent = formatMoney(profit);
+            totalProfitEl.className = "value " + (profit >= 0 ? "positive" : "negative");
+            totalTicketsEl.textContent = state.totalTickets.toLocaleString() + " 枚";
+
+            // スライダーの最大値を所持金に合わせて制限
+            const maxAffordable = Math.floor(state.balance / TICKET_PRICE);
+            const maxSliderVal = Math.min(3333, maxAffordable);
+            
+            if (maxSliderVal <= 0) {
+                slider.max = 1;
+                slider.value = 1;
+                buyBtn.disabled = true;
+                buyBtn.textContent = "資金不足 (ゲームオーバー)";
+            } else {
+                slider.max = maxSliderVal;
+                if (parseInt(slider.value) > maxSliderVal) {
+                    slider.value = maxSliderVal;
+                }
+                updateSliderDisplay(parseInt(slider.value));
+            }
+        }
+
+        function buyTickets() {
+            const count = parseInt(slider.value);
+            const cost = count * TICKET_PRICE;
+
+            if (cost > state.balance) return;
+
+            state.balance -= cost;
+            state.totalSpent += cost;
+            state.totalTickets += count;
+
+            // 抽選処理
+            // 各チケットごとに独立試行としてモンテカルロまたは確率判定
+            // 1枚あたりの当選確率をシミュレート
+            let hits = {};
+            PRIZES.forEach(p => hits[p.id] = 0);
+            let totalReturn = 0;
+
+            // 各賞の確率を累積確率または独立判定にする
+            // 1枚ごとに判定
+            for (let i = 0; i < count; i++) {
+                let rand = Math.random() * UNIT_TOTAL;
+                let cumulative = 0;
+                let wonPrize = null;
+
+                for (let p of PRIZES) {
+                    cumulative += p.countPerUnit;
+                    if (rand < cumulative) {
+                        wonPrize = p;
+                        break;
+                    }
+                }
+
+                if (wonPrize) {
+                    hits[wonPrize.id]++;
+                    totalReturn += wonPrize.amount;
+                }
+            }
+
+            state.balance += totalReturn;
+            state.totalWon += totalReturn;
+
+            // 結果表示の更新
+            renderResults(count, cost, totalReturn, hits);
+            
+            // 履歴追加
+            const profitChange = totalReturn - cost;
+            const logMsg = `[購入] ${count.toLocaleString()}枚購入 (-${cost.toLocaleString()}円) → 払戻金: ${totalReturn.toLocaleString()}円 (${profitChange >= 0 ? '+' : ''}${profitChange.toLocaleString()}円)`;
+            addLog(logMsg);
+
+            updateUI();
+
+            // 資金チェック (300円未満になったらゲームオーバー)
+            if (state.balance < TICKET_PRICE) {
+                setTimeout(() => {
+                    gameOverModal.classList.add('active');
+                }, 500);
+            }
+        }
+
+        function renderResults(count, cost, totalReturn, hits) {
+            const diff = totalReturn - cost;
+            if (diff > 0) {
+                resultSummary.textContent = `🎉 大当たり！ 払戻金: ${totalReturn.toLocaleString()}円 (+${diff.toLocaleString()}円)`;
+                resultSummary.style.background = "rgba(34, 197, 94, 0.2)";
+                resultSummary.style.color = "#4ade80";
+            } else if (diff === 0) {
+                resultSummary.textContent = `⚖️ トントン！ 払戻金: ${totalReturn.toLocaleString()}円 (収支 ±0円)`;
+                resultSummary.style.background = "rgba(51, 65, 85, 1)";
+                resultSummary.style.color = "#f8fafc";
+            } else {
+                resultSummary.textContent = `💧 残念… 払戻金: ${totalReturn.toLocaleString()}円 (${diff.toLocaleString()}円)`;
+                resultSummary.style.background = "rgba(239, 68, 68, 0.2)";
+                resultSummary.style.color = "#fca5a5";
+            }
+
+            let html = "";
+            PRIZES.forEach(p => {
+                const countHit = hits[p.id];
+                const isHit = countHit > 0;
+                html += `
+                    <div class="prize-row ${isHit ? 'hit' : ''}">
+                        <div class="prize-name">${p.name}</div>
+                        <div class="prize-count">${countHit} 本当選</div>
+                        <div class="prize-amount">${formatMoney(p.amount * countHit)}</div>
+                    </div>
+                `;
+            });
+            prizeTable.innerHTML = html;
+        }
+
+        function addLog(msg) {
+            const div = document.createElement('div');
+            div.textContent = msg;
+            historyLog.prepend(div);
+        }
+
+        function restartGame() {
+            state = {
+                balance: 10000000,
+                initialBalance: 10000000,
+                totalTickets: 0,
+                totalWon: 0,
+                totalSpent: 0
+            };
+            gameOverModal.classList.remove('active');
+            historyLog.innerHTML = `<div>[システム] ゲームがリセットされました。資金1,000万円で再スタート！</div>`;
+            resultSummary.textContent = "購入ボタンを押して宝くじを引いてください";
+            resultSummary.style.background = "#334155";
+            resultSummary.style.color = "#f8fafc";
+            prizeTable.innerHTML = "";
+            updateUI();
+        }
+
+        // 初期化
+        updateUI();
+    </script>
+</body>
+</html>
