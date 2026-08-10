@@ -1,0 +1,352 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ビンゴマシーン・観衆全員クリア大作戦</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=M+PLUS+Rounded+1p:wght@400;700;900&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'M PLUS Rounded 1p', sans-serif;
+            background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #4c1d95 100%);
+            color: #f8fafc;
+            min-height: 100vh;
+        }
+        .speech-bubble {
+            position: relative;
+            background: #ffffff;
+            color: #1e293b;
+            border-radius: 1rem;
+            padding: 0.5rem 1rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+        }
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 8px 8px 0;
+            border-style: solid;
+            border-color: #ffffff transparent;
+            display: block;
+            width: 0;
+        }
+        @keyframes bounce-short {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+        .animate-bounce-short {
+            animation: bounce-short 1.5s infinite;
+        }
+        @keyframes pop-in {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+        .pop-in {
+            animation: pop-in 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+        }
+    </style>
+</head>
+<body class="flex flex-col items-center justify-between p-4 min-h-screen">
+
+    <!-- ヘッダー -->
+    <header class="w-full max-w-4xl text-center py-2 bg-white/10 backdrop-blur-md rounded-2xl shadow-lg border border-white/20 mb-4">
+        <h1 class="text-2xl md:text-3xl font-black text-yellow-300 drop-shadow-md">🎰 ビンゴマシーン・観衆全員クリア大作戦 🎪</h1>
+        <p class="text-xs md:text-sm text-purple-200 mt-1">1〜20の数字を宣言して、5人の観衆全員をビンゴさせよう！</p>
+    </header>
+
+    <!-- メインステージ：観衆エリア (5人) -->
+    <main class="w-full max-w-5xl flex flex-col gap-4">
+        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3" id="audience-container">
+            <!-- JavaScriptで観衆カードを動的生成 -->
+        </div>
+
+        <!-- 抽選マシーン＆コントロールエリア -->
+        <div class="bg-slate-900/80 backdrop-blur-md border border-purple-500/30 rounded-3xl p-5 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-6">
+            
+            <!-- ステータス・残り回数 -->
+            <div class="flex flex-col items-center md:items-start text-center md:text-left gap-1">
+                <div class="text-sm font-bold text-purple-300">残り宣言回数</div>
+                <div class="text-4xl font-black text-yellow-400 tracking-wider" id="turns-left">10 <span class="text-lg font-normal text-slate-300">回</span></div>
+                <div class="text-xs text-slate-400 mt-1">クリア済み: <span id="cleared-count" class="text-green-400 font-bold">0</span> / 5人</div>
+            </div>
+
+            <!-- 数字選択パッド (1〜20) -->
+            <div class="flex-1 w-full max-w-md">
+                <div class="text-xs font-bold text-center text-indigo-300 mb-2">宣言する数字を選んでください (1〜20)</div>
+                <div class="grid grid-cols-5 gap-2" id="number-pad">
+                    <!-- 1〜20のボタン -->
+                </div>
+            </div>
+
+            <!-- アクション / リセットボタン -->
+            <div class="flex flex-col gap-2">
+                <button id="reset-btn" onclick="initGame()" class="px-5 py-2.5 bg-gradient-to-r from-pink-500 to-rose-600 hover:from-pink-600 hover:to-rose-700 text-white font-bold rounded-xl shadow-lg transition transform active:scale-95 text-sm">
+                    🔄 最初からやり直す
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <!-- フッター -->
+    <footer class="text-xs text-purple-300/60 mt-4 text-center">
+        © 2026 ビンゴマシーンゲーム開発部 | 観衆の心の声を聞き逃すな！
+    </footer>
+
+    <!-- 結果モーダル -->
+    <div id="result-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-slate-800 border-2 border-yellow-400 rounded-3xl p-8 max-w-md w-full text-center shadow-2xl pop-in">
+            <div id="modal-icon" class="text-6xl mb-3">🎉</div>
+            <h2 id="modal-title" class="text-2xl font-black text-yellow-300 mb-2">ゲームクリア！</h2>
+            <p id="modal-desc" class="text-slate-300 text-sm mb-6">観衆全員がビンゴを達成しました！素晴らしい司会ぶりです！</p>
+            <button onclick="initGame()" class="w-full py-3 bg-gradient-to-r from-yellow-400 to-amber-500 hover:from-yellow-500 hover:to-amber-600 text-slate-950 font-black rounded-xl shadow-lg text-lg transition transform active:scale-95">
+                もう一度遊ぶ
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 観衆データ定義
+        const audienceData = [
+            { name: "アリス", avatar: "👧", color: "from-pink-500/20 to-purple-500/20", border: "border-pink-500/40" },
+            { name: "ボブ", avatar: "👦", color: "from-blue-500/20 to-cyan-500/20", border: "border-blue-500/40" },
+            { name: "チャーリー", avatar: "🧑", color: "from-emerald-500/20 to-teal-500/20", border: "border-emerald-500/40" },
+            { name: "ダイアナ", avatar: "👩", color: "from-amber-500/20 to-orange-500/20", border: "border-amber-500/40" },
+            { name: "エドワード", avatar: "👨", color: "from-indigo-500/20 to-violet-500/20", border: "border-indigo-500/40" }
+        ];
+
+        let gameState = {
+            turnsLeft: 10,
+            calledNumbers: new Set(),
+            audiences: [],
+            isGameOver: false
+        };
+
+        // 配列シャッフル関数
+        function shuffle(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // 3x3のビンゴカードを生成 (1〜20から9個ランダム)
+        function generateCard() {
+            const nums = shuffle([...Array(20).keys()].map(i => i + 1)).slice(0, 9);
+            // 3x3のグリッドオブジェクト作成
+            return nums.map(n => ({ number: n, marked: false }));
+        }
+
+        // ビンゴ判定 (3x3: 行3, 列3, 斜め2)
+        function checkBingo(card) {
+            const lines = [
+                [0, 1, 2], [3, 4, 5], [6, 7, 8], // 行
+                [0, 3, 6], [1, 4, 7], [2, 5, 8], // 列
+                [0, 4, 8], [2, 4, 6]            // 斜め
+            ];
+            return lines.some(line => line.every(idx => card[idx].marked));
+        }
+
+        // 初期化
+        function initGame() {
+            gameState.turnsLeft = 10;
+            gameState.calledNumbers.clear();
+            gameState.isGameOver = false;
+
+            gameState.audiences = audienceData.map((data, index) => {
+                const card = generateCard();
+                return {
+                    id: index,
+                    ...data,
+                    card: card,
+                    cleared: false,
+                    wishNumber: getNewWish(card, new Set())
+                };
+            });
+
+            document.getElementById('result-modal').classList.add('hidden');
+            document.getElementById('result-modal').classList.remove('flex');
+
+            renderUI();
+        }
+
+        // 未マークの数字からランダムに1つ希望の数字を選ぶ
+        function wishNumber(audience) {
+            const unmarked = audience.card.filter(c => !c.marked).map(c => c.number);
+            if (unmarked.length === 0) return null;
+            return unmarked[Math.floor(Math.random() * unmarked.length)];
+        }
+
+        function getNewWish(card, calledSet) {
+            const available = card.filter(c => !calledSet.has(c.number) && !c.marked).map(c => c.number);
+            if (available.length > 0) {
+                return available[Math.floor(Math.random() * available.length)];
+            }
+            const unmarked = card.filter(c => !c.marked).map(c => c.number);
+            if (unmarked.length > 0) {
+                return unmarked[Math.floor(Math.random() * unmarked.length)];
+            }
+            return null;
+        }
+
+        // プレイヤーが数字を宣言
+        function callNumber(num) {
+            if (gameState.isGameOver || gameState.turnsLeft <= 0 || gameState.calledNumbers.has(num)) return;
+
+            gameState.calledNumbers.add(num);
+            gameState.turnsLeft--;
+
+            // 各観衆の処理
+            gameState.audiences.forEach(aud => {
+                if (aud.cleared) return;
+
+                // カードに数字があればマーク
+                aud.card.forEach(cell => {
+                    if (cell.number === num) {
+                        cell.marked = true;
+                    }
+                });
+
+                // ビンゴ判定
+                if (checkBingo(aud.card)) {
+                    aud.cleared = true;
+                    aud.wishNumber = "ビンゴ達成！🎉";
+                } else {
+                    aud.wishNumber = getNewWish(aud.card, gameState.calledNumbers);
+                }
+            });
+
+            renderUI();
+
+            // 勝敗判定
+            checkGameEnd();
+        }
+
+        // 勝敗チェック
+        function checkGameEnd() {
+            const allCleared = gameState.audiences.every(a => a.cleared);
+
+            if (allCleared) {
+                gameState.isGameOver = true;
+                showModal(true);
+            } else if (gameState.turnsLeft <= 0) {
+                gameState.isGameOver = true;
+                showModal(false);
+            }
+        }
+
+        // モーダル表示
+        function showModal(isWin) {
+            const modal = document.getElementById('result-modal');
+            const icon = document.getElementById('modal-icon');
+            const title = document.getElementById('modal-title');
+            const desc = document.getElementById('modal-desc');
+
+            if (isWin) {
+                icon.textContent = "🏆";
+                title.textContent = "大成功！ゲームクリア！";
+                title.className = "text-2xl font-black text-yellow-300 mb-2";
+                desc.textContent = "見事、10ターン以内に観衆全員をビンゴさせました！素晴らしい司会者です！";
+            } else {
+                icon.textContent = "😢";
+                title.textContent = "ゲームオーバー…";
+                title.className = "text-2xl font-black text-rose-400 mb-2";
+                desc.textContent = "宣言回数がなくなってしまいました。全員をビンゴさせるのは難しかった…！";
+            }
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+        }
+
+        // UI描画
+        function renderUI() {
+            // 残り回数・クリア数更新
+            document.getElementById('turns-left').innerHTML = `${gameState.turnsLeft} <span class="text-lg font-normal text-slate-300">回</span>`;
+            
+            const clearedCount = gameState.audiences.filter(a => a.cleared).length;
+            document.getElementById('cleared-count').textContent = clearedCount;
+
+            // 観衆カード描画
+            const audienceContainer = document.getElementById('audience-container');
+            audienceContainer.innerHTML = '';
+
+            gameState.audiences.forEach(aud => {
+                let statusBadge = '';
+                let speechText = '';
+
+                if (aud.cleared) {
+                    statusBadge = `<span class="bg-green-500 text-slate-950 font-black text-xs px-2 py-0.5 rounded-full animate-bounce-short">✨ BINGO! クリア! ✨</span>`;
+                    speechText = `やったー！ビンゴ達成したよ！`;
+                } else {
+                    statusBadge = `<span class="bg-purple-500/30 text-purple-200 text-xs px-2 py-0.5 rounded-full">観衆</span>`;
+                    speechText = aud.wishNumber ? `「${aud.wishNumber}」がほしいな…！` : `がんばれー！`;
+                }
+
+                const cardHtml = `
+                    <div class="bg-gradient-to-b ${aud.color} border ${aud.border} rounded-2xl p-3 flex flex-col items-center justify-between shadow-lg relative backdrop-blur-sm">
+                        
+                        <!-- 吹き出しコメント -->
+                        <div class="speech-bubble text-xs font-bold text-center w-full mb-2 truncate">
+                            ${speechText}
+                        </div>
+
+                        <!-- アバター ＆ 名前 -->
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="text-2xl">${aud.avatar}</span>
+                            <div class="text-left">
+                                <div class="font-bold text-sm text-white">${aud.name}</div>
+                                ${statusBadge}
+                            </div>
+                        </div>
+
+                        <!-- 非開示のビンゴカードのミニプレビュー (または未開示表現) -->
+                        <div class="w-full bg-slate-900/60 rounded-xl p-2 border border-white/10 text-center">
+                            <div class="text-[10px] text-slate-400 mb-1">【非公開カード】状況</div>
+                            <div class="grid grid-cols-3 gap-1">
+                                ${aud.card.map(c => {
+                                    let bg = "bg-slate-700/60 text-slate-400";
+                                    if (c.marked) bg = "bg-yellow-400 text-slate-950 font-black shadow-sm";
+                                    else if (gameState.calledNumbers.has(c.number)) bg = "bg-purple-600/50 text-purple-200";
+                                    return `<div class="aspect-square rounded flex items-center justify-center text-xs ${bg}">
+                                        ${c.marked ? '✓' : (gameState.calledNumbers.has(c.number) ? '?' : '•')}
+                                    </div>`;
+                                }).join('')}
+                            </div>
+                            <div class="text-[9px] text-slate-400 mt-1">
+                                開放済み: ${aud.card.filter(c => c.marked).length}/9
+                            </div>
+                        </div>
+                    </div>
+                `;
+                audienceContainer.insertAdjacentHTML('beforeend', cardHtml);
+            });
+
+            // ナンバーパッド描画 (1〜20)
+            const numberPad = document.getElementById('number-pad');
+            numberPad.innerHTML = '';
+
+            for (let i = 1; i <= 20; i++) {
+                const isCalled = gameState.calledNumbers.has(i);
+                let btnClass = "bg-slate-800 hover:bg-purple-600/40 text-purple-200 border-purple-500/30";
+                if (isCalled) {
+                    btnClass = "bg-slate-700/40 text-slate-500 border-slate-700 line-through cursor-not-allowed opacity-50";
+                }
+
+                const btn = document.createElement('button');
+                btn.className = `py-2 rounded-xl border font-bold text-sm transition transform active:scale-95 shadow ${btnClass}`;
+                btn.textContent = i;
+                btn.disabled = isCalled || gameState.isGameOver;
+                btn.onclick = () => callNumber(i);
+                numberPad.appendChild(btn);
+            }
+        }
+
+        // ゲーム初期化実行
+        initGame();
+    </script>
+</body>
+</html>
