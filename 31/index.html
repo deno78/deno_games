@@ -14,6 +14,28 @@
             height: 100vh;
             overflow: hidden;
         }
+        .speech-bubble {
+            position: relative;
+            background: #ffffff;
+            color: #1e293b;
+            border-radius: 0.5rem;
+            padding: 0.1rem 0.5rem;
+            font-size: 0.75rem;
+            font-weight: 700;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            left: -6px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-width: 4px 6px 4px 0;
+            border-style: solid;
+            border-color: transparent #ffffff;
+            display: block;
+            width: 0;
+        }
         @keyframes bounce-short {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-3px); }
@@ -34,26 +56,25 @@
 
     <!-- ヘッダー -->
     <header class="w-full text-center py-1 bg-white/10 backdrop-blur-md rounded-xl shadow border border-white/20">
-        <h1 class="text-lg md:text-2xl font-black text-yellow-300 drop-shadow">🎰 ビンゴマシーン大作戦 🎪</h1>
+        <h1 class="text-base md:text-xl font-black text-yellow-300 drop-shadow">🎰 ビンゴマシーン大作戦 🎪</h1>
         <div class="flex justify-center gap-4 text-xs text-purple-200 mt-0.5">
             <div>残り回数: <span id="turns-left" class="text-yellow-400 font-bold text-sm">10</span>回</div>
             <div>クリア: <span id="cleared-count" class="text-green-400 font-bold">0</span> / 4人</div>
         </div>
     </header>
 
-    <!-- メインステージ：観衆エリア (4人コンパクト) -->
+    <!-- メインステージ：観衆エリア (4人) -->
     <main class="w-full grid grid-cols-2 gap-2 my-auto px-1">
-        <!-- JavaScriptで観衆カードを動的生成 -->
         <div id="audience-container" class="contents"></div>
     </main>
 
-    <!-- コントロールエリア (1〜20ナンバーパッド) -->
-    <div class="bg-slate-900/90 backdrop-blur-md border border-purple-500/30 rounded-2xl p-2 shadow-xl flex flex-col gap-1.5 mb-1">
+    <!-- コントロールエリア (4行×5列のナンバーパッド) -->
+    <div class="bg-slate-900/90 backdrop-blur-md border border-purple-500/30 rounded-2xl p-2.5 shadow-xl flex flex-col gap-1.5 mb-1">
         <div class="text-[11px] font-bold text-center text-indigo-300">数字を宣言してください (1〜20)</div>
-        <div class="grid grid-cols-10 gap-1" id="number-pad">
-            <!-- 1〜20のボタン (2行で10個ずつ、あるいは4列×5行など、コンパクトに) -->
+        <div class="grid grid-cols-5 gap-1.5" id="number-pad">
+            <!-- 4行×5列 (1〜20) -->
         </div>
-        <div class="flex justify-center mt-1">
+        <div class="flex justify-center mt-0.5">
             <button onclick="initGame()" class="px-4 py-1 bg-gradient-to-r from-pink-500 to-rose-600 text-white font-bold rounded-lg shadow text-xs active:scale-95 transition">
                 🔄 最初からやり直す
             </button>
@@ -73,7 +94,6 @@
     </div>
 
     <script>
-        // 観衆データ定義 (4人)
         const audienceData = [
             { name: "アリス", avatar: "👧", color: "from-pink-500/20 to-purple-500/20", border: "border-pink-500/40" },
             { name: "ボブ", avatar: "👦", color: "from-blue-500/20 to-cyan-500/20", border: "border-blue-500/40" },
@@ -111,6 +131,19 @@
             return lines.some(line => line.every(idx => card[idx].marked));
         }
 
+        // 未マークの数字の中から1つ希望の数字を選ぶ
+        function getNewWish(card, calledSet) {
+            const available = card.filter(c => !calledSet.has(c.number) && !c.marked).map(c => c.number);
+            if (available.length > 0) {
+                return available[Math.floor(Math.random() * available.length)];
+            }
+            const unmarked = card.filter(c => !c.marked).map(c => c.number);
+            if (unmarked.length > 0) {
+                return unmarked[Math.floor(Math.random() * unmarked.length)];
+            }
+            return null;
+        }
+
         function initGame() {
             gameState.turnsLeft = 10;
             gameState.calledNumbers.clear();
@@ -122,7 +155,8 @@
                     id: index,
                     ...data,
                     card: card,
-                    cleared: false
+                    cleared: false,
+                    wishNumber: getNewWish(card, new Set())
                 };
             });
 
@@ -149,6 +183,9 @@
 
                 if (checkBingo(aud.card)) {
                     aud.cleared = true;
+                    aud.wishNumber = "達成!";
+                } else {
+                    aud.wishNumber = getNewWish(aud.card, gameState.calledNumbers);
                 }
             });
 
@@ -201,23 +238,33 @@
             gameState.audiences.forEach(aud => {
                 let statusBadge = '';
                 if (aud.cleared) {
-                    statusBadge = `<span class="bg-green-500 text-slate-950 font-black text-[10px] px-1.5 py-0.2 rounded-full animate-bounce-short">✨ BINGO! ✨</span>`;
+                    statusBadge = `<span class="bg-green-500 text-slate-950 font-black text-[9px] px-1 py-0.2 rounded-full animate-bounce-short">✨ BINGO!</span>`;
                 } else {
-                    statusBadge = `<span class="text-[10px] text-slate-300">進行中</span>`;
+                    statusBadge = `<span class="text-[9px] text-slate-300">進行中</span>`;
                 }
+
+                // 名前の右の白い吹き出し（希望の数字）
+                const wishBubble = aud.cleared 
+                    ? `<div class="speech-bubble text-green-700 bg-green-100">✨クリア!</div>`
+                    : (aud.wishNumber ? `<div class="speech-bubble">★${aud.wishNumber}</div>` : '');
 
                 const cardHtml = `
                     <div class="bg-gradient-to-b ${aud.color} border ${aud.border} rounded-xl p-2 flex flex-col items-center justify-between shadow backdrop-blur-sm">
-                        <!-- アバター ＆ 名前 -->
-                        <div class="flex items-center gap-1.5 w-full justify-between mb-1">
+                        <!-- アバター ＆ 名前 ＆ 白い吹き出し -->
+                        <div class="flex items-center justify-between w-full mb-1">
                             <div class="flex items-center gap-1">
-                                <span class="text-lg">${aud.avatar}</span>
-                                <span class="font-bold text-xs text-white">${aud.name}</span>
+                                <span class="text-base">${aud.avatar}</span>
+                                <div class="flex flex-col">
+                                    <span class="font-bold text-[11px] text-white leading-tight">${aud.name}</span>
+                                    ${statusBadge}
+                                </div>
                             </div>
-                            ${statusBadge}
+                            <div>
+                                ${wishBubble}
+                            </div>
                         </div>
 
-                        <!-- 3x3 ビンゴカード (コンパクト) -->
+                        <!-- 3x3 ビンゴカード -->
                         <div class="w-full bg-slate-900/70 rounded-lg p-1.5 border border-white/10">
                             <div class="grid grid-cols-3 gap-1">
                                 ${aud.card.map(c => {
@@ -235,7 +282,7 @@
                 audienceContainer.insertAdjacentHTML('beforeend', cardHtml);
             });
 
-            // ナンバーパッド (1〜20、2行×10列または5列×4行。横に10個並べるとスマホで小さいので2行×10列)
+            // ナンバーパッド (4行×5列)
             const numberPad = document.getElementById('number-pad');
             numberPad.innerHTML = '';
 
@@ -247,7 +294,7 @@
                 }
 
                 const btn = document.createElement('button');
-                btn.className = `py-1.5 rounded-lg border font-bold text-xs transition active:scale-95 shadow ${btnClass}`;
+                btn.className = `py-2.5 rounded-lg border font-bold text-sm transition active:scale-95 shadow ${btnClass}`;
                 btn.textContent = i;
                 btn.disabled = isCalled || gameState.isGameOver;
                 btn.onclick = () => callNumber(i);
