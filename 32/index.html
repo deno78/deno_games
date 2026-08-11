@@ -6,13 +6,13 @@
     <title>日本列島台風シミュレーター</title>
     <style>
         :root {
-            --bg-color: #0b0f19;
-            --panel-bg: rgba(17, 24, 39, 0.9);
-            --border-color: #374151;
-            --text-main: #f3f4f6;
-            --text-muted: #9ca3af;
+            --bg-color: #f0f4f8;
+            --panel-bg: rgba(255, 255, 255, 0.95);
+            --border-color: #cbd5e1;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
             --accent-red: #ef4444;
-            --accent-blue: #3b82f6;
+            --accent-blue: #0284c7;
             --accent-green: #10b981;
         }
 
@@ -44,7 +44,7 @@
 
         h1 {
             font-size: 1.2rem;
-            background: linear-gradient(90deg, #60a5fa, #f87171);
+            background: linear-gradient(90deg, #0284c7, #ef4444);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
         }
@@ -62,11 +62,11 @@
 
         .canvas-wrapper {
             position: relative;
-            background: #020617;
+            background: #e2e8f0;
             border-radius: 8px;
             overflow: hidden;
             border: 2px solid var(--border-color);
-            box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
             width: 100%;
             flex-grow: 1;
             max-height: 52vh;
@@ -76,7 +76,7 @@
             display: block;
             width: 100%;
             height: 100%;
-            background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
+            background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 100%);
         }
 
         .control-panel {
@@ -88,7 +88,7 @@
             display: flex;
             flex-direction: column;
             gap: 8px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
         }
 
         .control-row {
@@ -131,20 +131,21 @@
 
         .radio-btn {
             flex: 1;
-            background: #1f2937;
+            background: #f1f5f9;
             border: 1px solid var(--border-color);
             border-radius: 6px;
             padding: 6px;
             text-align: center;
             cursor: pointer;
             font-size: 0.75rem;
+            color: #334155;
             transition: all 0.2s;
         }
 
         .radio-btn.selected {
             border-color: var(--accent-blue);
-            background: rgba(59, 130, 246, 0.25);
-            color: #60a5fa;
+            background: rgba(2, 132, 199, 0.15);
+            color: #0284c7;
             font-weight: bold;
         }
 
@@ -158,7 +159,7 @@
             font-weight: bold;
             cursor: pointer;
             width: 100%;
-            box-shadow: 0 3px 10px rgba(239, 68, 68, 0.4);
+            box-shadow: 0 3px 10px rgba(239, 68, 68, 0.3);
             text-align: center;
         }
 
@@ -166,23 +167,28 @@
             transform: scale(0.98);
         }
 
+        .btn-result {
+            background: linear-gradient(135deg, #0284c7, #0369a1);
+            box-shadow: 0 3px 10px rgba(2, 132, 199, 0.3);
+        }
+
         .status-grid {
             display: grid;
             grid-template-columns: repeat(4, 1fr);
             gap: 4px;
-            background: rgba(15, 23, 42, 0.8);
+            background: #ffffff;
             padding: 6px;
             border-radius: 6px;
             font-size: 0.75rem;
             text-align: center;
-            border: 1px solid #1e293b;
+            border: 1px solid var(--border-color);
         }
 
         .status-grid div span {
             display: block;
             font-size: 0.8rem;
             font-weight: bold;
-            color: #60a5fa;
+            color: #0284c7;
         }
 
         .modal {
@@ -191,7 +197,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0,0,0,0.8);
+            background: rgba(0,0,0,0.6);
             display: flex;
             align-items: center;
             justify-content: center;
@@ -208,28 +214,29 @@
         }
 
         .modal-content {
-            background: #1e293b;
+            background: #ffffff;
             border: 2px solid var(--border-color);
             padding: 20px;
             border-radius: 12px;
             width: 100%;
             max-width: 360px;
             text-align: center;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.7);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
             display: flex;
             flex-direction: column;
             gap: 12px;
+            color: #1e293b;
         }
 
         .modal-content h2 {
             font-size: 1.4rem;
-            color: #f87171;
+            color: #ef4444;
         }
 
         .rank-badge {
             font-size: 1.8rem;
             font-weight: bold;
-            color: #fbbf24;
+            color: #d97706;
             margin: 2px 0;
         }
 
@@ -238,15 +245,16 @@
             grid-template-columns: 1fr 1fr;
             gap: 6px;
             text-align: left;
-            background: #0f172a;
+            background: #f8fafc;
             padding: 8px;
             border-radius: 6px;
             font-size: 0.8rem;
+            border: 1px solid #e2e8f0;
         }
 
         .stat-grid span {
             font-weight: bold;
-            color: #60a5fa;
+            color: #0284c7;
         }
     </style>
 </head>
@@ -266,7 +274,7 @@
         <div class="status-grid">
             <div>気圧<span id="statPressure" style="color:var(--accent-red)">900hPa</span></div>
             <div>風速<span id="statWind">65m/s</span></div>
-            <div>ランク<span id="statRank" style="color:#fbbf24">猛烈な</span></div>
+            <div>ランク<span id="statRank" style="color:#d97706">猛烈な</span></div>
             <div>被害<span id="statDamage" style="color:var(--accent-green)">0億</span></div>
         </div>
 
@@ -293,7 +301,7 @@
                 </div>
             </div>
 
-            <button class="btn" id="btnLaunch" onclick="launchTyphoon()">台風発令・出撃！</button>
+            <button class="btn" id="btnAction" onclick="handleActionButton()">台風発令・出撃！</button>
         </div>
     </div>
 
@@ -371,7 +379,7 @@
         const spawnPoint = { lat: 26.5, lon: 127.8 };
 
         let simState = {
-            active: false,
+            state: 'ready', // 'ready', 'running', 'finished'
             x: 0,
             y: 0,
             pressure: 900,
@@ -395,6 +403,7 @@
         const statWind = document.getElementById('statWind');
         const statRank = document.getElementById('statRank');
         const statDamage = document.getElementById('statDamage');
+        const btnAction = document.getElementById('btnAction');
 
         inputAngle.addEventListener('input', () => { valAngle.textContent = inputAngle.value; draw(); });
         inputSpeed.addEventListener('input', () => { valSpeed.textContent = inputSpeed.value; });
@@ -408,15 +417,23 @@
         function getRank(pressure) {
             if (pressure < 920) return { name: "猛烈な", color: "#ef4444" };
             if (pressure < 950) return { name: "非常に強い", color: "#f97316" };
-            if (pressure < 970) return { name: "強い", color: "#facc15" };
-            return { name: "並の台風", color: "#60a5fa" };
+            if (pressure < 970) return { name: "強い", color: "#d97706" };
+            return { name: "並の台風", color: "#0284c7" };
+        }
+
+        function handleActionButton() {
+            if (simState.state === 'ready') {
+                launchTyphoon();
+            } else if (simState.state === 'finished') {
+                showResultModal();
+            }
         }
 
         function launchTyphoon() {
             const sp = project(spawnPoint.lat, spawnPoint.lon);
             simState.x = sp.x;
             simState.y = sp.y;
-            simState.active = true;
+            simState.state = 'running';
             simState.pressure = 900;
             simState.speed = parseInt(inputSpeed.value) / 12;
             simState.angle = parseInt(inputAngle.value);
@@ -436,12 +453,13 @@
                 });
             }
 
-            document.getElementById('btnLaunch').disabled = true;
-            document.getElementById('btnLaunch').style.opacity = '0.5';
+            btnAction.textContent = "シミュレーション中...";
+            btnAction.disabled = true;
+            btnAction.style.opacity = '0.6';
         }
 
         function update() {
-            if (!simState.active) return;
+            if (simState.state !== 'running') return;
 
             simState.elapsedFrames++;
 
@@ -488,15 +506,20 @@
             statDamage.textContent = (simState.totalDamage).toLocaleString() + "億";
 
             if (simState.x < -30 || simState.x > canvas.width + 30 || simState.y < -30 || simState.y > canvas.height + 30 || simState.elapsedFrames > 1000) {
-                endSimulation();
+                finishSimulation();
             }
         }
 
-        function endSimulation() {
-            simState.active = false;
-            document.getElementById('btnLaunch').disabled = false;
-            document.getElementById('btnLaunch').style.opacity = '1';
+        function finishSimulation() {
+            simState.state = 'finished';
+            btnAction.textContent = "📊 結果を見る";
+            btnAction.disabled = false;
+            btnAction.style.opacity = '1';
+            btnAction.className = "btn btn-result";
+            showResultModal();
+        }
 
+        function showResultModal() {
             const hitCount = cities.filter(c => c.hit).length;
             let rankStr = "Sランク";
             let comment = "日本列島に甚大な被害をもたらしました！";
@@ -519,15 +542,29 @@
 
         function closeModal() {
             document.getElementById('resultModal').classList.remove('active');
+        }
+
+        function resetGame() {
+            simState.state = 'ready';
+            simState.elapsedFrames = 0;
+            simState.pathHistory = [];
+            cities.forEach(c => { c.hit = false; c.damage = 0; });
+            btnAction.textContent = "台風発令・出撃！";
+            btnAction.className = "btn";
             draw();
         }
+
+        document.querySelector('#resultModal button').onclick = () => {
+            closeModal();
+            resetGame();
+        };
 
         function draw() {
             simState.animTimer += 0.05;
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // Draw grid lines (map feel)
-            ctx.strokeStyle = 'rgba(51, 65, 85, 0.2)';
+            // Grid lines (weather forecast style)
+            ctx.strokeStyle = 'rgba(186, 230, 253, 0.6)';
             ctx.lineWidth = 1;
             for (let x = 0; x < canvas.width; x += 50) {
                 ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
@@ -536,9 +573,9 @@
                 ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
             }
 
-            // Draw Japan landmasses with subtle wave gradient or texture animation
-            ctx.fillStyle = '#1e293b';
-            ctx.strokeStyle = '#334155';
+            // Japan landmasses
+            ctx.fillStyle = '#cbd5e1';
+            ctx.strokeStyle = '#94a3b8';
             ctx.lineWidth = 1.5;
 
             japanPolygons.forEach(poly => {
@@ -553,21 +590,21 @@
                 ctx.stroke();
             });
 
-            // Draw spawn marker
+            // Spawn marker
             const sp = project(spawnPoint.lat, spawnPoint.lon);
-            ctx.fillStyle = '#3b82f6';
+            ctx.fillStyle = '#0284c7';
             ctx.beginPath();
             ctx.arc(sp.x, sp.y, 6, 0, Math.PI * 2);
             ctx.fill();
             ctx.strokeStyle = '#ffffff';
             ctx.lineWidth = 1.5;
             ctx.stroke();
-            ctx.fillStyle = '#93c5fd';
-            ctx.font = '10px sans-serif';
+            ctx.fillStyle = '#0369a1';
+            ctx.font = 'bold 10px sans-serif';
             ctx.fillText('発生 (南西諸島)', sp.x + 8, sp.y + 3);
 
-            // Draw anticipated trajectory line with animated pulse dash
-            if (!simState.active) {
+            // Trajectory preview
+            if (simState.state === 'ready') {
                 const angleVal = parseInt(inputAngle.value);
                 const rad = (angleVal - 90) * (Math.PI / 180);
                 ctx.strokeStyle = 'rgba(239, 68, 68, 0.7)';
@@ -582,7 +619,7 @@
                 ctx.lineDashOffset = 0;
             }
 
-            // Draw Typhoon path history (進路)
+            // Typhoon path history
             if (simState.pathHistory.length > 1) {
                 ctx.strokeStyle = '#ef4444';
                 ctx.lineWidth = 3;
@@ -594,70 +631,64 @@
                 ctx.stroke();
             }
 
-            // Draw Cities
+            // Cities & Fire marks
             cities.forEach(c => {
                 const p = project(c.lat, c.lon);
-                const radiusPulse = c.hit ? 6 + Math.sin(simState.animTimer * 5) * 2 : 4;
-
-                ctx.fillStyle = c.hit ? '#ef4444' : '#94a3b8';
+                ctx.fillStyle = c.hit ? '#ef4444' : '#64748b';
                 ctx.beginPath();
-                ctx.arc(p.x, p.y, radiusPulse, 0, Math.PI * 2);
+                ctx.arc(p.x, p.y, c.hit ? 7 : 4, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.strokeStyle = '#ffffff';
                 ctx.lineWidth = 1;
                 ctx.stroke();
 
-                ctx.fillStyle = c.hit ? '#fca5a5' : '#cbd5e1';
+                ctx.fillStyle = c.hit ? '#991b1b' : '#334155';
                 ctx.font = 'bold 10px sans-serif';
                 ctx.fillText(c.name, p.x + 8, p.y + 3);
 
-                // Fire mark 🔥 if hit
                 if (c.hit) {
                     ctx.font = '16px sans-serif';
                     ctx.fillText('🔥', p.x - 6, p.y - 10);
                 }
             });
 
-            // Draw Typhoon active state (spinning radar animation)
-            if (simState.active || simState.elapsedFrames > 0) {
-                const rx = simState.active ? simState.x : sp.x;
-                const ry = simState.active ? simState.y : sp.y;
+            // Typhoon active state
+            if (simState.state === 'running') {
                 const typhoonRadius = Math.max(30, (1010 - simState.pressure) * 0.6);
 
-                const grad = ctx.createRadialGradient(rx, ry, 3, rx, ry, typhoonRadius);
-                grad.addColorStop(0, 'rgba(239, 68, 68, 0.5)');
-                grad.addColorStop(0.6, 'rgba(59, 130, 246, 0.3)');
-                grad.addColorStop(1, 'rgba(59, 130, 246, 0)');
+                const grad = ctx.createRadialGradient(simState.x, simState.y, 3, simState.x, simState.y, typhoonRadius);
+                grad.addColorStop(0, 'rgba(239, 68, 68, 0.55)');
+                grad.addColorStop(0.6, 'rgba(2, 132, 199, 0.3)');
+                grad.addColorStop(1, 'rgba(2, 132, 199, 0)');
                 ctx.fillStyle = grad;
                 ctx.beginPath();
-                ctx.arc(rx, ry, typhoonRadius, 0, Math.PI * 2);
+                ctx.arc(simState.x, simState.y, typhoonRadius, 0, Math.PI * 2);
                 ctx.fill();
 
-                ctx.strokeStyle = 'rgba(255, 255, 255, 0.7)';
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.9)';
                 ctx.lineWidth = 1.2;
                 simState.particles.forEach(pt => {
-                    if (simState.active) pt.angle += pt.speed * simState.rotation;
-                    const px = rx + Math.cos(pt.angle) * pt.dist;
-                    const py = ry + Math.sin(pt.angle) * pt.dist;
+                    pt.angle += pt.speed * simState.rotation;
+                    const px = simState.x + Math.cos(pt.angle) * pt.dist;
+                    const py = simState.y + Math.sin(pt.angle) * pt.dist;
                     ctx.beginPath();
-                    ctx.moveTo(rx, ry);
+                    ctx.moveTo(simState.x, simState.y);
                     ctx.lineTo(px, py);
                     ctx.stroke();
                 });
 
                 ctx.fillStyle = '#ffffff';
                 ctx.beginPath();
-                ctx.arc(rx, ry, 7, 0, Math.PI * 2);
+                ctx.arc(simState.x, simState.y, 7, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.strokeStyle = '#ef4444';
                 ctx.lineWidth = 2.5;
                 ctx.stroke();
 
-                // Eye pressure label pulsing
-                ctx.fillStyle = '#ffffff';
+                ctx.fillStyle = '#1e293b';
                 ctx.font = 'bold 11px sans-serif';
                 ctx.textAlign = 'center';
-                ctx.fillText(Math.round(simState.pressure) + 'hPa', rx, ry - 14);
+                ctx.fillText(Math.round(simState.pressure) + 'hPa', simState.x, simState.y - 14);
                 ctx.textAlign = 'left';
             }
         }
@@ -672,5 +703,3 @@
     </script>
 </body>
 </html>
-
-
