@@ -582,10 +582,21 @@
                 ctx.lineDashOffset = 0;
             }
 
+            // Draw Typhoon path history (進路)
+            if (simState.pathHistory.length > 1) {
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 3;
+                ctx.beginPath();
+                simState.pathHistory.forEach((pt, idx) => {
+                    if (idx === 0) ctx.moveTo(pt.x, pt.y);
+                    else ctx.lineTo(pt.x, pt.y);
+                });
+                ctx.stroke();
+            }
+
             // Draw Cities
             cities.forEach(c => {
                 const p = project(c.lat, c.lon);
-                // Pulse effect on hit
                 const radiusPulse = c.hit ? 6 + Math.sin(simState.animTimer * 5) * 2 : 4;
 
                 ctx.fillStyle = c.hit ? '#ef4444' : '#94a3b8';
@@ -599,21 +610,13 @@
                 ctx.fillStyle = c.hit ? '#fca5a5' : '#cbd5e1';
                 ctx.font = 'bold 10px sans-serif';
                 ctx.fillText(c.name, p.x + 8, p.y + 3);
-            });
 
-            // Draw Typhoon path history
-            if (simState.pathHistory.length > 1) {
-                ctx.strokeStyle = 'rgba(239, 68, 68, 0.5)';
-                ctx.lineWidth = 2.5;
-                ctx.setLineDash([3, 3]);
-                ctx.beginPath();
-                simState.pathHistory.forEach((pt, idx) => {
-                    if (idx === 0) ctx.moveTo(pt.x, pt.y);
-                    else ctx.lineTo(pt.x, pt.y);
-                });
-                ctx.stroke();
-                ctx.setLineDash([]);
-            }
+                // Fire mark 🔥 if hit
+                if (c.hit) {
+                    ctx.font = '16px sans-serif';
+                    ctx.fillText('🔥', p.x - 6, p.y - 10);
+                }
+            });
 
             // Draw Typhoon active state (spinning radar animation)
             if (simState.active || simState.elapsedFrames > 0) {
