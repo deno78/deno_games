@@ -42,3 +42,4 @@ Deno/Web games collection.
 - [29. 消失オセロ (Vanishing Reversi vs CPU)](./29/index.html)
 - [30. ドリームジャンボ宝くじシミュレーター (Dream Jumbo Lottery Simulator)](./30/index.html)
 - [31. ビンゴマシーン・観衆全員クリア大作戦 (Bingo Machine Crowd Clear Game)](./31/index.html)
+- [32. 日本列島台風シミュレーター (Typhoon Simulator Japan)](./32/index.html)

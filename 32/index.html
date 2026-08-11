@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-scale=1.0">
+    <title>日本列島台風シミュレーター - 巨大台風上陸大作戦</title>
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --panel-bg: rgba(17, 24, 39, 0.85);
+            --border-color: #374151;
+            --text-main: #f3f4f6;
+            --text-muted: #9ca3af;
+            --accent-red: #ef4444;
+            --accent-blue: #3b82f6;
+            --accent-green: #10b981;
+            --accent-yellow: #f59e0b;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            user-select: none;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            padding: 15px;
+            overflow-x: hidden;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 12px;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            background: linear-gradient(90deg, #60a5fa, #f87171);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 4px;
+        }
+
+        p.subtitle {
+            font-size: 0.9rem;
+            color: var(--text-muted);
+        }
+
+        .main-container {
+            display: flex;
+            gap: 20px;
+            max-width: 1200px;
+            width: 100%;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .canvas-wrapper {
+            position: relative;
+            background: #020617;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid var(--border-color);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+
+        canvas {
+            display: block;
+            background: radial-gradient(circle at center, #1e293b 0%, #020617 100%);
+            cursor: crosshair;
+        }
+
+        .control-panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px;
+            width: 340px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+
+        .section-title {
+            font-size: 1.05rem;
+            font-weight: 600;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 6px;
+            color: #93c5fd;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        label {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            display: flex;
+            justify-content: space-between;
+        }
+
+        label span {
+            color: var(--text-main);
+            font-weight: 600;
+        }
+
+        input[type="range"] {
+            width: 100%;
+            accent-color: var(--accent-blue);
+            cursor: pointer;
+        }
+
+        .radio-group {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+        }
+
+        .radio-btn {
+            background: #1f2937;
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 8px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
+        }
+
+        .radio-btn input {
+            display: none;
+        }
+
+        .radio-btn.selected {
+            border-color: var(--accent-blue);
+            background: rgba(59, 130, 246, 0.2);
+            color: #60a5fa;
+            font-weight: bold;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #3b82f6, #1d4ed8);
+            color: white;
+            border: none;
+            padding: 12px;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.1s, opacity 0.2s;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+            text-align: center;
+        }
+
+        .btn:hover {
+            opacity: 0.9;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444, #b91c1c);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+        }
+
+        .status-box {
+            background: rgba(15, 23, 42, 0.8);
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 0.85rem;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            border: 1px solid #1e293b;
+        }
+
+        .status-row {
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .city-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            max-height: 180px;
+            overflow-y: auto;
+            padding-right: 4px;
+        }
+
+        .city-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #1e293b;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+
+        .city-item.hit {
+            background: rgba(239, 68, 68, 0.2);
+            border: 1px solid rgba(239, 68, 68, 0.5);
+            color: #fca5a5;
+        }
+
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: #1e293b;
+            border: 2px solid var(--border-color);
+            padding: 30px;
+            border-radius: 16px;
+            width: 420px;
+            text-align: center;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.7);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .modal-content h2 {
+            font-size: 1.8rem;
+            color: #f87171;
+        }
+
+        .rank-badge {
+            font-size: 2.2rem;
+            font-weight: bold;
+            color: #fbbf24;
+            margin: 5px 0;
+            text-shadow: 0 0 10px rgba(251, 191, 36, 0.5);
+        }
+
+        .stat-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            text-align: left;
+            background: #0f172a;
+            padding: 12px;
+            border-radius: 8px;
+        }
+
+        .stat-grid div {
+            font-size: 0.85rem;
+        }
+
+        .stat-grid span {
+            font-weight: bold;
+            color: #60a5fa;
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 3px;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>日本列島台風シミュレーター</h1>
+        <p class="subtitle">日本各地に上陸させ、大都市を破壊して巨大な被害総額を目指せ！</p>
+    </header>
+
+    <div class="main-container">
+        <!-- Canvas -->
+        <div class="canvas-wrapper">
+            <canvas id="simCanvas" width="700" height="650"></canvas>
+        </div>
+
+        <!-- Controls -->
+        <div class="control-panel">
+            <div class="section-title">
+                <span>台風初期設定</span>
+                <span id="presetName" style="font-size:0.75rem; color: #fbbf24;">カスタム</span>
+            </div>
+
+            <div class="control-group">
+                <label>発生位置 (緯度・経度風)</label>
+                <div style="display: flex; gap: 8px;">
+                    <button class="btn" style="flex: 1; padding: 6px; font-size: 0.8rem;" onclick="setSpawnPos('south')">南西諸島から</button>
+                    <button class="btn" style="flex: 1; padding: 6px; font-size: 0.8rem;" onclick="setSpawnPos('east')">太平洋沖から</button>
+                    <button class="btn" style="flex: 1; padding: 6px; font-size: 0.8rem;" onclick="setSpawnPos('sea')">日本海から</button>
+                </div>
+            </div>
+
+            <div class="control-group">
+                <label>初期中心気圧: <span id="valPressure">920</span> hPa</label>
+                <input type="range" id="inputPressure" min="900" max="980" step="2" value="920">
+            </div>
+
+            <div class="control-group">
+                <label>初期移動速度: <span id="valSpeed">25</span> km/h</label>
+                <input type="range" id="inputSpeed" min="10" max="60" step="5" value="25">
+            </div>
+
+            <div class="control-group">
+                <label>射出進行角度: <span id="valAngle">45</span>°</label>
+                <input type="range" id="inputAngle" min="0" max="360" step="5" value="45">
+            </div>
+
+            <div class="control-group">
+                <label>渦の回転方向 (コリオリ/自転)</label>
+                <div class="radio-group">
+                    <label class="radio-btn selected" id="rotCounter" onclick="setRotation(-1)">
+                        <input type="radio" name="rotation" value="-1" checked> 左回り (反時計)
+                    </label>
+                    <label class="radio-btn" id="rotClock" onclick="setRotation(1)">
+                        <input type="radio" name="rotation" value="1"> 右回り (時計)
+                    </label>
+                </div>
+            </div>
+
+            <button class="btn btn-danger" id="btnLaunch" onclick="launchTyphoon()">台風発令・シミュレーション開始</button>
+
+            <!-- Status during sim -->
+            <div class="section-title" style="margin-top: 5px;">台風ステータス</div>
+            <div class="status-box">
+                <div class="status-row"><span>現在地気圧:</span> <span id="statPressure" style="color:var(--accent-red)">920 hPa</span></div>
+                <div class="status-row"><span>最大風速:</span> <span id="statWind">55 m/s</span></div>
+                <div class="status-row"><span>勢力ランク:</span> <span id="statRank" style="color:#fbbf24">猛烈な</span></div>
+                <div class="status-row"><span>累計被害総額:</span> <span id="statDamage" style="color:var(--accent-green)">0 億円</span></div>
+            </div>
+
+            <div class="section-title">ターゲット都市直撃状況</div>
+            <div class="city-list" id="cityList">
+                <!-- dynamically populated -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Result Modal -->
+    <div class="modal" id="resultModal">
+        <div class="modal-content">
+            <h2>台風消滅・結果発表</h2>
+            <div class="rank-badge" id="modalRank">Sランク</div>
+            <p id="modalComment" style="font-size:0.95rem; color:var(--text-muted);">日本列島に甚大な被害をもたらしました！</p>
+            
+            <div class="stat-grid">
+                <div>直撃都市数: <span id="resHitCount">0</span> / 7</div>
+                <div>最高風速: <span id="resMaxWind">0</span> m/s</div>
+                <div>最安気圧: <span id="resMinPressure">0</span> hPa</div>
+                <div>最終被害額: <span id="resTotalDamage">0</span> 億円</div>
+            </div>
+
+            <button class="btn" onclick="closeModal()">もう一度シミュレート</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('simCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Cities data (x, y mapped to canvas 700x650)
+        // Japan bounds approx: Lat 24-46, Lon 128-146
+        const cities = [
+            { name: "札幌", lat: 43.06, lon: 141.35, pop: 190, hit: false, damage: 0 },
+            { name: "仙台", lat: 38.26, lon: 140.87, pop: 110, hit: false, damage: 0 },
+            { name: "東京", lat: 35.68, lon: 139.69, pop: 1400, hit: false, damage: 0 },
+            { name: "名古屋", lat: 35.18, lon: 136.90, pop: 230, hit: false, damage: 0 },
+            { name: "大阪", lat: 34.69, lon: 135.50, pop: 880, hit: false, damage: 0 },
+            { name: "広島", lat: 34.38, lon: 132.45, pop: 110, hit: false, damage: 0 },
+            { name: "福岡", lat: 33.59, lon: 130.40, pop: 160, hit: false, damage: 0 },
+        ];
+
+        // Convert lat/lon to canvas coordinates
+        function project(lat, lon) {
+            // Min/Max bounds for map rendering
+            const minLon = 126.0, maxLon = 148.0;
+            const minLat = 30.0, maxLat = 46.5;
+            
+            const x = ((lon - minLon) / (maxLon - minLon)) * canvas.width;
+            // Invert y because canvas y goes down
+            const y = canvas.height - ((lat - minLat) / (maxLat - minLat)) * canvas.height;
+            return { x, y };
+        }
+
+        // Map coastline data approximation (Simplified polygon chains for Japan main islands)
+        // We will render stylized Japan map paths
+        const japanPolygons = [
+            // Kyushu
+            [[31.5,130.5],[32.0,130.2],[33.5,130.2],[33.8,131.0],[32.8,131.8],[31.5,131.0],[31.2,130.7],[31.5,130.5]],
+            // Shikoku
+            [[33.3,132.5],[34.3,133.5],[33.8,134.5],[32.8,133.0],[33.3,132.5]],
+            // Honshu
+            [
+                [33.9,131.0],[34.5,132.8],[35.4,133.1],[35.6,134.8],[34.7,135.5],[34.3,136.8],
+                [35.1,136.9],[34.7,137.2],[34.6,138.2],[35.3,138.7],[35.6,139.7],[36.8,140.8],
+                [41.3,141.5],[40.5,142.0],[39.5,142.0],[38.3,141.0],[37.5,139.0],[37.9,139.2],
+                [37.2,137.0],[36.3,136.2],[35.7,136.0],[35.0,135.0],[34.8,134.5],[34.3,132.5],
+                [33.9,131.0]
+            ],
+            // Hokkaido
+            [[41.4,140.1],[42.3,140.0],[43.2,141.3],[45.4,141.7],[45.5,142.5],[43.3,143.2],
+             [42.8,144.5],[43.0,145.8],[42.0,143.2],[42.0,141.0],[41.4,140.1]]
+        ];
+
+        // Check if a point (x, y) is on land
+        // Simple point-in-polygon check for simplified Japan landmasses
+        function isLand(x, y) {
+            // Reverse project x, y to lat, lon
+            const minLon = 126.0, maxLon = 148.0;
+            const minLat = 30.0, maxLat = 46.5;
+            const lon = minLon + (x / canvas.width) * (maxLon - minLon);
+            const lat = minLat + ((canvas.height - y) / canvas.height) * (maxLat - minLat);
+
+            for (let poly of japanPolygons) {
+                if (pointInPolygon(lat, lon, poly)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        function pointInPolygon(lat, lon, poly) {
+            let inside = false;
+            for (let i = 0, j = poly.length - 1; i < poly.length; j = i++) {
+                let xi = poly[i][1], yi = poly[i][0];
+                let xj = poly[j][1], yj = poly[j][0];
+                
+                let intersect = ((yi > lat) !== (yj > lat)) &&
+                    (lon < (xj - xi) * (lat - yi) / (yj - yi) + xi);
+                if (intersect) inside = !inside;
+            }
+            return inside;
+        }
+
+        // Simulation state
+        let simState = {
+            active: false,
+            x: 150,
+            y: 580,
+            pressure: 920,
+            speed: 25,
+            angle: 45, // degrees
+            rotation: -1, // -1 counter-clockwise, 1 clockwise
+            maxWind: 55,
+            minPressure: 920,
+            totalDamage: 0,
+            particles: [],
+            pathHistory: [],
+            elapsedFrames: 0
+        };
+
+        // UI Inputs
+        const inputPressure = document.getElementById('inputPressure');
+        const inputSpeed = document.getElementById('inputSpeed');
+        const inputAngle = document.getElementById('inputAngle');
+        const valPressure = document.getElementById('valPressure');
+        const valSpeed = document.getElementById('valSpeed');
+        const valAngle = document.getElementById('valAngle');
+        const statPressure = document.getElementById('statPressure');
+        const statWind = document.getElementById('statWind');
+        const statRank = document.getElementById('statRank');
+        const statDamage = document.getElementById('statDamage');
+        const cityListElem = document.getElementById('cityList');
+
+        // Event listeners for inputs
+        inputPressure.addEventListener('input', () => { valPressure.textContent = inputPressure.value; });
+        inputSpeed.addEventListener('input', () => { valSpeed.textContent = inputSpeed.value; });
+        inputAngle.addEventListener('input', () => { valAngle.textContent = inputAngle.value; });
+
+        function setRotation(dir) {
+            simState.rotation = dir;
+            document.getElementById('rotCounter').classList.toggle('selected', dir === -1);
+            document.getElementById('rotClock').classList.toggle('selected', dir === 1);
+            document.getElementById('presetName').textContent = "カスタム";
+        }
+
+        function setSpawnPos(type) {
+            if (type === 'south') {
+                simState.x = 180;
+                simState.y = 600;
+                inputAngle.value = 45;
+            } else if (type === 'east') {
+                simState.x = 600;
+                simState.y = 450;
+                inputAngle.value = 230;
+            } else if (type === 'sea') {
+                simState.x = 350;
+                simState.y = 380;
+                inputAngle.value = 110;
+            }
+            valAngle.textContent = inputAngle.value;
+            document.getElementById('presetName').textContent = type === 'south' ? '南西諸島ルート' : type === 'east' ? '太平洋沖ルート' : '日本海ルート';
+            draw();
+        }
+
+        function initCityList() {
+            cityListElem.innerHTML = '';
+            cities.forEach((c, idx) => {
+                const div = document.createElement('div');
+                div.className = 'city-item' + (c.hit ? ' hit' : '');
+                div.id = `city-item-${idx}`;
+                div.innerHTML = `<span>📍 ${c.name} (人口${c.pop}万人)</span><span>${c.hit ? '直撃 (' + c.damage + '億円)' : '未被災'}</span>`;
+                cityListElem.appendChild(div);
+            });
+        }
+
+        function getRank(pressure) {
+            if (pressure < 920) return { name: "猛烈な", color: "#ef4444" };
+            if (pressure < 950) return { name: "非常に強い", color: "#f97316" };
+            if (pressure < 970) return { name: "強い", color: "#facc15" };
+            return { name: "並の台風", color: "#60a5fa" };
+        }
+
+        function launchTyphoon() {
+            simState.active = true;
+            simState.pressure = parseInt(inputPressure.value);
+            simState.speed = parseInt(inputSpeed.value) / 10; // scale for per-frame movement
+            simState.angle = parseInt(inputAngle.value);
+            simState.minPressure = simState.pressure;
+            simState.totalDamage = 0;
+            simState.pathHistory = [];
+            simState.elapsedFrames = 0;
+
+            // reset cities
+            cities.forEach(c => {
+                c.hit = false;
+                c.damage = 0;
+            });
+            initCityList();
+
+            // spawn spiral particles
+            simState.particles = [];
+            for (let i = 0; i < 80; i++) {
+                simState.particles.push({
+                    angle: Math.random() * Math.PI * 2,
+                    dist: 20 + Math.random() * 110,
+                    speed: 0.03 + Math.random() * 0.05
+                });
+            }
+
+            document.getElementById('btnLaunch').disabled = true;
+            document.getElementById('btnLaunch'].style.opacity = '0.5';
+        }
+
+        // Main game loop update
+        function update() {
+            if (!simState.active) return;
+
+            simState.elapsedFrames++;
+
+            // Move typhoon based on angle and speed
+            const rad = (simState.angle - 90) * (Math.PI / 180);
+            const vx = Math.cos(rad) * (simState.speed * 0.6);
+            const vy = Math.sin(rad) * (simState.speed * 0.6);
+
+            simState.x += vx;
+            simState.y += vy;
+
+            // Record path
+            if (simState.elapsedFrames % 5 === 0) {
+                simState.pathHistory.push({ x: simState.x, y: simState.y });
+            }
+
+            // Check land interaction
+            const onLand = isLand(simState.x, simState.y);
+            if (onLand) {
+                // Land weakens typhoon (pressure increases)
+                simState.pressure += 0.15;
+                if (simState.pressure > 1000) simState.pressure = 1000;
+            } else {
+                // Sea slightly energizes or maintains if warm (decrease pressure towards initial or minimum)
+                if (simState.pressure > 910) {
+                    simState.pressure -= 0.05;
+                }
+            }
+
+            if (simState.pressure < simState.minPressure) {
+                simState.minPressure = Math.round(simState.pressure);
+            }
+
+            // Calculate wind speed based on central pressure (approx meteorological formula)
+            // Lower pressure = higher wind speed
+            let calculatedWind = Math.round(Math.max(15, (1010 - simState.pressure) * 1.2));
+            simState.maxWind = Math.max(simState.maxWind, calculatedWind);
+
+            // Check city hits (radius of typhoon destructive wind ~ 60 pixels)
+            const typhoonRadius = Math.max(40, (1010 - simState.pressure) * 0.8);
+            cities.forEach((c, idx) => {
+                const pos = project(c.lat, c.lon);
+                const dist = Math.hypot(simState.x - pos.x, simState.y - pos.y);
+                if (dist < typhoonRadius) {
+                    if (!c.hit) {
+                        c.hit = true;
+                        // Damage calculated by population * wind speed factor
+                        const dmg = Math.round(c.pop * (calculatedWind * 2.5) * (onLand ? 1.2 : 0.8));
+                        c.damage = dmg;
+                        simState.totalDamage += dmg;
+                        initCityList();
+                    }
+                }
+            });
+
+            // Update UI status
+            statPressure.textContent = Math.round(simState.pressure) + " hPa";
+            statWind.textContent = calculatedWind + " m/s";
+            const rank = getRank(simState.pressure);
+            statRank.textContent = rank.name;
+            statRank.style.color = rank.color;
+            statDamage.textContent = simState.totalDamage.toLocaleString() + " 億円";
+
+            // Out of bounds check (exit canvas)
+            if (simState.x < -50 || simState.x > canvas.width + 50 || simState.y < -50 || simState.y > canvas.height + 50 || simState.elapsedFrames > 1200) {
+                endSimulation();
+            }
+        }
+
+        function endSimulation() {
+            simState.active = false;
+            document.getElementById('btnLaunch').disabled = false;
+            document.getElementById('btnLaunch').style.opacity = '1';
+
+            // Show modal with evaluation
+            const hitCount = cities.filter(c => c.hit).length;
+            let rankStr = "Sランク";
+            let comment = "日本列島を完全に掌握し、伝説の超巨大台風として歴史に刻まれました！";
+            
+            if (simState.totalDamage > 50000) {
+                rankStr = "神話級 (SSS)";
+            } else if (simState.totalDamage > 30000) {
+                rankStr = "超特級 (SS)";
+            } else if (simState.totalDamage > 15000) {
+                rankStr = "甚大災害級 (S)";
+            } else if (simState.totalDamage > 5000) {
+                rankStr = "大規模台風 (A)";
+            } else if (simState.totalDamage > 1000) {
+                rankStr = "通常台風 (B)";
+            } else {
+                rankStr = "かすり傷 (C)";
+                comment = "ほとんど都市を直撃せず海上に去っていきました……。";
+            }
+
+            document.getElementById('modalRank').textContent = rankStr;
+            document.getElementById('modalComment').textContent = comment;
+            document.getElementById('resHitCount').textContent = hitCount;
+            document.getElementById('resMaxWind').textContent = simState.maxWind;
+            document.getElementById('resMinPressure').textContent = simState.minPressure;
+            document.getElementById('resTotalDamage').textContent = simState.totalDamage.toLocaleString() + " 億円";
+
+            document.getElementById('resultModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('resultModal').classList.remove('active');
+        }
+
+        // Render graphics
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // Draw grid lines (latitude/longitude hints)
+            ctx.strokeStyle = 'rgba(51, 65, 85, 0.3)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < canvas.width; x += 70) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += 70) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+            }
+
+            // Draw Japan landmasses (stylized simplified filled polygons)
+            ctx.fillStyle = '#1e293b';
+            ctx.strokeStyle = '#334155';
+            ctx.lineWidth = 2;
+
+            japanPolygons.forEach(poly => {
+                ctx.beginPath();
+                poly.forEach((pt, idx) => {
+                    const p = project(pt[0], pt[1]);
+                    if (idx === 0) ctx.moveTo(p.x, p.y);
+                    else ctx.lineTo(p.x, p.y);
+                });
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+            });
+
+            // Draw Cities
+            cities.forEach(c => {
+                const p = project(c.lat, c.lon);
+                ctx.fillStyle = c.hit ? '#ef4444' : '#94a3b8';
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, c.hit ? 8 : 5, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#ffffff';
+                ctx.lineWidth = 1.5;
+                ctx.stroke();
+
+                // City Label
+                ctx.fillStyle = c.hit ? '#fca5a5' : '#cbd5e1';
+                ctx.font = 'bold 12px sans-serif';
+                ctx.fillText(c.name, p.x + 10, p.y + 4);
+            });
+
+            // Draw Typhoon path history
+            if (simState.pathHistory.length > 1) {
+                ctx.strokeStyle = 'rgba(239, 68, 68, 0.4)';
+                ctx.lineWidth = 3;
+                ctx.setLineDash([4, 4]);
+                ctx.beginPath();
+                simState.pathHistory.forEach((pt, idx) => {
+                    if (idx === 0) ctx.moveTo(pt.x, pt.y);
+                    else ctx.lineTo(pt.x, pt.y);
+                });
+                ctx.stroke();
+                ctx.setLineDash([]);
+            }
+
+            // Draw Typhoon if active or initialized
+            if (simState.x) {
+                const typhoonRadius = Math.max(40, (1010 - simState.pressure) * 0.8);
+
+                // Wind storm area (translucent colored circles)
+                const grad = ctx.createRadialGradient(simState.x, simState.y, 5, simState.x, simState.y, typhoonRadius);
+                grad.addColorStop(0, 'rgba(239, 68, 68, 0.4)');
+                grad.addColorStop(0.5, 'rgba(59, 130, 246, 0.25)');
+                grad.addColorStop(1, 'rgba(59, 130, 246, 0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.arc(simState.x, simState.y, typhoonRadius, 0, Math.PI * 2);
+                ctx.fill();
+
+                // Spiral wind particles
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.lineWidth = 1.5;
+                simState.particles.forEach(pt => {
+                    if (simState.active) {
+                        pt.angle += pt.speed * simState.rotation;
+                    }
+                    const px = simState.x + Math.cos(pt.angle) * pt.dist;
+                    const py = simState.y + Math.sin(pt.angle) * pt.dist;
+                    
+                    ctx.beginPath();
+                    ctx.moveTo(simState.x, simState.y);
+                    ctx.lineTo(px, py);
+                    ctx.stroke();
+                });
+
+                // Eye of the typhoon (center)
+                ctx.fillStyle = '#ffffff';
+                ctx.beginPath();
+                ctx.arc(simState.x, simState.y, 8, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 3;
+                ctx.stroke();
+
+                // Center label
+                ctx.fillStyle = '#ffffff';
+                ctx.font = 'bold 11px sans-serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(Math.round(simState.pressure) + 'hPa', simState.x, simState.y - 14);
+                ctx.textAlign = 'left';
+            }
+        }
+
+        // Loop execution
+        function loop() {
+            update();
+            draw();
+            requestAnimationFrame(loop);
+        }
+
+        // Initialize
+        initCityList();
+        setSpawnPos('south');
+        loop();
+    </script>
+</body>
+</html>
