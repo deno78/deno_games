@@ -174,9 +174,6 @@
             color: #ccc;
             margin-top: 2px;
         }
-        .topic-btn.span-3 {
-            grid-column: span 3;
-        }
 
         /* スクリーン共通 (タイトル、難易度、結果) */
         .screen {
@@ -570,12 +567,9 @@
     // 話題ボタンの初期化
     function initTopicsUI() {
         topicsPanel.innerHTML = '';
-        TOPICS.forEach((topic, index) => {
+        TOPICS.forEach((topic) => {
             const btn = document.createElement('button');
             btn.className = 'topic-btn';
-            if (index === 10) {
-                btn.classList.add('span-3'); // 11個目は幅広く
-            }
             btn.innerHTML = `
                 <span class="key-label">${topic.name.split(' ')[0]}</span>
                 <span class="desc-label">${topic.name}</span>
