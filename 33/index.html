@@ -116,14 +116,22 @@
             border-radius: 6px;
             padding: 10px 12px;
             width: 100%;
-            min-height: 75px;
-            max-height: 90px;
+            min-height: 85px;
+            max-height: 100px;
             overflow-y: auto;
-            font-size: 13px;
+            font-size: 12px;
             line-height: 1.4;
             color: #ffffff;
             box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
             margin-top: 10px;
+        }
+        .dialogue-box .speaker-you {
+            color: #aaffaa;
+            font-weight: bold;
+        }
+        .dialogue-box .speaker-customer {
+            color: #ffaa66;
+            font-weight: bold;
         }
 
         /* 11個の話題ボタンエリア */
@@ -165,9 +173,6 @@
             font-size: 10px;
             color: #ccc;
             margin-top: 2px;
-        }
-        .topic-btn.span-2 {
-            grid-column: span 2;
         }
         .topic-btn.span-3 {
             grid-column: span 3;
@@ -309,19 +314,118 @@
 </div>
 
 <script>
-    // 11個の話題データ (木戸に立てかけし衣食住)
+    // 11個の話題データ (木戸に立てかけし衣食住) と各5パターンの具体的なセリフ
     const TOPICS = [
-        { id: 0, code: 'き', name: '気候・季節', desc: '最近の気温や季節の変わり目について' },
-        { id: 1, code: 'ど', name: '道楽・趣味', desc: '映画、音楽、スポーツなどの趣味について' },
-        { id: 2, code: 'に', name: 'ニュース', desc: '最近の世間の話題やニュースについて' },
-        { id: 3, code: 'た', name: '建物・内装', desc: '店舗や自宅の建築・インテリアについて' },
-        { id: 4, code: 'て', name: '天気', desc: '今日の天気や降水確率について' },
-        { id: 5, code: 'か', name: '家族・家庭', desc: '家族構成やペット、家庭の話題について' },
-        { id: 6, code: 'け', name: '健康', desc: '体調管理、運動、睡眠や美容について' },
-        { id: 7, code: 'し', name: '仕事', desc: 'ビジネス、職業、最近の業務について' },
-        { id: 8, code: 'い', name: '衣 (ファッション)', desc: '服装、トレンド、ブランドについて' },
-        { id: 9, code: 'しょ', name: '食 (グルメ)', desc: '美味しいお店、料理、食べ物の好みについて' },
-        { id: 10, code: 'じゅう', name: '住 (住まい)', desc: '引越し、居住エリア、住環境について' }
+        { 
+            id: 0, code: 'き', name: '気候・季節', desc: '最近の気温や季節の変わり目', 
+            phrases: [
+                "最近急に冷え込んできましたけど、体調崩されてないですか？",
+                "今日は一段と蒸し暑いですね、汗が止まらないですよ〜",
+                "すっかり秋らしい気候になって、過ごしやすくなりましたね",
+                "春一番が吹いたみたいで、外の風が強いですね",
+                "梅雨の時期はジメジメして気分まで沈みがちですよね"
+            ] 
+        },
+        { 
+            id: 1, code: 'ど', name: '道楽・趣味', desc: '映画、音楽、スポーツなどの趣味', 
+            phrases: [
+                "最近、週末に始めたゴルフのスコアがやっと伸びてきたんですよ",
+                "お休みの日はもっぱら映画鑑賞なんですが、最近の名作観ました？",
+                "実はキャンプが趣味で、最近買ったテントが最高なんです",
+                "最近はサウナにハマってまして、あのトトノイ感がたまらないんですよね",
+                "最近競馬で一山当てましてね、ちょっと景気がいいんです"
+            ] 
+        },
+        { 
+            id: 2, code: 'に', name: 'ニュース', desc: '最近の世間の話題やニュース', 
+            phrases: [
+                "昨日のニュースの新しいロケット打ち上げ、ご覧になりました？",
+                "最近の物価高騰には本当に参っちゃいますよねぇ",
+                "今朝の経済ニュース、日経平均がすごいことになってましたね",
+                "新しいAIのニュースを見たんですが、もう人間みたいで驚きです",
+                "ワールドカップの話題で、街中が大盛り上がりでしたね"
+            ] 
+        },
+        { 
+            id: 3, code: 'た', name: '建物・内装', desc: '店舗や自宅の建築・インテリア', 
+            phrases: [
+                "このオフィスビル、エントランスの作りがすごく豪華ですよね",
+                "最近リノベーションされた物件が人気みたいで、内装見るのが好きなんです",
+                "お宅の壁紙のデザイン、すごく落ち着いた色合いで素敵ですね",
+                "最近のスマートハウスの最新設備には目を見張るものがありますよ",
+                "このあたりの地域の街並みって、レトロで味がありますよね"
+            ] 
+        },
+        { 
+            id: 4, code: 'て', name: '天気', desc: '今日の天気や降水確率', 
+            phrases: [
+                "予報だと午後から雨らしいので、折りたたみ傘持ってきました？",
+                "こんなに綺麗に晴れると、外を歩くだけで気分が上がりますね",
+                "昨日の突然のゲリラ豪雨には本当にびっくりさせられましたよ",
+                "朝の空の雲の形がすごくユニークで、思わず写真撮っちゃいました",
+                "今週はずっと晴れマークが続いていて、洗濯物がよく乾きそうです"
+            ] 
+        },
+        { 
+            id: 5, code: 'か', name: '家族・家庭', desc: '家族構成やペット、家庭の話題', 
+            phrases: [
+                "うちのワンコが最近お座りを覚えたんですよ、親バカですけど可愛いんです",
+                "子供の運動会に行ってきまして、ビデオ撮影で筋肉痛ですわ",
+                "休日は家族みんなで買い物に出かけるのが定番コースなんですよ",
+                "実家の母から送られてきた野菜がダンボール一杯で大変でした",
+                "最近、家での晩酌の時間が一日の中で一番の楽しみなんです"
+            ] 
+        },
+        { 
+            id: 6, code: 'け', name: '健康', desc: '体調管理、運動、睡眠や美容', 
+            phrases: [
+                "最近、会社の健康診断に向けて毎日30分ウォーキングしてるんです",
+                "やっぱり睡眠の質って大事ですよね、最近枕を買い換えました",
+                "ニンニク卵黄を飲み始めてから、朝の目覚めが全然違うんですよ",
+                "最近ちょっと体重が増えちゃって、糖質制限を意識してるんです",
+                "ヨガを始めたら、長年の肩こりがすっきり解消したんです"
+            ] 
+        },
+        { 
+            id: 7, code: 'し', name: '仕事', desc: 'ビジネス、職業、最近の業務', 
+            phrases: [
+                "今期のプロジェクトが山場でして、毎日エナジードリンクが手放せません",
+                "うちの部署、最近新しい若い子が入ってきて一気に活気が出たんですよ",
+                "書類のデジタル化を進めてるんですが、これがなかなか一筋縄ではいかなくて",
+                "先週の大きなプレゼンが無事に通って、やっと一息つけたところです",
+                "リモートワークも快適ですが、やっぱり直接お会いして話すのが一番ですね"
+            ] 
+        },
+        { 
+            id: 8, code: 'い', name: '衣 (ファッション)', desc: '服装、トレンド、ブランド', 
+            phrases: [
+                "最近、思い切ってオーダーメイドのスーツを作ってみたんです",
+                "街で流行りのセットアップを着ている人を見かけて、欲しくなっちゃいました",
+                "靴の手入れを週末にするのが、意外と良いリフレッシュになるんです",
+                "最近のカジュアル通勤ブリーフ、機能的でカッコいいですよね",
+                "季節の変わり目は、何を着て出かけるか毎朝悩んじゃいます"
+            ] 
+        },
+        { 
+            id: 9, code: 'しょ', name: '食 (グルメ)', desc: '美味しいお店、料理、食べ物の好み', 
+            phrases: [
+                "昨日、駅裏の隠れ家的な小料理屋さんで食べた刺身が絶品でしたよ",
+                "最近スパイスカレー作りにハマっていて、スパイスを何種類も調合してるんです",
+                "無性にこってりしたラーメンが食べたくなって、深夜に食べてしまいました",
+                "最近見つけた美味しいパン屋さんのクロワッサンがサクサクで最高なんです",
+                "やっぱり仕事終わりのキンキンに冷えた一杯と焼き鳥は最高ですよね"
+            ] 
+        },
+        { 
+            id: 10, code: 'じゅう', name: '住 (住まい)', desc: '引越し、居住エリア、住環境', 
+            phrases: [
+                "最近、郊外の一戸建てに引っ越したんですが、静かで本当に快適ですよ",
+                "キッチンの使い勝手が良い物件を見ると、ついつい内見したくなります",
+                "日当たりの良いリビングに憧れて、観葉植物をたくさん買っちゃいました",
+                "駅チカのマンションか、少し離れた広い家か、引越しのたびに悩みますよね",
+                "DIYでリビングの棚を作ったんですが、意外とうまくできました"
+            ] 
+        }
     ];
 
     // お客様のバリエーション
@@ -339,7 +443,7 @@
     // ゲーム状態
     let gameState = {
         difficulty: 'normal',
-        mineCount: 5, // easy:3, normal:5, hard:7
+        mineCount: 5,
         score: 0,
         miss: 0,
         currentCustomer: null,
@@ -389,9 +493,9 @@
                 osc.stop(now + 0.08);
             } else if (type === 'success') {
                 osc.type = 'triangle';
-                osc.frequency.setValueAtTime(523.25, now); // C5
-                osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
-                osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+                osc.frequency.setValueAtTime(523.25, now);
+                osc.frequency.setValueAtTime(659.25, now + 0.1);
+                osc.frequency.setValueAtTime(783.99, now + 0.2);
                 gain.gain.setValueAtTime(0.15, now);
                 gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
                 osc.start(now);
@@ -493,7 +597,7 @@
         gameState.mineTopics = shuffled.slice(0, gameState.mineCount).map(t => t.id);
 
         const mood = profile.moods[Math.floor(Math.random() * profile.moods.length)];
-        dialogueText.innerHTML = `<strong>${profile.name}</strong>が来店した。<br>「${mood} さて、何の話から始めようか？」`;
+        dialogueText.innerHTML = `<strong>${profile.name}</strong>「${mood}」<br><span style="color:#aaa; font-size:11px;">（木戸に立てかけし衣食住から話題を選んでください）</span>`;
     }
 
     // 話題を選んだときの処理
@@ -507,34 +611,42 @@
 
         gameState.isAnimating = true;
 
-        if (isMine) {
-            // 地雷を踏んだ！ 怒る
-            playSound('angry');
-            customerAvatar.classList.add('shake');
-            dialogueText.innerHTML = `<strong>${customer.name}</strong>「なんだって！？【${selectedTopic.name}】の話なんて……失礼な！もう帰る！」<br><span style="color:#ff5555;">➡ 怒らせてしまった……！</span>`;
-            
-            showOverlay('激怒！ (-1)', '#ff5555');
-            gameState.miss++;
-            updateStats();
+        // 5つのセリフからランダムに1つ選択
+        const randomPhrase = selectedTopic.phrases[Math.floor(Math.random() * selectedTopic.phrases.length)];
 
-            setTimeout(() => {
-                customerAvatar.classList.remove('shake');
-                checkGameStatus();
-            }, 1500);
+        // まず営業マン（プレイヤー）が喋る内容を表示
+        dialogueText.innerHTML = `<span class="speaker-you">あなた：</span>${randomPhrase}`;
 
-        } else {
-            // セーフ！ 成功
-            playSound('success');
-            dialogueText.innerHTML = `<strong>${customer.name}</strong>「ほう、【${selectedTopic.name}】ですか。面白いですね！詳しく聞かせてください。」<br><span style="color:#55ff55;">➡ 接客大成功！</span>`;
+        setTimeout(() => {
+            if (isMine) {
+                // 地雷を踏んだ！ 怒る
+                playSound('angry');
+                customerAvatar.classList.add('shake');
+                dialogueText.innerHTML += `<br><span class="speaker-customer">${customer.name}：</span>「なんだって！？その【${selectedTopic.name}】の話は……失礼な！もう帰る！」<br><span style="color:#ff5555; font-weight:bold;">➡ 怒らせてしまった……！</span>`;
+                
+                showOverlay('激怒！ (-1)', '#ff5555');
+                gameState.miss++;
+                updateStats();
 
-            showOverlay('大成功！ (+1)', '#ffd700');
-            gameState.score++;
-            updateStats();
+                setTimeout(() => {
+                    customerAvatar.classList.remove('shake');
+                    checkGameStatus();
+                }, 1800);
 
-            setTimeout(() => {
-                checkGameStatus();
-            }, 1500);
-        }
+            } else {
+                // セーフ！ 成功
+                playSound('success');
+                dialogueText.innerHTML += `<br><span class="speaker-customer">${customer.name}：</span>「ほう、【${selectedTopic.name}】ですか。面白いですね、詳しく聞かせてください！」<br><span style="color:#55ff55; font-weight:bold;">➡ 接客大成功！</span>`;
+
+                showOverlay('大成功！ (+1)', '#ffd700');
+                gameState.score++;
+                updateStats();
+
+                setTimeout(() => {
+                    checkGameStatus();
+                }, 1800);
+            }
+        }, 900);
     }
 
     function showOverlay(text, color) {
@@ -543,7 +655,7 @@
         msgOverlay.classList.add('show');
         setTimeout(() => {
             msgOverlay.classList.remove('show');
-        }, 1000);
+        }, 1100);
     }
 
     function updateStats() {
