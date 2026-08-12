@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>木戸に立てかけし衣食住 - レトロ接客営業ゲーム</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #12121a;
+            color: #f0f0f0;
+            font-family: 'Courier New', Courier, monospace, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        #game-container {
+            width: 100%;
+            max-width: 480px;
+            height: 100vh;
+            max-height: 850px;
+            background: #1e1e2f;
+            border: 4px solid #4a4a75;
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+        /* ヘッダー */
+        .header {
+            background: #2a2a48;
+            border-bottom: 3px solid #4a4a75;
+            padding: 10px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+        }
+        .stats {
+            display: flex;
+            gap: 15px;
+        }
+        .stat-item span {
+            color: #ffd700;
+            font-weight: bold;
+        }
+        .danger-stat span {
+            color: #ff5555;
+        }
+
+        /* メインビュー (お客様と店舗) */
+        .store-view {
+            flex: 1;
+            background: linear-gradient(to bottom, #2d2d44 0%, #1a1a2e 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            position: relative;
+        }
+        .customer-area {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+            margin-top: 5px;
+        }
+        .customer-sprite {
+            width: 90px;
+            height: 90px;
+            background: #33334d;
+            border: 3px solid #7a7ac9;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 42px;
+            position: relative;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            transition: transform 0.2s;
+        }
+        .customer-sprite.shake {
+            animation: shake 0.4s ease-in-out;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-8px); }
+            40%, 80% { transform: translateX(8px); }
+        }
+        .customer-info {
+            margin-top: 8px;
+            text-align: center;
+        }
+        .customer-name {
+            font-size: 14px;
+            color: #aaccff;
+            font-weight: bold;
+        }
+        
+        /* 吹き出しウィンドウ */
+        .dialogue-box {
+            background: #0d0d1a;
+            border: 3px solid #7a7ac9;
+            border-radius: 6px;
+            padding: 10px 12px;
+            width: 100%;
+            min-height: 75px;
+            max-height: 90px;
+            overflow-y: auto;
+            font-size: 13px;
+            line-height: 1.4;
+            color: #ffffff;
+            box-shadow: inset 0 2px 5px rgba(0,0,0,0.5);
+            margin-top: 10px;
+        }
+
+        /* 11個の話題ボタンエリア */
+        .topics-panel {
+            background: #151522;
+            border-top: 3px solid #4a4a75;
+            padding: 10px;
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+        }
+        .topic-btn {
+            background: #2b2b48;
+            border: 2px solid #5c5cc9;
+            color: #ffffff;
+            padding: 8px 4px;
+            font-size: 11px;
+            font-family: inherit;
+            border-radius: 4px;
+            cursor: pointer;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.1s, transform 0.1s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .topic-btn:active {
+            transform: scale(0.95);
+            background: #41417a;
+        }
+        .topic-btn .key-label {
+            font-size: 13px;
+            font-weight: bold;
+            color: #ffd700;
+        }
+        .topic-btn .desc-label {
+            font-size: 10px;
+            color: #ccc;
+            margin-top: 2px;
+        }
+        .topic-btn.span-2 {
+            grid-column: span 2;
+        }
+        .topic-btn.span-3 {
+            grid-column: span 3;
+        }
+
+        /* スクリーン共通 (タイトル、難易度、結果) */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #12121acc;
+            backdrop-filter: blur(4px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            padding: 20px;
+            text-align: center;
+        }
+        .screen.hidden {
+            display: none;
+        }
+        h1 {
+            font-size: 22px;
+            color: #ffd700;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px #333;
+        }
+        p {
+            font-size: 13px;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            color: #d0d0ff;
+        }
+        .btn {
+            background: #4a4ae6;
+            border: 3px solid #8080ff;
+            color: white;
+            padding: 10px 20px;
+            font-size: 15px;
+            font-family: inherit;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            margin: 6px;
+            width: 80%;
+            max-width: 250px;
+            box-shadow: 0 4px 0 #222288;
+            transition: transform 0.1s, background 0.1s;
+        }
+        .btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 #222288;
+        }
+        .btn-easy { background: #2e8b57; border-color: #3cb371; box-shadow: 0 4px 0 #194d2f; }
+        .btn-normal { background: #cd853f; border-color: #deb887; box-shadow: 0 4px 0 #7b4e20; }
+        .btn-hard { background: #b22222; border-color: #ff6347; box-shadow: 0 4px 0 #5c1111; }
+
+        /* エフェクトメッセージ用 */
+        #msg-overlay {
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 24px;
+            font-weight: bold;
+            color: #ffd700;
+            text-shadow: 2px 2px 0 #000, -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000;
+            z-index: 5;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.3s, transform 0.3s;
+        }
+        #msg-overlay.show {
+            opacity: 1;
+            transform: translate(-50%, -60%);
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <!-- ヘッダー -->
+    <div class="header">
+        <div class="stats">
+            <div class="stat-item">接客: <span id="score-val">0</span>/10</div>
+        </div>
+        <div class="stats danger-stat">
+            <div class="stat-item">怒らせた回数: <span id="miss-val">0</span>/3</div>
+        </div>
+    </div>
+
+    <!-- 店舗メインビュー -->
+    <div class="store-view">
+        <div class="customer-area">
+            <div class="customer-sprite" id="customer-avatar">👤</div>
+            <div class="customer-info">
+                <div class="customer-name" id="customer-name">来店客</div>
+            </div>
+        </div>
+
+        <div class="dialogue-box" id="dialogue-text">
+            いらっしゃいませ！お客様が来店しました。<br>「木戸に立てかけし衣食住」の11個の話題から、適切な導入会話を選んでください。
+        </div>
+
+        <div id="msg-overlay">大成功！</div>
+    </div>
+
+    <!-- 11個の話題選択ボタンパネル -->
+    <div class="topics-panel" id="topics-panel">
+        <!-- JSで生成 -->
+    </div>
+
+    <!-- タイトル画面 -->
+    <div id="title-screen" class="screen">
+        <h1>木戸に立てかけし衣食住</h1>
+        <p>接客営業会話ゲーム<br><br>11個の会話のネタから、お客様の地雷を踏まないように選ぼう！<br>3人怒らせるとゲームオーバー、10人成功でクリア！</p>
+        <button class="btn" onclick="showDifficultyScreen()">ゲームスタート</button>
+    </div>
+
+    <!-- 難易度選択画面 -->
+    <div id="difficulty-screen" class="screen hidden">
+        <h1>難易度選択</h1>
+        <p>地雷の数（怒る確率）が変わります</p>
+        <button class="btn btn-easy" onclick="startGame('easy')">イージー (地雷 3/11)</button>
+        <button class="btn btn-normal" onclick="startGame('normal')">ノーマル (地雷 5/11)</button>
+        <button class="btn btn-hard" onclick="startGame('hard')">ハード (地雷 7/11)</button>
+    </div>
+
+    <!-- リザルト画面 (クリア / ゲームオーバー) -->
+    <div id="result-screen" class="screen hidden">
+        <h1 id="result-title">ゲームクリア！</h1>
+        <p id="result-desc">お見事！優秀な営業成績です。</p>
+        <button class="btn" onclick="returnToTitle()">タイトルへ戻る</button>
+    </div>
+</div>
+
+<script>
+    // 11個の話題データ (木戸に立てかけし衣食住)
+    const TOPICS = [
+        { id: 0, code: 'き', name: '気候・季節', desc: '最近の気温や季節の変わり目について' },
+        { id: 1, code: 'ど', name: '道楽・趣味', desc: '映画、音楽、スポーツなどの趣味について' },
+        { id: 2, code: 'に', name: 'ニュース', desc: '最近の世間の話題やニュースについて' },
+        { id: 3, code: 'た', name: '建物・内装', desc: '店舗や自宅の建築・インテリアについて' },
+        { id: 4, code: 'て', name: '天気', desc: '今日の天気や降水確率について' },
+        { id: 5, code: 'か', name: '家族・家庭', desc: '家族構成やペット、家庭の話題について' },
+        { id: 6, code: 'け', name: '健康', desc: '体調管理、運動、睡眠や美容について' },
+        { id: 7, code: 'し', name: '仕事', desc: 'ビジネス、職業、最近の業務について' },
+        { id: 8, code: 'い', name: '衣 (ファッション)', desc: '服装、トレンド、ブランドについて' },
+        { id: 9, code: 'しょ', name: '食 (グルメ)', desc: '美味しいお店、料理、食べ物の好みについて' },
+        { id: 10, code: 'じゅう', name: '住 (住まい)', desc: '引越し、居住エリア、住環境について' }
+    ];
+
+    // お客様のバリエーション
+    const CUSTOMER_PROFILES = [
+        { name: 'サラリーマン田中', avatar: '👔', moods: ['ふむふむ...', 'なるほど。', 'おや？'] },
+        { name: '主婦の佐藤さん', avatar: '👜', moods: ['こんにちは。', 'そうなのよ。', 'まあ！'] },
+        { name: '大学生の鈴木君', avatar: '🧢', moods: ['ちっすー。', 'お疲れ様です！', 'ほうほう。'] },
+        { name: 'お洒落な高橋さん', avatar: '👓', moods: ['こんにちは。', 'おや、いいね。', 'ふむ。'] },
+        { name: '頑固な渡辺爺さん', avatar: '👴', moods: ['むぅ。', 'なんだと。', 'ほう……'] },
+        { name: '元気な伊藤さん', avatar: '👒', moods: ['こんにちは！', 'いい天気ですね！', 'へえ〜！'] },
+        { name: 'インテリ風中村さん', avatar: '🧐', moods: ['失礼します。', '興味深いですね。', '……。'] },
+        { name: 'アルバイトの山田君', avatar: '🎧', moods: ['っす！', 'こんにちはー。', 'なるほどです。'] }
+    ];
+
+    // ゲーム状態
+    let gameState = {
+        difficulty: 'normal',
+        mineCount: 5, // easy:3, normal:5, hard:7
+        score: 0,
+        miss: 0,
+        currentCustomer: null,
+        mineTopics: [],
+        isAnimating: false
+    };
+
+    // DOM要素
+    const titleScreen = document.getElementById('title-screen');
+    const difficultyScreen = document.getElementById('difficulty-screen');
+    const resultScreen = document.getElementById('result-screen');
+    const topicsPanel = document.getElementById('topics-panel');
+    const scoreVal = document.getElementById('score-val');
+    const missVal = document.getElementById('miss-val');
+    const customerAvatar = document.getElementById('customer-avatar');
+    const customerName = document.getElementById('customer-name');
+    const dialogueText = document.getElementById('dialogue-text');
+    const msgOverlay = document.getElementById('msg-overlay');
+    const resultTitle = document.getElementById('result-title');
+    const resultDesc = document.getElementById('result-desc');
+
+    // Web Audio API サウンド効果
+    let audioCtx = null;
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+    }
+
+    function playSound(type) {
+        try {
+            initAudio();
+            if (!audioCtx) return;
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+            if (type === 'click') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.exponentialRampToValueAtTime(880, now + 0.08);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.08);
+                osc.start(now);
+                osc.stop(now + 0.08);
+            } else if (type === 'success') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(523.25, now); // C5
+                osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } else if (type === 'angry') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.linearRampToValueAtTime(80, now + 0.4);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } else if (type === 'gameover') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.linearRampToValueAtTime(60, now + 0.6);
+                gain.gain.setValueAtTime(0.25, now);
+                gain.gain.exponentialRampToValueAtTime(0.01, now + 0.6);
+                osc.start(now);
+                osc.stop(now + 0.6);
+            } else if (type === 'clear') {
+                osc.type = 'square';
+                const notes = [523.25, 587.33, 659.25, 698.46, 783.99, 880, 987.77, 1046.50];
+                notes.forEach((freq, idx) => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.type = 'triangle';
+                    o.connect(g);
+                    g.connect(audioCtx.destination);
+                    o.frequency.setValueAtTime(freq, now + idx * 0.08);
+                    g.gain.setValueAtTime(0.1, now + idx * 0.08);
+                    g.gain.exponentialRampToValueAtTime(0.01, now + idx * 0.08 + 0.15);
+                    o.start(now + idx * 0.08);
+                    o.stop(now + idx * 0.08 + 0.15);
+                });
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    }
+
+    // 画面切り替え関数
+    function showDifficultyScreen() {
+        playSound('click');
+        titleScreen.classList.add('hidden');
+        difficultyScreen.classList.remove('hidden');
+    }
+
+    function returnToTitle() {
+        playSound('click');
+        resultScreen.classList.add('hidden');
+        titleScreen.classList.remove('hidden');
+    }
+
+    // ゲーム開始
+    function startGame(diff) {
+        playSound('click');
+        gameState.difficulty = diff;
+        if (diff === 'easy') gameState.mineCount = 3;
+        else if (diff === 'normal') gameState.mineCount = 5;
+        else if (diff === 'hard') gameState.mineCount = 7;
+
+        gameState.score = 0;
+        gameState.miss = 0;
+        updateStats();
+
+        difficultyScreen.classList.add('hidden');
+        initTopicsUI();
+        nextCustomer();
+    }
+
+    // 話題ボタンの初期化
+    function initTopicsUI() {
+        topicsPanel.innerHTML = '';
+        TOPICS.forEach((topic, index) => {
+            const btn = document.createElement('button');
+            btn.className = 'topic-btn';
+            if (index === 10) {
+                btn.classList.add('span-3'); // 11個目は幅広く
+            }
+            btn.innerHTML = `
+                <span class="key-label">${topic.name.split(' ')[0]}</span>
+                <span class="desc-label">${topic.name}</span>
+            `;
+            btn.onclick = () => selectTopic(topic.id);
+            topicsPanel.appendChild(btn);
+        });
+    }
+
+    // 次のお客様を生成
+    function nextCustomer() {
+        const profile = CUSTOMER_PROFILES[Math.floor(Math.random() * CUSTOMER_PROFILES.length)];
+        gameState.currentCustomer = profile;
+        customerAvatar.textContent = profile.avatar;
+        customerName.textContent = profile.name;
+
+        // このお客様の地雷話題をランダムに mineCount 個決定
+        let shuffled = [...TOPICS].sort(() => 0.5 - Math.random());
+        gameState.mineTopics = shuffled.slice(0, gameState.mineCount).map(t => t.id);
+
+        const mood = profile.moods[Math.floor(Math.random() * profile.moods.length)];
+        dialogueText.innerHTML = `<strong>${profile.name}</strong>が来店した。<br>「${mood} さて、何の話から始めようか？」`;
+    }
+
+    // 話題を選んだときの処理
+    function selectTopic(topicId) {
+        if (gameState.isAnimating) return;
+        playSound('click');
+        
+        const isMine = gameState.mineTopics.includes(topicId);
+        const selectedTopic = TOPICS.find(t => t.id === topicId);
+        const customer = gameState.currentCustomer;
+
+        gameState.isAnimating = true;
+
+        if (isMine) {
+            // 地雷を踏んだ！ 怒る
+            playSound('angry');
+            customerAvatar.classList.add('shake');
+            dialogueText.innerHTML = `<strong>${customer.name}</strong>「なんだって！？【${selectedTopic.name}】の話なんて……失礼な！もう帰る！」<br><span style="color:#ff5555;">➡ 怒らせてしまった……！</span>`;
+            
+            showOverlay('激怒！ (-1)', '#ff5555');
+            gameState.miss++;
+            updateStats();
+
+            setTimeout(() => {
+                customerAvatar.classList.remove('shake');
+                checkGameStatus();
+            }, 1500);
+
+        } else {
+            // セーフ！ 成功
+            playSound('success');
+            dialogueText.innerHTML = `<strong>${customer.name}</strong>「ほう、【${selectedTopic.name}】ですか。面白いですね！詳しく聞かせてください。」<br><span style="color:#55ff55;">➡ 接客大成功！</span>`;
+
+            showOverlay('大成功！ (+1)', '#ffd700');
+            gameState.score++;
+            updateStats();
+
+            setTimeout(() => {
+                checkGameStatus();
+            }, 1500);
+        }
+    }
+
+    function showOverlay(text, color) {
+        msgOverlay.textContent = text;
+        msgOverlay.style.color = color;
+        msgOverlay.classList.add('show');
+        setTimeout(() => {
+            msgOverlay.classList.remove('show');
+        }, 1000);
+    }
+
+    function updateStats() {
+        scoreVal.textContent = gameState.score;
+        missVal.textContent = gameState.miss;
+    }
+
+    function checkGameStatus() {
+        gameState.isAnimating = false;
+        if (gameState.score >= 10) {
+            // ゲームクリア
+            playSound('clear');
+            resultTitle.textContent = 'ゲームクリア！';
+            resultTitle.style.color = '#55ff55';
+            resultDesc.innerHTML = `お見事です！10人の接客を華麗に成功させました！<br>難易度: <strong>${gameState.difficulty.toUpperCase()}</strong>`;
+            resultScreen.classList.remove('hidden');
+        } else if (gameState.miss >= 3) {
+            // ゲームオーバー
+            playSound('gameover');
+            resultTitle.textContent = 'ゲームオーバー';
+            resultTitle.style.color = '#ff5555';
+            resultDesc.innerHTML = `3人のお客様を怒らせてしまいました……。<br>営業成績は振るわず、お店はピンチです。`;
+            resultScreen.classList.remove('hidden');
+        } else {
+            nextCustomer();
+        }
+    }
+</script>
+
+</body>
+</html>

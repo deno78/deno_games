@@ -43,3 +43,4 @@ Deno/Web games collection.
 - [30. ドリームジャンボ宝くじシミュレーター (Dream Jumbo Lottery Simulator)](./30/index.html)
 - [31. ビンゴマシーン・観衆全員クリア大作戦 (Bingo Machine Crowd Clear Game)](./31/index.html)
 - [32. 日本列島台風シミュレーター (Typhoon Simulator Japan)](./32/index.html)
+- [33. 木戸に立てかけし衣食住 接客営業ゲーム (Kido ni Tatekashi Ishokujyu Sales Game)](./33/index.html)
