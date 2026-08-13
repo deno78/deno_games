@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ディスク デフラグ (Windows 98 Style Game)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            background-color: #008080; /* Windows 98 デスクトップ Teal */
+            font-family: "MS Gothic", "Osaka", monospace;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        /* Win98 Window Frame */
+        .win-window {
+            background-color: #c0c0c0;
+            border-top: 2px solid #dfdfdf;
+            border-left: 2px solid #dfdfdf;
+            border-right: 2px solid #404040;
+            border-bottom: 2px solid #404040;
+            box-shadow: 4px 4px 10px rgba(0,0,0,0.5);
+            width: 720px;
+            max-width: 100%;
+        }
+        .win-titlebar {
+            background: linear-gradient(90deg, #000080, #1084d0);
+            color: #ffffff;
+            padding: 4px 6px;
+            font-weight: bold;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .win-titlebar-buttons {
+            display: flex;
+            gap: 2px;
+        }
+        .win-btn {
+            background-color: #c0c0c0;
+            border-top: 1px solid #dfdfdf;
+            border-left: 1px solid #dfdfdf;
+            border-right: 1px solid #404040;
+            border-bottom: 1px solid #404040;
+            width: 16px;
+            height: 14px;
+            font-size: 9px;
+            font-weight: bold;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            color: #000;
+        }
+        .win-btn:active {
+            border-top: 1px solid #404040;
+            border-left: 1px solid #404040;
+            border-right: 1px solid #dfdfdf;
+            border-bottom: 1px solid #dfdfdf;
+            padding-top: 1px;
+            padding-left: 1px;
+        }
+        .win-menubar {
+            background-color: #c0c0c0;
+            padding: 2px 4px;
+            font-size: 12px;
+            display: flex;
+            gap: 12px;
+            border-bottom: 1px solid #808080;
+        }
+        .win-menubar span {
+            cursor: pointer;
+            padding: 1px 4px;
+        }
+        .win-menubar span:hover {
+            background-color: #000080;
+            color: #fff;
+        }
+        .win-body {
+            padding: 10px;
+        }
+        /* Drive info section */
+        .drive-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+        .drive-select {
+            font-family: "MS Gothic", monospace;
+            font-size: 12px;
+            padding: 2px 5px;
+            background: #fff;
+            border-top: 1px solid #404040;
+            border-left: 1px solid #404040;
+            border-right: 1px solid #dfdfdf;
+            border-bottom: 1px solid #dfdfdf;
+        }
+        /* Status panel (Win98 sunken box) */
+        .sunken-box {
+            background-color: #ffffff;
+            border-top: 1px solid #404040;
+            border-left: 1px solid #404040;
+            border-right: 1px solid #dfdfdf;
+            border-bottom: 1px solid #dfdfdf;
+            padding: 10px;
+            margin-bottom: 10px;
+            font-size: 12px;
+        }
+        /* Sector Grid Map */
+        .sector-grid {
+            display: grid;
+            grid-template-columns: repeat(32, 1fr);
+            gap: 1px;
+            background-color: #808080;
+            border: 1px solid #404040;
+            padding: 2px;
+            margin-bottom: 10px;
+            max-height: 260px;
+            overflow-y: auto;
+        }
+        .sector {
+            aspect-ratio: 1;
+            width: 100%;
+            cursor: pointer;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 9px;
+        }
+        /* Block types */
+        .sec-free { background-color: #ffffff; } /* 空白 (3) */
+        .sec-data { background-color: #000080; } /* 動かせるブロック (6) */
+        .sec-fixed { background-color: #808000; } /* 動かせないブロック (1) */
+        .sec-bad { background-color: #ff0000; animation: blink 0.5s infinite alternate; } /* 不良セクター */
+        .sector.selected {
+            outline: 2px dashed #ff00ff;
+            z-index: 2;
+        }
+        @keyframes blink {
+            from { opacity: 1; }
+            to { opacity: 0.4; }
+        }
+
+        /* Legend */
+        .legend-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            font-size: 11px;
+            margin-bottom: 10px;
+            align-items: center;
+            background: #c0c0c0;
+            padding: 5px;
+            border-top: 1px solid #dfdfdf;
+            border-left: 1px solid #dfdfdf;
+            border-right: 1px solid #404040;
+            border-bottom: 1px solid #404040;
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        .legend-box {
+            width: 12px;
+            height: 12px;
+            border: 1px solid #000;
+        }
+
+        /* Action buttons panel */
+        .action-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #c0c0c0;
+            padding-top: 5px;
+        }
+        .stats-display {
+            font-size: 11px;
+            line-height: 1.4;
+        }
+        .button-group {
+            display: flex;
+            gap: 8px;
+        }
+        .win-button {
+            font-family: "MS Gothic", monospace;
+            font-size: 12px;
+            padding: 6px 14px;
+            background-color: #c0c0c0;
+            border-top: 2px solid #dfdfdf;
+            border-left: 2px solid #dfdfdf;
+            border-right: 2px solid #404040;
+            border-bottom: 2px solid #404040;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .win-button:active {
+            border-top: 2px solid #404040;
+            border-left: 2px solid #404040;
+            border-right: 2px solid #dfdfdf;
+            border-bottom: 2px solid #dfdfdf;
+            padding: 7px 13px 5px 15px;
+        }
+        .win-button:disabled {
+            color: #808080;
+            border-color: #808080;
+            cursor: not-allowed;
+            text-shadow: 1px 1px #fff;
+        }
+
+        /* Modal Dialog */
+        .modal-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.3);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+        .modal-window {
+            background-color: #c0c0c0;
+            border-top: 2px solid #dfdfdf;
+            border-left: 2px solid #dfdfdf;
+            border-right: 2px solid #404040;
+            border-bottom: 2px solid #404040;
+            width: 400px;
+            box-shadow: 4px 4px 15px rgba(0,0,0,0.6);
+        }
+        .modal-body {
+            padding: 15px;
+            font-size: 12px;
+            display: flex;
+            gap: 15px;
+            align-items: flex-start;
+        }
+        .modal-footer {
+            padding: 10px;
+            background-color: #c0c0c0;
+            display: flex;
+            justify-content: center;
+            border-top: 1px solid #808080;
+        }
+
+        /* Instructions toggle / help */
+        .help-box {
+            font-size: 11px;
+            color: #000;
+            background: #ffffe0;
+            border: 1px solid #808000;
+            padding: 6px;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="win-window">
+    <div class="win-titlebar">
+        <span>デフラグ - [C: ローカル ディスク]</span>
+        <div class="win-titlebar-buttons">
+            <div class="win-btn">_</div>
+            <div class="win-btn">□</div>
+            <div class="win-btn" onclick="location.reload()">×</div>
+        </div>
+    </div>
+    <div class="win-menubar">
+        <span>ファイル(F)</span>
+        <span>ドライブ(D)</span>
+        <span>分析(A)</span>
+        <span>オプション(O)</span>
+        <span>ヘルプ(H)</span>
+    </div>
+    <div class="win-body">
+        <div class="drive-header">
+            <span>ドライブの選択:</span>
+            <select class="drive-select" id="driveSelect" onchange="resetGame()">
+                <option value="C">3.5 インチ フロッピー (A:)</option>
+                <option value="C" selected>ローカル ディスク (C:)</option>
+                <option value="D">バックアップ (D:)</option>
+            </select>
+            <button class="win-button" style="padding: 2px 8px; font-size:11px;" onclick="resetGame()">再分析</button>
+        </div>
+
+        <div class="help-box">
+            <b>【デフラグゲームの遊び方】</b><br>
+            グリッドをクリックしてセルを選択し、下の<b>「詰める」</b>ボタンまたは<b>「進める」</b>ボタンを押します。<br>
+            ・<b>空白（3）</b>で詰める：空白が圧縮され、データが整理されます。<br>
+            ・<b>動かせるブロック（6）</b>で詰める：何も起きません。<br>
+            ・<b>動かせないブロック（1）</b>で詰める：<b>セクター不良</b>が増加します！<br>
+            目標：<b>中間の空白ブロック</b>と<b>不良セクター</b>を最小限にしてデフラグを完了させよう！
+        </div>
+
+        <div class="sunken-box" style="margin-bottom:5px; font-weight:bold;" id="statusText">
+            状態: 分析完了。ドライブの断片化が検出されました。
+        </div>
+
+        <!-- Sector Map Grid -->
+        <div class="sector-grid" id="sectorGrid"></div>
+
+        <!-- Legend -->
+        <div class="legend-container">
+            <div class="legend-item"><div class="legend-box sec-free"></div><span>空白 (3:フリー)</span></div>
+            <div class="legend-item"><div class="legend-box sec-data"></div><span>動かせるブロック (6:データ)</span></div>
+            <div class="legend-item"><div class="legend-box sec-fixed"></div><span>動かせないブロック (1:システム)</span></div>
+            <div class="legend-item"><div class="legend-box sec-bad"></div><span>不良セクター</span></div>
+        </div>
+
+        <!-- Action Panel -->
+        <div class="action-panel">
+            <div class="stats-display" id="statsDisplay">
+                セクター不良: <span id="badCount" style="color:red; font-weight:bold;">0</span> 個<br>
+                中間の空白ブロック: <span id="fragmentCount" style="font-weight:bold;">0</span> 個<br>
+                最適化率: <span id="optRate" style="font-weight:bold;">0</span>%
+            </div>
+            <div class="button-group">
+                <button class="win-button" id="btnCompact" onclick="actionCompact()">詰める</button>
+                <button class="win-button" id="btnAdvance" onclick="actionAdvance()">進める</button>
+                <button class="win-button" onclick="completeDefrag()">最適化完了</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal Dialog -->
+<div class="modal-overlay" id="modalOverlay">
+    <div class="modal-window">
+        <div class="win-titlebar" id="modalTitle">ディスク デフラグ</div>
+        <div class="modal-body">
+            <div style="font-size: 24px;">ℹ️</div>
+            <div>
+                <div id="modalMessage" style="font-weight: bold; margin-bottom: 8px;">メッセージ</div>
+                <div id="modalSubMessage" style="color: #404040;">サブメッセージ</div>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button class="win-button" style="width: 80px;" onclick="closeModal()">OK</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    // Game state
+    const COLS = 32;
+    const ROWS = 10;
+    const TOTAL_CELLS = COLS * ROWS;
+    
+    let grid = []; // 3: 空白, 6: 動かせるブロック, 1: 動かせないブロック, 9: 不良セクター
+    let selectedIndex = null;
+    let badSectorsCount = 0;
+    let stepsCount = 0;
+
+    function initGame() {
+        grid = [];
+        badSectorsCount = 0;
+        stepsCount = 0;
+        selectedIndex = null;
+
+        // 生成: 1 (固定/システム), 6 (動かせるデータ), 3 (空白)
+        // 初期状態は断片化された状態にする
+        for (let i = 0; i < TOTAL_CELLS; i++) {
+            let rand = Math.random();
+            if (i < 20) {
+                // 先頭付近にシステムファイル (1)
+                grid.push(1);
+            } else if (rand < 0.35) {
+                grid.push(1); // 動かせないブロック
+            } else if (rand < 0.70) {
+                grid.push(6); // 動かせるブロック
+            } else {
+                grid.push(3); // 空白
+            }
+        }
+
+        // 確実に見栄えよくするために数箇所手動調整やシャッフル
+        renderGrid();
+        updateStats();
+        document.getElementById("statusTextinnerText = '状態: 分析が完了しました。デフラグを開始してください。';");
+        document.getElementById("statusText").innerText = "状態: 分析が完了しました。操作を選択してください。";
+    }
+
+    function renderGrid() {
+        const container = document.getElementById("sectorGrid");
+        container.innerHTML = "";
+
+        for (let i = 0; i < TOTAL_CELLS; i++) {
+            const cell = document.createElement("div");
+            cell.className = "sector";
+            
+            const val = grid[i];
+            if (val === 3) cell.classList.add("sec-free");
+            else if (val === 6) cell.classList.add("sec-data");
+            else if (val === 1) cell.classList.add("sec-fixed");
+            else if (val === 9) cell.classList.add("sec-bad");
+
+            if (i === selectedIndex) {
+                cell.classList.add("selected");
+            }
+
+            // 数字は小さく表示または空白
+            // cell.innerText = val === 3 ? '' : val;
+
+            cell.onclick = () => selectCell(i);
+            container.appendChild(cell);
+        }
+    }
+
+    function selectCell(index) {
+        selectedIndex = index;
+        renderGrid();
+        
+        let typeStr = "";
+        let val = grid[index];
+        if (val === 3) typeStr = "空白ブロック (3) - 選択中";
+        else if (val === 6) typeStr = "動かせるブロック (6) - データファイル";
+        else if (val === 1) typeStr = "動かせないブロック (1) - システム領域";
+        else if (val === 9) typeStr = "不良セクター (破損)";
+
+        document.getElementById("statusText").innerText = `セクター #${index}: ${typeStr}`;
+    }
+
+    // 「詰める」ボタンのロジック
+    function actionCompact() {
+        if (selectedIndex === null) {
+            showModal("選択エラー", "セクターが選択されていません。グリッド上のセルをクリックしてください。");
+            return;
+        }
+
+        let val = grid[selectedIndex];
+        stepsCount++;
+
+        if (val === 3) {
+            // 空白だったら詰める：左側のデータ（6）がこの空白位置にスライドインするか、あるいは全体的に空白を右側に寄せる圧縮処理
+            // ここではシンプルな圧縮パズルとして、選択した空白（3）と、その右側にある動かせるブロック（6）をスワップして左に詰める！
+            let moved = false;
+            for (let i = selectedIndex + 1; i < TOTAL_CELLS; i++) {
+                if (grid[i] === 6) {
+                    grid[selectedIndex] = 6;
+                    grid[i] = 3;
+                    selectedIndex = i; // 選択位置を移動
+                    moved = true;
+                    break;
+                }
+            }
+            if (moved) {
+                playSoundEffect("compact");
+                document.getElementById("statusText").innerText = "状態: 選択された空白にデータを詰めました。";
+            } else {
+                // 右側に動かせるブロックがない場合、左側の空白を右から持ってきたりする全体圧縮
+                // シンプルに左へ寄せる
+                compactLeft();
+                playSoundEffect("compact");
+                document.getElementById("statusText").innerText = "状態: ドライブ全体の空白を左側に詰めました。";
+            }
+        } else if (val === 6) {
+            // 動かせるブロックで詰めるボタンを押すと何も起こらない
+            playSoundEffect("noop");
+            document.getElementById("statusText").innerText = "状態: 動かせるブロックです。「詰める」ボタンでは何も起きません。";
+            showModal("情報", "動かせるデータファイル（6）で「詰める」ボタンを押しても何も起こりません。\n空白（3）を選択して押してください。");
+        } else if (val === 1) {
+            // 動かせないブロックで詰めるボタンを押すとセクター不良の値が増えて、ブロックは動きません
+            badSectorsCount++;
+            grid[selectedIndex] = 9; // 不良セクター化
+            playSoundEffect("error");
+            document.getElementById("statusText").innerText = "⚠️ 警告: システム領域に干渉したためセクター不良が発生しました！";
+            showModal("エラー", "動かせないブロック（システムファイル）で「詰める」操作を行いました！\nドライブにダメージを受け、セクター不良が発生しました。");
+        } else if (val === 9) {
+            showModal("警告", "すでに不良セクターになっている場所です。");
+        }
+
+        renderGrid();
+        updateStats();
+    }
+
+    // 全体的な空白圧縮処理
+    function compactLeft() {
+        // 1や9（動かせない・不良）の位置はそのままにし、6と3の配置を整理して左に寄せる
+        let dataBlocks = [];
+        let freeCount = 0;
+        
+        for (let i = 0; i < TOTAL_CELLS; i++) {
+            if (grid[i] === 6) dataBlocks.push(6);
+            if (grid[i] === 3) freeCount++;
+        }
+
+        let dataIdx = 0;
+        for (let i = 0; i < TOTAL_CELLS; i++) {
+            if (grid[i] !== 1 && grid[i] !== 9) {
+                if (dataIdx < dataBlocks.length) {
+                    grid[i] = 6;
+                    dataIdx++;
+                } else {
+                    grid[i] = 3;
+                }
+            }
+        }
+    }
+
+    // 「進める」ボタンのロジック
+    function actionAdvance() {
+        stepsCount++;
+        // ランダムにデフラグのステップを進める：自動で断片化の一部を結合またはシャッフル
+        // 空白とデータを少し綺麗にする
+        let freeSlots = [];
+        let dataSlots = [];
+
+        for (let i = 0; i < TOTAL_CELLS; i++) {
+            if (grid[i] === 3) freeSlots.push(i);
+            if (grid[i] === 6) dataSlots.push(i);
+        }
+
+        // ランダムにいくつかのデータを詰める
+        if (dataSlots.length > 0 && freeSlots.length > 0) {
+            // 一番後ろのデータを前の空白へ持っていくなどの自動最適化
+            let lastDataIdx = dataSlots[dataSlots.length - 1];
+            let firstFreeIdx = freeSlots[0];
+            if (firstFreeIdx < lastDataIdx && grid[firstFreeIdx] === 3 && grid[lastDataIdx] === 6) {
+                grid[firstFreeIdx] = 6;
+                grid[lastDataIdx] = 3;
+            }
+        }
+
+        playSoundEffect("advance");
+        document.getElementById("statusText").innerText = "状態: デフラグエンジンが1ステップ進行しました。";
+        renderGrid();
+        updateStats();
+    }
+
+    function calculateFragments() {
+        // 中間の空白ブロック（データの間に挟まっている空白の数）を数える
+        let fragments = 0;
+        let foundData = false;
+        let trailingFree = 0;
+
+        // 最初と最後のデータの間にある空白をカウント
+        let firstData = -1;
+        let lastData = -1;
+
+        for (let i = 0; i < TOTAL_CELLS; i++) {
+            if (grid[i] === 6 || grid[i] === 1) {
+                if (firstData === -1) firstData = i;
+                lastData = i;
+            }
+        }
+
+        if (firstData !== -1 && lastData !== -1) {
+            for (let i = firstData; i <= lastData; i++) {
+                if (grid[i] === 3) {
+                    fragments++;
+                }
+            }
+        }
+        return fragments;
+    }
+
+    function updateStats() {
+        let frags = calculateFragments();
+        document.getElementById("badCount").innerText = badSectorsCount;
+        document.getElementById("fragmentCount").innerText = frags;
+
+        // 最適化率計算 (空白が右側に寄り、中間の空白が少ないほど100%に近づく)
+        let totalFree = grid.filter(v => v === 3).length;
+        let maxFrags = Math.max(1, TOTAL_CELLS / 2);
+        let opt = Math.max(0, Math.min(100, Math.floor(100 - (frags / maxFrags) * 100 - (badSectorsCount * 5))));
+        // もしきれいに左に詰まっていたら100%
+        if (frags === 0) opt = 100;
+        
+        document.getElementById("optRate").innerText = opt;
+    }
+
+    function completeDefrag() {
+        let frags = calculateFragments();
+        let opt = document.getElementById("optRate").innerText;
+        
+        let rank = "S";
+        if (badSectorsCount > 3 || frags > 30) rank = "D";
+        else if (badSectorsCount > 1 || frags > 15) rank = "C";
+        else if (frags > 5) rank = "B";
+        else if (frags > 0) rank = "A";
+
+        let msg = `ドライブ C: の最適化が完了しました。\n\n` +
+                  `【結果レポート】\n` +
+                  `・セクター不良: ${badSectorsCount} 個\n` +
+                  `・中間の空白ブロック: ${frags} 個\n` +
+                  `・最適化率: ${opt}%\n` +
+                  `・総合評価: 【 ${rank} ランク 】\n\n`;
+
+        if (rank === "S" || rank === "A") {
+            msg += "素晴らしいデフラグ捌きです！お見事！";
+        } else {
+            msg += "システムファイルに誤って干渉して不良セクターが増えてしまいましたね。";
+        }
+
+        showModal("デフラグ完了", msg);
+        document.getElementById("statusText").innerText = `状態: デフラグ完了 (評価: ${rank})`;
+    }
+
+    function resetGame() {
+        initGame();
+    }
+
+    function showModal(title, message) {
+        document.getElementById("modalTitle").innerText = title;
+        document.getElementById("modalMessage").innerText = message;
+        document.getElementById("modalSubMessage").innerText = "";
+        document.getElementById("modalOverlay").style.display = "flex";
+    }
+
+    function closeModal() {
+        document.getElementById("modalOverlay").style.display = "none";
+    }
+
+    function playSoundEffect(type) {
+        // Web Audio APIによるレトロなサウンド効果
+        try {
+            const ctx = new (window.AudioContext || window.webkitAudioContext)();
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            if (type === "compact") {
+                osc.type = "sine";
+                osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+                osc.frequency.setValueAtTime(880, ctx.currentTime + 0.08); // A5
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.2);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.2);
+            } else if (type === "noop") {
+                osc.type = "square";
+                osc.frequency.setValueAtTime(220, ctx.currentTime);
+                gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.1);
+            } else if (type === "error") {
+                osc.type = "sawtooth";
+                osc.frequency.setValueAtTime(150, ctx.currentTime);
+                osc.frequency.setValueAtTime(80, ctx.currentTime + 0.15);
+                gain.gain.setValueAtTime(0.15, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.3);
+            } else if (type === "advance") {
+                osc.type = "triangle";
+                osc.frequency.setValueAtTime(440, ctx.currentTime);
+                osc.frequency.setValueAtTime(554.37, ctx.currentTime + 0.05);
+                gain.gain.setValueAtTime(0.08, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.15);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.15);
+            }
+        } catch (e) {
+            // AudioContext not allowed or supported without user gesture
+        }
+    }
+
+    // Initialize on load
+    window.onload = initGame;
+</script>
+
+</body>
+</html>
