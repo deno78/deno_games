@@ -26,7 +26,7 @@
             border-right: 2px solid #404040;
             border-bottom: 2px solid #404040;
             box-shadow: 4px 4px 10px rgba(0,0,0,0.5);
-            width: 720px;
+            width: 740px;
             max-width: 100%;
         }
         .win-titlebar {
@@ -111,7 +111,7 @@
             border-left: 1px solid #404040;
             border-right: 1px solid #dfdfdf;
             border-bottom: 1px solid #dfdfdf;
-            padding: 10px;
+            padding: 8px;
             margin-bottom: 10px;
             font-size: 12px;
         }
@@ -139,9 +139,10 @@
         }
         /* Block types */
         .sec-free { background-color: #ffffff; } /* 空白 (3) */
-        .sec-data { background-color: #000080; } /* 動かせるブロック (6) */
-        .sec-fixed { background-color: #808000; } /* 動かせないブロック (1) */
-        .sec-bad { background-color: #ff0000; animation: blink 0.5s infinite alternate; } /* 不良セクター */
+        .sec-fixed { background-color: #cc0000; } /* 動かせないブロック (1): 赤 */
+        .sec-data-light { background-color: #add8e6; } /* 動かせるブロック (6): 薄い水色 */
+        .sec-data-dark { background-color: #1e90ff; } /* カーソルより後ろの動かせるブロック (6): 濃い水色 */
+        .sec-bad { background-color: #ff0000; animation: blink 0.4s infinite alternate; } /* セクター不良: 赤点滅 */
         
         /* Cursor (thick distinct frame) */
         .sector.cursor {
@@ -152,14 +153,23 @@
 
         @keyframes blink {
             from { opacity: 1; }
-            to { opacity: 0.4; }
+            to { opacity: 0.3; }
+        }
+
+        @keyframes pulse-red {
+            0% { color: red; transform: scale(1); }
+            50% { color: darkred; transform: scale(1.2); }
+            100% { color: red; transform: scale(1); }
+        }
+        .bad-pulse {
+            animation: pulse-red 0.4s ease;
         }
 
         /* Legend */
         .legend-container {
             display: flex;
             flex-wrap: wrap;
-            gap: 15px;
+            gap: 12px;
             font-size: 11px;
             margin-bottom: 10px;
             align-items: center;
@@ -195,12 +205,13 @@
         }
         .button-group {
             display: flex;
-            gap: 8px;
+            gap: 12px;
         }
-        .win-button {
+        /* 2倍くらいのサイズにしたボタン */
+        .win-button-large {
             font-family: "MS Gothic", monospace;
-            font-size: 12px;
-            padding: 6px 14px;
+            font-size: 16px;
+            padding: 12px 28px;
             background-color: #c0c0c0;
             border-top: 2px solid #dfdfdf;
             border-left: 2px solid #dfdfdf;
@@ -209,12 +220,29 @@
             cursor: pointer;
             font-weight: bold;
         }
-        .win-button:active {
+        .win-button-large:active {
             border-top: 2px solid #404040;
             border-left: 2px solid #404040;
             border-right: 2px solid #dfdfdf;
             border-bottom: 2px solid #dfdfdf;
-            padding: 7px 13px 5px 15px;
+            padding: 13px 27px 11px 29px;
+        }
+        .win-button-large:disabled {
+            color: #808080;
+            cursor: not-allowed;
+        }
+
+        .win-button-normal {
+            font-family: "MS Gothic", monospace;
+            font-size: 12px;
+            padding: 4px 10px;
+            background-color: #c0c0c0;
+            border-top: 2px solid #dfdfdf;
+            border-left: 2px solid #dfdfdf;
+            border-right: 2px solid #404040;
+            border-bottom: 2px solid #404040;
+            cursor: pointer;
+            font-weight: bold;
         }
 
         /* Modal Dialog */
@@ -233,7 +261,7 @@
             border-left: 2px solid #dfdfdf;
             border-right: 2px solid #404040;
             border-bottom: 2px solid #404040;
-            width: 400px;
+            width: 420px;
             box-shadow: 4px 4px 15px rgba(0,0,0,0.6);
         }
         .modal-body {
@@ -249,15 +277,6 @@
             display: flex;
             justify-content: center;
             border-top: 1px solid #808080;
-        }
-
-        .help-box {
-            font-size: 11px;
-            color: #000;
-            background: #ffffe0;
-            border: 1px solid #808000;
-            padding: 6px;
-            margin-bottom: 10px;
         }
     </style>
 </head>
@@ -287,20 +306,11 @@
                 <option value="C" selected>ローカル ディスク (C:)</option>
                 <option value="D">バックアップ (D:)</option>
             </select>
-            <button class="win-button" style="padding: 2px 8px; font-size:11px;" onclick="resetGame()">再分析</button>
+            <button class="win-button-normal" onclick="resetGame()">再分析</button>
         </div>
 
-        <div class="help-box">
-            <b>【デフラグゲームの遊び方】</b><br>
-            カーソル（紫の太枠）が<b>左上端</b>からスタートします。<br>
-            下の<b>「詰める」</b>または<b>「進める」</b>ボタンを押すと、現在のカーソル位置で処理が行われ、カーソルが右へ進みます（右端で次の行の左端へ）。<br>
-            ・<b>空白（3）</b>で詰める：空白が詰まります。<br>
-            ・<b>動かせるブロック（6）</b>で詰める：何も起きません。<br>
-            ・<b>動かせないブロック（1）</b>で詰める：<b>セクター不良</b>が増加します！
-        </div>
-
-        <div class="sunken-box" style="margin-bottom:5px; font-weight:bold;" id="statusText">
-            状態: 分析完了。デフラグを開始してください。
+        <div class="sunken-box" id="statusText">
+            状態: カーソルが左上端にあります。「詰める」または「進める」を押してください。
         </div>
 
         <!-- Sector Map Grid -->
@@ -309,9 +319,10 @@
         <!-- Legend -->
         <div class="legend-container">
             <div class="legend-item"><div class="legend-box sec-free"></div><span>空白 (3)</span></div>
-            <div class="legend-item"><div class="legend-box sec-data"></div><span>動かせるブロック (6)</span></div>
-            <div class="legend-item"><div class="legend-box sec-fixed"></div><span>動かせないブロック (1)</span></div>
-            <div class="legend-item"><div class="legend-box sec-bad"></div><span>不良セクター</span></div>
+            <div class="legend-item"><div class="legend-box sec-data-light"></div><span>動かせるブロック (6:薄水色)</span></div>
+            <div class="legend-item"><div class="legend-box sec-data-dark"></div><span>処理済ブロック (6:濃水色)</span></div>
+            <div class="legend-item"><div class="legend-box sec-fixed"></div><span>動かせないブロック (1:赤)</span></div>
+            <div class="legend-item"><div class="legend-box sec-bad"></div><span>不良セクター (赤点滅)</span></div>
         </div>
 
         <!-- Action Panel -->
@@ -322,9 +333,8 @@
                 最適化率: <span id="optRate" style="font-weight:bold;">0</span>%
             </div>
             <div class="button-group">
-                <button class="win-button" id="btnCompact" onclick="actionCompact()">詰める</button>
-                <button class="win-button" id="btnAdvance" onclick="actionAdvance()">進める</button>
-                <button class="win-button" onclick="completeDefrag()">最適化完了</button>
+                <button class="win-button-large" id="btnCompact" onclick="actionCompact()">詰める</button>
+                <button class="win-button-large" id="btnAdvance" onclick="actionAdvance()">進める</button>
             </div>
         </div>
     </div>
@@ -342,7 +352,7 @@
             </div>
         </div>
         <div class="modal-footer">
-            <button class="win-button" style="width: 80px;" onclick="closeModal()">OK</button>
+            <button class="win-button-normal" style="width: 80px;" onclick="closeModal()">OK</button>
         </div>
     </div>
 </div>
@@ -353,24 +363,24 @@
     const TOTAL_CELLS = COLS * ROWS;
     
     let grid = []; 
-    let cursorIndex = 0; // 初期値左上端 (0)
+    let cursorIndex = 0; 
     let badSectorsCount = 0;
-    let stepsCount = 0;
+    let isGameOver = false;
 
     function initGame() {
         grid = [];
         badSectorsCount = 0;
-        stepsCount = 0;
-        cursorIndex = 0; // 左上端
+        cursorIndex = 0;
+        isGameOver = false;
 
-        // ブロックの存在比率: 
-        // 1 (動かせないブロック): 約25%
-        // 6 (動かせるブロック): 約45%
-        // 3 (空白): 約30%
+        document.getElementById("btnCompact").disabled = false;
+        document.getElementById("btnAdvance").disabled = false;
+
+        // 存在比率: 1 (動かせないブロック/赤): 25%, 6 (動かせるブロック/水色): 45%, 3 (空白): 30%
         for (let i = 0; i < TOTAL_CELLS; i++) {
             let rand = Math.random();
             if (i < 15) {
-                grid.push(1); // 先頭付近はシステム固定
+                grid.push(1);
             } else if (rand < 0.25) {
                 grid.push(1);
             } else if (rand < 0.70) {
@@ -394,28 +404,32 @@
             cell.className = "sector";
             
             const val = grid[i];
-            if (val === 3) cell.classList.add("sec-free");
-            else if (val === 6) cell.classList.add("sec-data");
-            else if (val === 1) cell.classList.add("sec-fixed");
-            else if (val === 9) cell.classList.add("sec-bad");
-
-            // 現在のカーソル位置は太枠で表示
-            if (i === cursorIndex) {
-                cell.classList.add("cursor");
+            if (val === 3) {
+                cell.classList.add("sec-free");
+            } else if (val === 6) {
+                // カーソルより後ろ（インデックスが小さい位置）は濃い水色、それ以降は薄い水色
+                if (i < cursorIndex) {
+                    cell.classList.add("sec-data-dark");
+                } else {
+                    cell.classList.add("sec-data-light");
+                }
+            } else if (val === 1) {
+                cell.classList.add("sec-fixed");
+            } else if (val === 9) {
+                cell.classList.add("sec-bad");
             }
 
-            // クリックでもカーソルを移動できるようにする
-            cell.onclick = () => {
-                cursorIndex = i;
-                renderGrid();
-                updateStatusText();
-            };
+            // 現在のカーソル位置は太枠
+            if (i === cursorIndex && !isGameOver) {
+                cell.classList.add("cursor");
+            }
 
             container.appendChild(cell);
         }
     }
 
     function updateStatusText() {
+        if (isGameOver) return;
         let val = grid[cursorIndex];
         let typeStr = "";
         if (val === 3) typeStr = "空白ブロック (3)";
@@ -428,21 +442,22 @@
         document.getElementById("statusText").innerText = `カーソル位置 [行:${row}, 列:${col}] : ${typeStr}`;
     }
 
-    // カーソルを右へ進める（右端なら次の行の左端へ、最後まで行ったらループまたは停止）
     function advanceCursor() {
         cursorIndex++;
         if (cursorIndex >= TOTAL_CELLS) {
-            cursorIndex = 0; // 先頭に戻る
+            // 末尾到達：ゲーム終了
+            cursorIndex = TOTAL_CELLS - 1;
+            isGameOver = true;
+            triggerEndGame();
         }
     }
 
     // 「詰める」ボタン
     function actionCompact() {
+        if (isGameOver) return;
         let val = grid[cursorIndex];
-        stepsCount++;
 
         if (val === 3) {
-            // 空白だったら詰める：右側にある動かせるブロック（6）を引っ張ってきてここに埋める
             let moved = false;
             for (let i = cursorIndex + 1; i < TOTAL_CELLS; i++) {
                 if (grid[i] === 6) {
@@ -452,25 +467,21 @@
                     break;
                 }
             }
-            if (moved) {
-                playSoundEffect("compact");
-            } else {
-                playSoundEffect("noop");
-            }
+            if (moved) playSoundEffect("compact");
+            else playSoundEffect("noop");
         } else if (val === 6) {
-            // 動かせるブロックで詰めるボタンを押すと何も起こらない
             playSoundEffect("noop");
         } else if (val === 1) {
-            // 動かせないブロックで詰めるボタンを押すとセクター不良の値が増えてブロックは動かない
+            // 動かせないブロックで詰める：不良セクター増加、ポップアップなしでカウンター点滅
             badSectorsCount++;
-            grid[cursorIndex] = 9; // 不良セクター化
+            grid[cursorIndex] = 9;
             playSoundEffect("error");
-            showModal("警告", "動かせないブロック（システムファイル）で「詰める」操作を行いました！\nセクター不良が発生しました。");
+            pulseBadCount();
+            document.getElementById("statusText").innerText = "⚠️ 警告: 動かせないブロックで詰めたため不良セクターが発生しました！";
         } else if (val === 9) {
             playSoundEffect("noop");
         }
 
-        // 実行後、カーソルを右に進める
         advanceCursor();
         renderGrid();
         updateStats();
@@ -479,11 +490,9 @@
 
     // 「進める」ボタン
     function actionAdvance() {
-        stepsCount++;
-        // 進めるボタン：カーソル位置のブロックを自動整理 or エンジンが1ステップ進む
+        if (isGameOver) return;
         let val = grid[cursorIndex];
         if (val === 3) {
-            // 空白なら自動的に後ろのデータを手前に持ってくる
             for (let i = cursorIndex + 1; i < TOTAL_CELLS; i++) {
                 if (grid[i] === 6) {
                     grid[cursorIndex] = 6;
@@ -494,11 +503,19 @@
         }
         playSoundEffect("advance");
 
-        // 実行後、カーソルを右に進める
         advanceCursor();
         renderGrid();
         updateStats();
         updateStatusText();
+    }
+
+    function pulseBadCount() {
+        const span = document.getElementById("badCount");
+        span.innerText = badSectorsCount;
+        span.classList.add("bad-pulse");
+        setTimeout(() => {
+            span.classList.remove("bad-pulse");
+        }, 400);
     }
 
     function calculateFragments() {
@@ -535,7 +552,10 @@
         document.getElementById("optRate").innerText = opt;
     }
 
-    function completeDefrag() {
+    function triggerEndGame() {
+        document.getElementById("btnCompact").disabled = true;
+        document.getElementById("btnAdvance").disabled = true;
+
         let frags = calculateFragments();
         let opt = document.getElementById("optRate").innerText;
         
@@ -545,7 +565,7 @@
         else if (frags > 5) rank = "B";
         else if (frags > 0) rank = "A";
 
-        let msg = `ドライブの最適化が完了しました。\n\n` +
+        let msg = `カーソルが画面末尾に到達しました。デフラグ終了です。\n\n` +
                   `【結果レポート】\n` +
                   `・セクター不良: ${badSectorsCount} 個\n` +
                   `・中間の空白ブロック: ${frags} 個\n` +
@@ -553,12 +573,13 @@
                   `・総合評価: 【 ${rank} ランク 】\n\n`;
 
         if (rank === "S" || rank === "A") {
-            msg += "完璧なデフラグ操作でした！お見事です！";
+            msg += "素晴らしいデフラグ捌きです！お見事！";
         } else {
             msg += "システム領域に干渉して不良セクターが発生してしまいました。";
         }
 
-        showModal("デフラグ完了", msg);
+        document.getElementById("statusText").innerText = `状態: デフラグ終了 (評価: ${rank})`;
+        showModal("デフラグ終了", msg);
     }
 
     function resetGame() {
