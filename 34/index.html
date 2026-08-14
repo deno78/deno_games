@@ -91,7 +91,7 @@
             display: flex;
             align-items: center;
             gap: 10px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             font-size: 12px;
         }
         .drive-select {
@@ -104,6 +104,15 @@
             border-right: 1px solid #dfdfdf;
             border-bottom: 1px solid #dfdfdf;
         }
+        /* Rule box */
+        .rule-box {
+            background-color: #ffffe0;
+            border: 1px solid #808000;
+            padding: 6px 8px;
+            font-size: 11px;
+            margin-bottom: 8px;
+            line-height: 1.3;
+        }
         /* Status panel (Win98 sunken box) */
         .sunken-box {
             background-color: #ffffff;
@@ -112,19 +121,18 @@
             border-right: 1px solid #dfdfdf;
             border-bottom: 1px solid #dfdfdf;
             padding: 8px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             font-size: 12px;
         }
         /* Sector Grid Map */
         .sector-grid {
             display: grid;
-            grid-template-columns: repeat(32, 1fr);
             gap: 1px;
             background-color: #808080;
             border: 1px solid #404040;
             padding: 2px;
-            margin-bottom: 10px;
-            max-height: 260px;
+            margin-bottom: 8px;
+            max-height: 240px;
             overflow-y: auto;
         }
         .sector {
@@ -157,7 +165,7 @@
             flex-wrap: wrap;
             gap: 15px;
             font-size: 11px;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
             align-items: center;
             background: #c0c0c0;
             padding: 5px;
@@ -183,7 +191,7 @@
             justify-content: space-between;
             align-items: center;
             background-color: #c0c0c0;
-            padding-top: 5px;
+            padding-top: 2px;
         }
         .stats-display {
             font-size: 11px;
@@ -270,7 +278,7 @@
 
 <div class="win-window">
     <div class="win-titlebar">
-        <span>デフラグ - [C: ローカル ディスク]</span>
+        <span>デフラグ - [ディスク最適化ゲーム]</span>
         <div class="win-titlebar-buttons">
             <div class="win-btn">_</div>
             <div class="win-btn">□</div>
@@ -288,11 +296,16 @@
         <div class="drive-header">
             <span>ドライブの選択:</span>
             <select class="drive-select" id="driveSelect" onchange="resetGame()">
-                <option value="C">3.5 インチ フロッピー (A:)</option>
-                <option value="C" selected>ローカル ディスク (C:)</option>
-                <option value="D">バックアップ (D:)</option>
+                <option value="A">3.5 インチ フロッピー (A: 容量極小)</option>
+                <option value="C" selected>ローカル ディスク (C: 標準)</option>
+                <option value="D">バックアップ (D: 大容量)</option>
             </select>
             <button class="win-button-normal" onclick="resetGame()">再分析</button>
+        </div>
+
+        <!-- ルール説明（100文字程度） -->
+        <div class="rule-box">
+            <b>【ルール】</b> 左上から進むカーソル位置で「詰める」か「スキップ」を押せ！空白で詰めるとデータ圧縮、システム領域で押すと不良セクター増加。末尾到達でゲーム終了！
         </div>
 
         <div class="sunken-box" id="statusText">
@@ -342,9 +355,9 @@
 </div>
 
 <script>
-    const COLS = 32;
-    const ROWS = 10;
-    const TOTAL_CELLS = COLS * ROWS;
+    let COLS = 32;
+    let ROWS = 10;
+    let TOTAL_CELLS = COLS * ROWS;
     
     let grid = []; 
     let cursorIndex = 0; 
@@ -352,6 +365,29 @@
     let isGameOver = false;
 
     function initGame() {
+        const driveVal = document.getElementById("driveSelect").value;
+        
+        // ドライブに応じた容量設定
+        if (driveVal === "A") {
+            // Aドライブ: 極小容量 (16列 × 5行 = 80セクター)
+            COLS = 16;
+            ROWS = 5;
+        } else if (driveVal === "C") {
+            // Cドライブ: 標準容量 (32列 × 10行 = 320セクター)
+            COLS = 32;
+            ROWS = 10;
+        } else if (driveVal === "D") {
+            // Dドライブ: Cの約2倍の大容量 (32列 × 20行 = 640セクター)
+            COLS = 32;
+            ROWS = 20;
+        }
+
+        TOTAL_CELLS = COLS * ROWS;
+
+        // グリッドの列数をCSSに反映
+        const gridContainer = document.getElementById("sectorGrid");
+        gridContainer.style.gridTemplateColumns = `repeat(${COLS}, 1fr)`;
+
         grid = [];
         badSectorsCount = 0;
         cursorIndex = 0;
@@ -465,7 +501,6 @@
         updateStatusText();
     }
 
-    // 「スキップ」ボタン：現在のセクター状態を変えずにそのままカーソルを進める
     function actionSkip() {
         if (isGameOver) return;
         playSoundEffect("advance");
@@ -579,7 +614,7 @@
             } else if (type === "error") {
                 osc.type = "sawtooth";
                 osc.frequency.setValueAtTime(150, ctx.currentTime);
-                osc.frequency.setValueAtTime(80, ctx.currentTime + 0.15);
+                osc.frequency.setValueInTime(80, ctx.currentTime + 0.15);
                 gain.gain.setValueAtTime(0.15, ctx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.3);
                 osc.start();
@@ -587,6 +622,7 @@
             } else if (type === "advance") {
                 osc.type = "triangle";
                 osc.frequency.setValueAtTime(440, ctx.currentTime);
+                osc.frequency.setValueAtTime(554.37, ctx.currentTime + 0.05);
                 gain.gain.setValueAtTime(0.08, ctx.currentTime);
                 gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.1);
                 osc.start();
