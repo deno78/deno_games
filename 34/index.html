@@ -139,10 +139,10 @@
         }
         /* Block types */
         .sec-free { background-color: #ffffff; } /* 空白 (3) */
-        .sec-fixed { background-color: #cc0000; } /* 動かせないブロック (1): 赤 */
-        .sec-data-light { background-color: #add8e6; } /* 動かせるブロック (6): 薄い水色 */
-        .sec-data-dark { background-color: #1e90ff; } /* カーソルより後ろの動かせるブロック (6): 濃い水色 */
-        .sec-bad { background-color: #ff0000; animation: blink 0.4s infinite alternate; } /* セクター不良: 赤点滅 */
+        .sec-fixed { background-color: #cc0000; } /* システム領域 (1): 赤 */
+        .sec-data-light { background-color: #add8e6; } /* 通常セクター未処理 (6): 薄い水色 */
+        .sec-data-dark { background-color: #1e90ff; } /* 通常セクター処理済 (6): 濃い水色 */
+        .sec-bad { background-color: #ff0000; } /* 不良セクター: 赤（点滅なし） */
         
         /* Cursor (thick distinct frame) */
         .sector.cursor {
@@ -151,25 +151,11 @@
             z-index: 10;
         }
 
-        @keyframes blink {
-            from { opacity: 1; }
-            to { opacity: 0.3; }
-        }
-
-        @keyframes pulse-red {
-            0% { color: red; transform: scale(1); }
-            50% { color: darkred; transform: scale(1.2); }
-            100% { color: red; transform: scale(1); }
-        }
-        .bad-pulse {
-            animation: pulse-red 0.4s ease;
-        }
-
         /* Legend */
         .legend-container {
             display: flex;
             flex-wrap: wrap;
-            gap: 12px;
+            gap: 15px;
             font-size: 11px;
             margin-bottom: 10px;
             align-items: center;
@@ -316,13 +302,11 @@
         <!-- Sector Map Grid -->
         <div class="sector-grid" id="sectorGrid"></div>
 
-        <!-- Legend -->
+        <!-- Legend (システム領域、通常セクター、不良セクターの3つの表示サンプル) -->
         <div class="legend-container">
-            <div class="legend-item"><div class="legend-box sec-free"></div><span>空白 (3)</span></div>
-            <div class="legend-item"><div class="legend-box sec-data-light"></div><span>動かせるブロック (6:薄水色)</span></div>
-            <div class="legend-item"><div class="legend-box sec-data-dark"></div><span>処理済ブロック (6:濃水色)</span></div>
-            <div class="legend-item"><div class="legend-box sec-fixed"></div><span>動かせないブロック (1:赤)</span></div>
-            <div class="legend-item"><div class="legend-box sec-bad"></div><span>不良セクター (赤点滅)</span></div>
+            <div class="legend-item"><div class="legend-box sec-fixed"></div><span>システム領域 (1)</span></div>
+            <div class="legend-item"><div class="legend-box sec-data-light"></div><span>通常セクター (6)</span></div>
+            <div class="legend-item"><div class="legend-box sec-bad"></div><span>不良セクター</span></div>
         </div>
 
         <!-- Action Panel -->
@@ -376,17 +360,18 @@
         document.getElementById("btnCompact").disabled = false;
         document.getElementById("btnAdvance").disabled = false;
 
-        // 存在比率: 1 (動かせないブロック/赤): 25%, 6 (動かせるブロック/水色): 45%, 3 (空白): 30%
+        // 初期配置の種類の分布:
+        // システム領域 (1): 10%
+        // 空白 (3): 30%
+        // 通常セクター (6): 60%
         for (let i = 0; i < TOTAL_CELLS; i++) {
             let rand = Math.random();
-            if (i < 15) {
-                grid.push(1);
-            } else if (rand < 0.25) {
-                grid.push(1);
-            } else if (rand < 0.70) {
-                grid.push(6);
+            if (rand < 0.10) {
+                grid.push(1); // システム領域 (10%)
+            } else if (rand < 0.40) {
+                grid.push(3); // 空白 (30%)
             } else {
-                grid.push(3);
+                grid.push(6); // 通常セクター (60%)
             }
         }
 
@@ -407,7 +392,6 @@
             if (val === 3) {
                 cell.classList.add("sec-free");
             } else if (val === 6) {
-                // カーソルより後ろ（インデックスが小さい位置）は濃い水色、それ以降は薄い水色
                 if (i < cursorIndex) {
                     cell.classList.add("sec-data-dark");
                 } else {
@@ -419,7 +403,6 @@
                 cell.classList.add("sec-bad");
             }
 
-            // 現在のカーソル位置は太枠
             if (i === cursorIndex && !isGameOver) {
                 cell.classList.add("cursor");
             }
@@ -433,8 +416,8 @@
         let val = grid[cursorIndex];
         let typeStr = "";
         if (val === 3) typeStr = "空白ブロック (3)";
-        else if (val === 6) typeStr = "動かせるブロック (6)";
-        else if (val === 1) typeStr = "動かせないブロック (1)";
+        else if (val === 6) typeStr = "通常セクター (6)";
+        else if (val === 1) typeStr = "システム領域 (1)";
         else if (val === 9) typeStr = "不良セクター (9)";
 
         let row = Math.floor(cursorIndex / COLS) + 1;
@@ -445,14 +428,12 @@
     function advanceCursor() {
         cursorIndex++;
         if (cursorIndex >= TOTAL_CELLS) {
-            // 末尾到達：ゲーム終了
             cursorIndex = TOTAL_CELLS - 1;
             isGameOver = true;
             triggerEndGame();
         }
     }
 
-    // 「詰める」ボタン
     function actionCompact() {
         if (isGameOver) return;
         let val = grid[cursorIndex];
@@ -472,12 +453,12 @@
         } else if (val === 6) {
             playSoundEffect("noop");
         } else if (val === 1) {
-            // 動かせないブロックで詰める：不良セクター増加、ポップアップなしでカウンター点滅
+            // システム領域で詰める：不良セクター増加（点滅なしで普通にカウントアップ）
             badSectorsCount++;
             grid[cursorIndex] = 9;
             playSoundEffect("error");
-            pulseBadCount();
-            document.getElementById("statusText").innerText = "⚠️ 警告: 動かせないブロックで詰めたため不良セクターが発生しました！";
+            document.getElementById("badCount").innerText = badSectorsCount;
+            document.getElementById("statusText").innerText = "⚠️ 警告: システム領域で詰めたため不良セクターが発生しました！";
         } else if (val === 9) {
             playSoundEffect("noop");
         }
@@ -488,7 +469,6 @@
         updateStatusText();
     }
 
-    // 「進める」ボタン
     function actionAdvance() {
         if (isGameOver) return;
         let val = grid[cursorIndex];
@@ -507,15 +487,6 @@
         renderGrid();
         updateStats();
         updateStatusText();
-    }
-
-    function pulseBadCount() {
-        const span = document.getElementById("badCount");
-        span.innerText = badSectorsCount;
-        span.classList.add("bad-pulse");
-        setTimeout(() => {
-            span.classList.remove("bad-pulse");
-        }, 400);
     }
 
     function calculateFragments() {
