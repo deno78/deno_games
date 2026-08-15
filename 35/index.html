@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3x3 王対玉 タイマン将棋</title>
+    <style>
+        :root {
+            --board-bg: #deb887;
+            --board-border: #8b4513;
+            --cell-size: min(80vw, 90vh, 100px);
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: #f0f2f5;
+            color: var(--text-color);
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            touch-action: manipulation;
+        }
+
+        h1 {
+            font-size: 1.5rem;
+            margin: 5px 0 10px 0;
+            color: #4a3525;
+            text-align: center;
+        }
+
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #fff;
+            padding: 15px;
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .status-bar {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 12px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: #fff3e0;
+            color: #e65100;
+            text-align: center;
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #ffe0b2;
+        }
+
+        .status-bar.sente {
+            background: #e3f2fd;
+            color: #1565c0;
+            border-color: #bbdefb;
+        }
+
+        .status-bar.gote {
+            background: #ffebee;
+            color: #c62828;
+            border-color: #ffcdd2;
+        }
+
+        .player-area {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 6px 12px;
+            box-sizing: border-box;
+            background: #fafafa;
+            border-radius: 8px;
+            margin: 6px 0;
+            align-items: center;
+            font-size: 0.95rem;
+            border: 1px solid #eee;
+        }
+
+        .player-area.active {
+            border-color: #2196f3;
+            box-shadow: 0 0 6px rgba(33, 150, 243, 0.3);
+        }
+
+        .hand-pieces {
+            display: flex;
+            gap: 8px;
+            cursor: pointer;
+        }
+
+        .hand-piece {
+            background: #fff;
+            border: 2px solid #8b4513;
+            border-radius: 4px;
+            padding: 4px 8px;
+            font-weight: bold;
+            font-size: 0.9rem;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            user-select: none;
+            transition: transform 0.1s, background 0.1s;
+        }
+
+        .hand-piece.selected {
+            background: #ffeb3b;
+            transform: translateY(-3px);
+            border-color: #f57f17;
+        }
+
+        .hand-piece.empty {
+            color: #aaa;
+            border-color: #ccc;
+            border-style: dashed;
+            cursor: default;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 3px;
+            background-color: var(--board-border);
+            border: 4px solid var(--board-border);
+            border-radius: 6px;
+            width: 100%;
+            aspect-ratio: 1;
+            margin: 10px 0;
+            box-shadow: inset 0 2px 6px rgba(0,0,0,0.2);
+        }
+
+        .cell {
+            background-color: var(--board-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: calc(var(--cell-size) * 0.45);
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            transition: background-color 0.15s;
+        }
+
+        .cell:hover {
+            background-color: #e6c280;
+        }
+
+        .cell.highlight {
+            background-color: #aed581 !important;
+        }
+
+        .cell.selected {
+            background-color: #fff176 !important;
+        }
+
+        .piece {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 90%;
+            height: 90%;
+            background: #fff8dc;
+            border-radius: 4px;
+            box-shadow: 0 3px 6px rgba(0,0,0,0.2);
+            position: relative;
+            font-family: 'Kozuka Mincho Pro', 'MS Mincho', serif;
+        }
+
+        .piece.gote {
+            transform: rotate(180deg);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 10px;
+            width: 100%;
+        }
+
+        button.btn {
+            flex: 1;
+            padding: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            background: #6d4c41;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: background 0.15s, transform 0.1s;
+        }
+
+        button.btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+        }
+
+        button.btn:hover {
+            background: #5d4037;
+        }
+
+        /* Modal Overlay */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .modal.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            max-width: 300px;
+            width: 90%;
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            color: #333;
+        }
+
+        .rules {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 12px;
+            text-align: left;
+            background: #f9f9f9;
+            padding: 10px;
+            border-radius: 6px;
+            line-height: 1.4;
+        }
+
+        .rules ul {
+            margin: 0;
+            padding-left: 18px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <h1>3x3 王対玉 タイマン将棋</h1>
+        
+        <!-- 後手持ち駒エリア -->
+        <div id="gote-area" class="player-area">
+            <span>後手 (☖) 持駒:</span>
+            <div id="gote-hand" class="hand-pieces"></div>
+        </div>
+
+        <div id="status" class="status-bar sente">先手の番です</div>
+
+        <!-- 盤面 -->
+        <div id="board" class="board"></div>
+
+        <!-- 先手持ち駒エリア -->
+        <div id="sente-area" class="player-area">
+            <span>先手 (☗) 持駒:</span>
+            <div id="sente-hand" class="hand-pieces"></div>
+        </div>
+
+        <div class="controls">
+            <button class="btn" onclick="resetGame()">リセット</button>
+        </div>
+
+        <div class="rules">
+            <strong>ルール:</strong>
+            <ul>
+                <li>3x3マスの王(☗)対玉(☖)のタイマン勝負</li>
+                <li>お互い「歩」を1枚持っています</li>
+                <li>王・玉は全方向に1マス移動可能</li>
+                <li>歩は前方に1マス進め、敵陣で「と」に成れます（持ち駒として打つことも可能）</li>
+                <li>相手の玉/王を取るか、歩で詰ませると勝ち！</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 勝敗モーダル -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <h2 id="modal-title">先手の勝ち！</h2>
+            <p id="modal-desc">お見事でした！</p>
+            <button class="btn" onclick="resetGame()">もう一度プレイ</button>
+        </div>
+    </div>
+
+    <script>
+        // 状態管理
+        // 盤面: 3x3 array (0: empty, object for piece)
+        // piece: { type: 'ou'|'gyoku'|'fu'|'to', player: 0(sente)|1(gote) }
+        let board = [];
+        let turn = 0; // 0: 先手, 1: 後手
+        let hands = [
+            [{ type: 'fu', name: '歩' }], // 先手持ち駒
+            [{ type: 'fu', name: '歩' }]  // 後手持ち駒
+        ];
+        
+        let selectedPiece = null; // { type: 'board', r, c } or { type: 'hand', player, index }
+        let validMoves = []; // [{r, c}]
+
+        function initGame() {
+            board = [
+                [{ type: 'gyoku', player: 1 }, null, null],
+                [null, null, null],
+                [null, null, { type: 'ou', player: 0 }]
+            ];
+            turn = 0;
+            hands = [
+                [{ type: 'fu', name: '歩' }],
+                [{ type: 'fu', name: '歩' }]
+            ];
+            selectedPiece = null;
+            validMoves = [];
+            document.getElementById('modal').classList.remove('show');
+            render();
+        }
+
+        function render() {
+            // ステータス表示
+            const statusEl = document.getElementById('status');
+            if (turn === 0) {
+                statusEl.className = 'status-bar sente';
+                statusEl.textContent = '先手 (☗) の番です';
+                document.getElementById('sente-area').classList.add('active');
+                document.getElementById('gote-area').classList.remove('active');
+            } else {
+                statusEl.className = 'status-bar gote';
+                statusEl.textContent = '後手 (☖) の番です';
+                document.getElementById('gote-area').classList.add('active');
+                document.getElementById('sente-area').classList.remove('active');
+            }
+
+            // 持駒描画
+            renderHands(0, 'sente-hand');
+            renderHands(1, 'gote-hand');
+
+            // 盤面描画
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+
+            for (let r = 0; r < 3; r++) {
+                for (let c = 0; c < 3; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    
+                    // ハイライト判定
+                    if (validMoves.some(m => m.r === r && m.c === c)) {
+                        cell.classList.add('highlight');
+                    }
+                    if (selectedPiece && selectedPiece.type === 'board' && selectedPiece.r === r && selectedPiece.c === c) {
+                        cell.classList.add('selected');
+                    }
+
+                    const piece = board[r][c];
+                    if (piece) {
+                        const pieceEl = document.createElement('div');
+                        pieceEl.className = `piece ${piece.player === 1 ? 'gote' : ''}`;
+                        pieceEl.textContent = getPieceSymbol(piece);
+                        cell.appendChild(pieceEl);
+                    }
+
+                    cell.addEventListener('click', () => onCellClick(r, c));
+                    boardEl.appendChild(cell);
+                }
+            }
+        }
+
+        function getPieceSymbol(piece) {
+            if (piece.type === 'ou') return '王';
+            if (piece.type === 'gyoku') return '玉';
+            if (piece.type === 'fu') return piece.player === 0 ? '歩' : '歩';
+            if (piece.type === 'to') return 'と';
+            return '';
+        }
+
+        function renderHands(player, elementId) {
+            const container = document.getElementById(elementId);
+            container.innerHTML = '';
+            const playerHands = hands[player];
+
+            if (playerHands.length === 0) {
+                const emptyEl = document.createElement('div');
+                emptyEl.className = 'hand-piece empty';
+                emptyEl.textContent = 'なし';
+                container.appendChild(emptyEl);
+            } else {
+                playerHands.forEach((item, index) => {
+                    const hpEl = document.createElement('div');
+                    hpEl.className = 'hand-piece';
+                    if (player === 1) hpEl.style.transform = 'rotate(180deg)';
+                    if (selectedPiece && selectedPiece.type === 'hand' && selectedPiece.player === player && selectedPiece.index === index) {
+                        hpEl.classList.add('selected');
+                    }
+                    hpEl.textContent = item.name;
+                    hpEl.addEventListener('click', (e) => {
+                        e.stopPropagation();
+                        onHandClick(player, index);
+                    });
+                    container.appendChild(hpEl);
+                });
+            }
+        }
+
+        function onHandClick(player, index) {
+            if (player !== turn) return; // 自分のターンでなければ無視
+
+            if (selectedPiece && selectedPiece.type === 'hand' && selectedPiece.player === player && selectedPiece.index === index) {
+                selectedPiece = null;
+                validMoves = [];
+            } else {
+                selectedPiece = { type: 'hand', player, index };
+                // 持ち駒（歩）を打てる空マスを計算
+                validMoves = [];
+                for (let r = 0; r < 3; r++) {
+                    for (let c = 0; c < 3; c++) {
+                        if (!board[r][c]) {
+                            // 二歩のチェック (同じ縦筋に自分の歩がないか)
+                            let hasFuInColumn = false;
+                            for (let row = 0; row < 3; row++) {
+                                if (board[row][c] && board[row][c].player === player && board[row][c].type === 'fu') {
+                                    hasFuInColumn = true;
+                                    break;
+                                }
+                            }
+                            // 行き所のない歩チェック（先手ならr=0に歩を打てない、後手ならr=2に歩を打てない）
+                            let isInvalidRow = (player === 0 && r === 0) || (player === 1 && r === 2);
+
+                            if (!hasFuInColumn && !isInvalidRow) {
+                                validMoves.push({ r, c });
+                            }
+                        }
+                    }
+                }
+            }
+            render();
+        }
+
+        function onCellClick(r, c) {
+            const piece = board[r][c];
+
+            // 1. 持ち駒を選択している場合、空きマスに打つ
+            if (selectedPiece && selectedPiece.type === 'hand') {
+                if (validMoves.some(m => m.r === r && m.c === c)) {
+                    dropPiece(selectedPiece.player, selectedPiece.index, r, c);
+                } else {
+                    // 選択解除または別の場所
+                    selectedPiece = null;
+                    validMoves = [];
+                    render();
+                }
+                return;
+            }
+
+            // 2. 盤上の駒を選択している場合
+            if (selectedPiece && selectedPiece.type === 'board') {
+                const sr = selectedPiece.r;
+                const sc = selectedPiece.c;
+
+                if (sr === r && sc === c) {
+                    // 同じ駒をクリックしたら選択解除
+                    selectedPiece = null;
+                    validMoves = [];
+                    render();
+                    return;
+                }
+
+                if (validMoves.some(m => m.r === r && m.c === c)) {
+                    movePiece(sr, sc, r, c);
+                    return;
+                }
+
+                // 自分の別の駒を選択し直す
+                if (piece && piece.player === turn) {
+                    selectBoardPiece(r, c);
+                    return;
+                } else {
+                    selectedPiece = null;
+                    validMoves = [];
+                    render();
+                    return;
+                }
+            }
+
+            // 3. 何も選択していない状態
+            if (piece && piece.player === turn) {
+                selectBoardPiece(r, c);
+            }
+        }
+
+        function selectBoardPiece(r, c) {
+            selectedPiece = { type: 'board', r, c };
+            validMoves = getValidMoves(r, c);
+            render();
+        }
+
+        function getValidMoves(r, c) {
+            const piece = board[r][c];
+            const moves = [];
+            if (!piece) return moves;
+
+            if (piece.type === 'ou' || piece.type === 'gyoku') {
+                // 王・玉は全方向1マス
+                const dirs = [
+                    [-1, -1], [-1, 0], [-1, 1],
+                    [0, -1],           [0, 1],
+                    [1, -1],  [1, 0],  [1, 1]
+                ];
+                for (let [dr, dc] of dirs) {
+                    const nr = r + dr;
+                    const nc = c + dc;
+                    if (nr >= 0 && nr < 3 && nc >= 0 && nc < 3) {
+                        const target = board[nr][nc];
+                        if (!target || target.player !== piece.player) {
+                            moves.push({ r: nr, c: nc });
+                        }
+                    }
+                }
+            } else if (piece.type === 'fu') {
+                // 歩は前へ1マス
+                const dr = piece.player === 0 ? -1 : 1;
+                const nr = r + dr;
+                const nc = c;
+                if (nr >= 0 && nr < 3) {
+                    const target = board[nr][nc];
+                    if (!target || target.player !== piece.player) {
+                        moves.push({ r: nr, c: nc });
+                    }
+                }
+            } else if (piece.type === 'to') {
+                // と金は金と同じ動き（前、斜め前、横、後ろ1マス。つまり後ろ以外の全方向1マス）
+                const drs = piece.player === 0 ? 
+                    [[-1,-1], [-1,0], [-1,1], [0,-1], [0,1], [1,0]] : // 先手（上方向が敵陣）
+                    [[1,-1], [1,0], [1,1], [0,-1], [0,1], [-1,0]];   // 後手（下方向が敵陣）
+                
+                for (let [dr, dc] of drs) {
+                    const nr = r + dr;
+                    const nc = c + dc;
+                    if (nr >= 0 && nr < 3 && nc >= 0 && nc < 3) {
+                        const target = board[nr][nc];
+                        if (!target || target.player !== piece.player) {
+                            moves.push({ r: nr, c: nc });
+                        }
+                    }
+                }
+            }
+            return moves;
+        }
+
+        function movePiece(sr, sc, tr, tc) {
+            const piece = board[sr][sc];
+            const target = board[tr][tc];
+
+            // 王・玉を取ったら勝ち
+            if (target && (target.type === 'ou' || target.type === 'gyoku')) {
+                board[tr][tc] = piece;
+                board[sr][sc] = null;
+                render();
+                endGame(piece.player);
+                return;
+            }
+
+            // 成りの判定（歩が敵陣に入った場合。先手ならtr=0、後手ならtr=2）
+            let promote = false;
+            if (piece.type === 'fu') {
+                if ((piece.player === 0 && tr === 0) || (piece.player === 1 && tr === 2)) {
+                    promote = true;
+                }
+            }
+
+            if (promote) {
+                piece.type = 'to';
+            }
+
+            board[tr][tc] = piece;
+            board[sr][sc] = null;
+
+            selectedPiece = null;
+            validMoves = [];
+            turn = 1 - turn;
+            render();
+        }
+
+        function dropPiece(player, handIndex, tr, tc) {
+            const handItem = hands[player].splice(handIndex, 1)[0];
+            
+            board[tr][tc] = {
+                type: 'fu',
+                player: player
+            };
+
+            selectedPiece = null;
+            validMoves = [];
+            turn = 1 - turn;
+            render();
+        }
+
+        function endGame(winnerPlayer) {
+            const modal = document.getElementById('modal');
+            const title = document.getElementById('modal-title');
+            const desc = document.getElementById('modal-desc');
+
+            if (winnerPlayer === 0) {
+                title.textContent = '先手 (☗) の勝利！';
+                desc.textContent = 'お見事！王が相手を制しました！';
+            } else {
+                title.textContent = '後手 (☖) の勝利！';
+                desc.textContent = 'お見事！玉が相手を制しました！';
+            }
+            modal.classList.add('show');
+        }
+
+        function resetGame() {
+            initGame();
+        }
+
+        // 初期化実行
+        initGame();
+    </script>
+</body>
+</html>
