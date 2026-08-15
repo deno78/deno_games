@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>サイトウさんだぞゲーム</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            color: #fff;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+            text-align: center;
+            position: relative;
+        }
+        h1 {
+            margin-top: 0;
+            font-size: 2.2rem;
+            background: linear-gradient(45deg, #ff6b6b, #feca57);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 10px rgba(255, 107, 107, 0.3);
+            margin-bottom: 10px;
+        }
+        .status-bar {
+            display: flex;
+            justify-content: space-around;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 10px 20px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+        .status-item span {
+            color: #feca57;
+        }
+        /* ステージ共通エリア */
+        .stage {
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 300px;
+        }
+        .stage.active {
+            display: flex;
+        }
+        /* ステージ1: 歩行・名乗り */
+        #stage-walk {
+            position: relative;
+            height: 300px;
+            width: 100%;
+            background: rgba(0,0,0,0.2);
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px dashed rgba(255,255,255,0.2);
+        }
+        .saito-avatar {
+            position: absolute;
+            bottom: 40px;
+            left: -100px;
+            font-size: 4rem;
+            transition: transform 0.2s;
+            filter: drop-shadow(0 5px 5px rgba(0,0,0,0.5));
+        }
+        .speech-bubble {
+            position: absolute;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%) scale(0);
+            background: #fff;
+            color: #333;
+            padding: 15px 25px;
+            border-radius: 20px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            white-space: nowrap;
+            z-index: 10;
+        }
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 10px 10px 0;
+            border-style: solid;
+            border-color: #fff transparent;
+            display: block;
+            width: 0;
+        }
+        .speech-bubble.show {
+            transform: translateX(-50%) scale(1);
+        }
+        .ground {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 40px;
+            background: #2e4057;
+            border-top: 4px solid #048a81;
+        }
+
+        /* ステージ2: 4択クイズ */
+        .question-text {
+            font-size: 1.3rem;
+            margin-bottom: 20px;
+            color: #e2e8f0;
+            line-height: 1.5;
+        }
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            width: 100%;
+            max-width: 450px;
+            margin: 0 auto;
+        }
+        .option-btn {
+            background: linear-gradient(135deg, #4e54c8, #8f94fb);
+            border: none;
+            border-radius: 12px;
+            padding: 20px;
+            font-size: 2.2rem;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 6px 15px rgba(0,0,0,0.3);
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: inherit;
+        }
+        .option-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.4);
+            background: linear-gradient(135deg, #5c62d6, #9fa4fc);
+        }
+        .option-btn:active {
+            transform: translateY(1px);
+        }
+        .none-btn {
+            grid-column: span 2;
+            background: linear-gradient(135deg, #eb3349, #f45c43);
+            font-size: 1.3rem;
+            padding: 15px;
+            font-weight: bold;
+        }
+        .none-btn:hover {
+            background: linear-gradient(135deg, #f04359, #f66c53);
+        }
+
+        /* アクションボタン共通 */
+        .btn-action {
+            margin-top: 20px;
+            background: #feca57;
+            color: #1a1a2e;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(254, 202, 87, 0.4);
+            transition: all 0.2s;
+        }
+        .btn-action:hover {
+            transform: scale(1.05);
+            background: #ffdb70;
+        }
+
+        /* 結果画面/オーバー画面 */
+        .end-screen h2 {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+        .end-screen p {
+            font-size: 1.2rem;
+            margin-bottom: 25px;
+            color: #cbd5e1;
+        }
+
+        /* 演出用アニメーション用クラス */
+        .fade-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .message-box {
+            margin-top: 15px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            min-height: 30px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>サイトウさんだぞゲーム</h1>
+        
+        <div class="status-bar">
+            <div class="status-item">連続正解: <span id="streak-count">0</span> / 3</div>
+            <div class="status-item">ミス: <span id="fail-count">0</span> / 3</div>
+        </div>
+
+        <!-- ステージ1: 歩行シーン -->
+        <div id="stage-walk" class="stage active">
+            <div class="speech-bubble" id="speechBubble">私の名前はサイトウです</div>
+            <div class="saito-avatar" id="saitoAvatar">🧑</div>
+            <div class="ground"></div>
+            <button class="btn-action" id="walkStartBtn" style="position: absolute; bottom: 50px; z-index: 20;">サイトウさんを呼ぶ</button>
+        </div>
+
+        <!-- ステージ2: 4択クイズシーン -->
+        <div id="stage-quiz" class="stage">
+            <div class="question-text" id="questionText">次のうち、正しい「さいの字」（斉、斎、齋、齋...など）はどれだ？</div>
+            <div class="options-grid">
+                <button class="option-btn" onclick="checkAnswer(0)" id="opt0">斉</button>
+                <button class="option-btn" onclick="checkAnswer(1)" id="opt1">斎</button>
+                <button class="option-btn" onclick="option-btn" onclick="checkAnswer(2)" id="opt2">齋</button>
+                <button class="option-btn" onclick="checkAnswer(3)" id="opt3">劑</button>
+                <button class="option-btn none-btn" onclick="checkAnswer(-1)">どれでもない（偽物だ！）</button>
+            </div>
+            <div class="message-box" id="quizMessage"></div>
+        </div>
+
+        <!-- ステージ3: クリア / ゲームオーバー -->
+        <div id="stage-end" class="stage end-screen">
+            <h2 id="endTitle">ゲームクリア！</h2>
+            <p id="endDesc">あなたは真のサイトウさんを見破りました！</p>
+            <button class="btn-action" onclick="restartGame()">もう一度プレイ</button>
+        </div>
+    </div>
+
+    <script>
+        // 「さい」の漢字のバリエーション（本物と、巧妙な偽物・別字）
+        const saiVariants = [
+            "斉", "斎", "齋", "齊", "剂", "剂", "剤", "済", "済", "斉"
+        ];
+        // 本物認定する「サイトウ」のサイ（代表的なもの）
+        const validSai = ["斉", "斎", "齋", "齊"];
+
+        let streak = 0;
+        let fails = 0;
+        let currentOptions = [];
+        let correctAnswerIndex = -1; // -1なら「どれでもない」
+
+        const streakCountEl = document.getElementById('streak-count');
+        const failCountEl = document.getElementById('fail-count');
+        const stageWalk = document.getElementById('stage-walk');
+        const stageQuiz = document.getElementById('stage-quiz');
+        const stageEnd = document.getElementById('stage-end');
+        const saitoAvatar = document.getElementById('saitoAvatar');
+        const speechBubble = document.getElementById('speechBubble');
+        const walkStartBtn = document.getElementById('walkStartBtn');
+        const questionText = document.getElementById('questionText');
+        const quizMessage = document.getElementById('quizMessage');
+        const endTitle = document.getElementById('endTitle');
+        const endDesc = document.getElementById('endDesc');
+
+        walkStartBtn.addEventListener('click', startWalking);
+
+        function updateStatus() {
+            streakCountEl.textContent = streak;
+            failCountEl.textContent = fails;
+        }
+
+        function startWalking() {
+            walkStartBtn.style.display = 'none';
+            saitoAvatar.style.transition = 'none';
+            saitoAvatar.style.left = '-100px';
+            speechBubble.classList.remove('show');
+
+            // 歩行アニメーション
+            let position = -100;
+            const targetPosition = 220; // 中央付近
+            
+            function walkStep() {
+                if (position < targetPosition) {
+                    position += 4;
+                    // 歩くときのちょっとした揺れ
+                    const bounce = Math.sin(position / 10) * 5;
+                    saitoAvatar.style.left = position + 'px';
+                    saitoAvatar.style.bottom = (40 + Math.abs(bounce)) + 'px';
+                    requestAnimationFrame(walkStep);
+                } else {
+                    // 到着！名乗る
+                    saitoAvatar.style.bottom = '40px';
+                    speechBubble.classList.add('show');
+                    
+                    // 音声読み上げ（利用可能な場合）
+                    speakText("私の名前はサイトウです");
+
+                    // 2秒後にクイズへ移行
+                    setTimeout(() => {
+                        transitionToQuiz();
+                    }, 2200);
+                }
+            }
+            walkStep();
+        }
+
+        function speakText(text) {
+            if ('speechSynthesis' in window) {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'ja-JP';
+                utterance.pitch = 1.1;
+                utterance.rate = 1.0;
+                window.speechSynthesis.speak(utterance);
+            }
+        }
+
+        function transitionToQuiz() {
+            stageWalk.classList.remove('active');
+            stageQuiz.classList.add('active');
+            quizMessage.textContent = '';
+            setupQuiz();
+        }
+
+        function setupQuiz() {
+            // 4択の内容をランダム生成
+            // 確率で「正しいサイが1つ以上ある」か「すべて偽物（どれでもない）」を決める
+            // 0: 正解が1つある, 1: 正解が複数ある？ いや「正しいものを選びます。ただし、どれにも当てはまらない場合もあります。」
+            
+            const isAllFake = Math.random() < 0.3; // 30%の確率でどれにも当てはまらない
+            currentOptions = [];
+
+            if (isAllFake) {
+                // すべて偽物（または「サイ」に見えて違う漢字：劑、剤、済、剤 など）
+                const fakes = ["劑", "剤", "済", "斉の字違い", "斎？", "斎(偽)", "剤", "済"];
+                for (let i = 0; i < 4; i++) {
+                    const randomFake = fakes[Math.floor(Math.random() * fakes.length)];
+                    // 被らないようにあるいはダミー
+                    currentOptions.push(["剤", "済", "劑", "斎❌", "斉❌"][Math.floor(Math.random()*5)]);
+                }
+                correctAnswerIndex = -1; // 正解は「どれでもない」
+            } else {
+                // 正解を1つ決める
+                const correct = validSai[Math.floor(Math.random() * validSai.length)];
+                const correctPos = Math.floor(Math.random() * 4);
+                
+                for (let i = 0; i < 4; i++) {
+                    if (i === correctPos) {
+                        currentOptions.push(correct);
+                    } else {
+                        // 偽物を選ぶ
+                        const fakes = ["剤", "済", "劑", "斉❌", "斎(偽)"];
+                        currentOptions.push(fakes[Math.floor(Math.random() * fakes.length)]);
+                    }
+                }
+                correctAnswerIndex = correctPos;
+            }
+
+            // ボタンに反映
+            for (let i = 0; i < 4; i++) {
+                document.getElementById(`opt${i}`).textContent = currentOptions[i];
+            }
+        }
+
+        function checkAnswer(selectedIndex) {
+            // ボタンを一旦無効化
+            const buttons = document.querySelectorAll('.option-btn');
+            buttons.forEach(b => b.style.pointerEvents = 'none');
+
+            let isCorrect = false;
+            if (selectedIndex === correctAnswerIndex) {
+                isCorrect = true;
+            }
+
+            if (isCorrect) {
+                quizMessage.style.color = '#2ed573';
+                quizMessage.textContent = '正解！本物のサイトウさんだぞ！';
+                streak++;
+                updateStatus();
+
+                if (streak >= 3) {
+                    setTimeout(gameClear, 1200);
+                    return;
+                }
+            } else {
+                quizMessage.style.color = '#ff4757';
+                if (correctAnswerIndex === -1) {
+                    quizMessage.textContent = '不正解！実はどれも偽物のサイでした！';
+                } else {
+                    quizMessage.textContent = `不正解！正しいのは ${currentOptions[correctAnswerIndex]} でした！`;
+                }
+                fails++;
+                updateStatus();
+
+                if (fails >= 3) {
+                    setTimeout(gameOver, 1200);
+                    return;
+                }
+            }
+
+            // 次の問題へ（あるいは歩行シーンからやり直し）
+            setTimeout(() => {
+                buttons.forEach(b => b.style.pointerEvents = 'auto');
+                stageQuiz.classList.remove('active');
+                stageWalk.classList.add('active');
+                walkStartBtn.style.display = 'inline-block';
+            }, 1500);
+        }
+
+        function gameClear() {
+            stageQuiz.classList.remove('active');
+            stageEnd.classList.add('active');
+            endTitle.textContent = '🎉 祝・ゲームクリア！ 🎉';
+            endTitle.style.color = '#feca57';
+            endDesc.textContent = '3回連続でサイトウさんのサイの字を見破りました！あなたも今日からサイトウさんだぞ！';
+        }
+
+        function gameOver() {
+            stageQuiz.classList.remove('active');
+            stageEnd.classList.add('active');
+            endTitle.textContent = '💥 ゲームオーバー 💥';
+            endTitle.style.color = '#ff4757';
+            endDesc.textContent = '偽物のサイトウさんに惑わされてしまいました…。';
+        }
+
+        function restartGame() {
+            streak = 0;
+            fails = 0;
+            updateStatus();
+            stageEnd.classList.remove('active');
+            stageWalk.classList.add('active');
+            walkStartBtn.style.display = 'inline-block';
+            saitoAvatar.style.left = '-100px';
+            speechBubble.classList.remove('show');
+        }
+
+        updateStatus();
+    </script>
+</body>
+</html>
