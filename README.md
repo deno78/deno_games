@@ -45,4 +45,4 @@ Deno/Web games collection.
 - [32. 日本列島台風シミュレーター (Typhoon Simulator Japan)](./32/index.html)
 - [33. 木戸に立てかけし衣食住 接客営業ゲーム (Kido ni Tatekashi Ishokujyu Sales Game)](./33/index.html)
 - [34. レトロWindowsディスクデフラグゲーム (Retro Windows Defrag Game)](./34/index.html)
-- [35. 3x3 王対玉タイマン将棋 (3x3 O vs Gyoku Shogi)](./35/index.html)
+- [35. タイマンだって言っただろうが！ (3x3 O vs Gyoku Shogi)](./35/index.html)
