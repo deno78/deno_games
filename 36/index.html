@@ -233,7 +233,7 @@
 
         <!-- ステージ1: 歩行シーン -->
         <div id="stage-walk" class="stage active">
-            <div class="speech-bubble" id="speechBubble">私の名前はサイトウです</div>
+            <div class="speech-bubble" id="speechBubble">私の名前は<span id="saitoKanjiName">斉藤</span>です</div>
             <div class="saito-avatar" id="saitoAvatar">🧑</div>
             <div class="ground"></div>
             <button class="btn-action" id="walkStartBtn" style="position: absolute; bottom: 50px; z-index: 20;">サイトウさんを呼ぶ</button>
@@ -299,6 +299,18 @@
             saitoAvatar.style.left = '-100px';
             speechBubble.classList.remove('show');
 
+            // ランダムに漢字のサイトウを選択（斉藤、斎藤、齋藤、齊藤 など）
+            const surnames = [
+                { family: "斉", given: "藤" },
+                { family: "斎", given: "藤" },
+                { family: "齋", given: "藤" },
+                { family: "齊", given: "藤" },
+                { family: "斉", given: "藤" }
+            ];
+            const chosen = surnames[Math.floor(Math.random() * surnames.length)];
+            const fullNameKanji = chosen.family + chosen.given;
+            document.getElementById('saitoKanjiName').textContent = fullNameKanji;
+
             // 歩行アニメーション
             let position = -100;
             const targetPosition = 220; // 中央付近
@@ -317,7 +329,7 @@
                     speechBubble.classList.add('show');
                     
                     // 音声読み上げ（利用可能な場合）
-                    speakText("私の名前はサイトウです");
+                    speakText(`私の名前は${fullNameKanji}です`);
 
                     // 2秒後にクイズへ移行
                     setTimeout(() => {
