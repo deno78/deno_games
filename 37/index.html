@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>セミの鳴き声・特徴クイズ - 何ゼミかな？</title>
+    <style>
+        :root {
+            --primary-color: #2e7d32;
+            --secondary-color: #4caf50;
+            --accent-color: #ff9800;
+            --bg-color: #f1f8e9;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background-color: var(--card-bg);
+            border-radius: 16px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            padding: 30px;
+            box-sizing: border-box;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+        }
+
+        h1 {
+            color: var(--primary-color);
+            margin-top: 0;
+            font-size: 1.8rem;
+            margin-bottom: 10px;
+        }
+
+        .subtitle {
+            font-size: 0.95rem;
+            color: #666;
+            margin-bottom: 25px;
+        }
+
+        .screen {
+            display: none;
+        }
+
+        .screen.active {
+            display: block;
+        }
+
+        /* スタート画面 */
+        .start-desc {
+            font-size: 1.05rem;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            color: #444;
+        }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 10px rgba(46, 125, 50, 0.3);
+        }
+
+        .btn:hover {
+            background-color: var(--secondary-color);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 14px rgba(46, 125, 50, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        /* クイズ画面 */
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+            color: #555;
+            font-size: 0.95rem;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 10px;
+        }
+
+        /* セミのドット絵（CSS描画） */
+        .semi-art-container {
+            width: 140px;
+            height: 140px;
+            margin: 0 auto 20px auto;
+            background: #e8f5e9;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            box-shadow: inset 0 2px 8px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        .semi-body {
+            position: relative;
+            width: 70px;
+            height: 100px;
+        }
+
+        /* 共通セミシェイプ */
+        .semi-head {
+            width: 44px;
+            height: 30px;
+            background: #4e342e;
+            border-radius: 20px 20px 10px 10px;
+            position: absolute;
+            top: 0;
+            left: 13px;
+            z-index: 3;
+        }
+
+        .semi-thorax {
+            width: 52px;
+            height: 36px;
+            background: #5d4037;
+            border-radius: 12px;
+            position: absolute;
+            top: 25px;
+            left: 9px;
+            z-index: 2;
+        }
+
+        .semi-abdomen {
+            width: 46px;
+            height: 44px;
+            background: #6d4c41;
+            border-radius: 8px 8px 22px 22px;
+            position: absolute;
+            top: 55px;
+            left: 12px;
+            z-index: 1;
+        }
+
+        .semi-wing-left, .semi-wing-right {
+            position: absolute;
+            width: 30px;
+            height: 65px;
+            background: rgba(255, 255, 255, 0.6);
+            border: 2px solid #8d6e63;
+            top: 28px;
+            z-index: 4;
+        }
+
+        .semi-wing-left {
+            left: -12px;
+            border-radius: 50% 20% 50% 50%;
+            transform: rotate(-15deg);
+        }
+
+        .semi-wing-right {
+            right: -12px;
+            border-radius: 20% 50% 50% 50%;
+            transform: rotate(15deg);
+        }
+
+        /* 個別特徴スタイリング */
+        .semi-niinii .semi-wing-left, .semi-niinii .semi-wing-right {
+            background: repeating-linear-gradient(45deg, rgba(139,69,19,0.3), rgba(139,69,19,0.3) 4px, rgba(255,255,255,0.7) 4px, rgba(255,255,255,0.7) 8px);
+        }
+        .semi-abura .semi-wing-left, .semi-abura .semi-wing-right {
+            background: rgba(160, 82, 45, 0.6);
+            border-color: #5c3a21;
+        }
+        .semi-minmin .semi-thorax {
+            background: #2e7d32; /* 緑の胸部 */
+        }
+        .semi-kumazemi .semi-body {
+            transform: scale(1.15);
+        }
+        .semi-kumazemi .semi-head, .semi-kumazemi .semi-thorax, .semi-kumazemi .semi-abdomen {
+            background: #1a1a1a; /* 真っ黒ながっしりした体 */
+        }
+        .semi-higurashi .semi-thorax {
+            background: #33691e;
+        }
+        .semi-higurashi .semi-abdomen {
+            background: #bcaaa4; /* 薄茶色の腹部 */
+        }
+        .semi-tsukutsuku .semi-thorax {
+            background: #212121;
+        }
+        .semi-ezozemi .semi-thorax {
+            background: #111;
+        }
+        /* エゾゼミの赤い紋様風の飾り */
+        .semi-ezozemi::after {
+            content: '';
+            position: absolute;
+            top: 35px;
+            left: 55px;
+            width: 30px;
+            height: 15px;
+            background: radial-gradient(circle, #e53935 30%, #fbc02d 70%);
+            border-radius: 50%;
+            z-index: 5;
+        }
+
+        .hint-box {
+            background-color: #f9fbe7;
+            border-left: 4px solid var(--accent-color);
+            padding: 12px 16px;
+            text-align: left;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 0.95rem;
+            line-height: 1.5;
+        }
+
+        .hint-title {
+            font-weight: bold;
+            color: #e65100;
+            margin-bottom: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .choices-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 15px;
+        }
+
+        .choice-btn {
+            background-color: white;
+            border: 2px solid #c8e6c9;
+            padding: 14px;
+            font-size: 1.05rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.15s ease;
+        }
+
+        .choice-btn:hover {
+            background-color: #e8f5e9;
+            border-color: var(--primary-color);
+            transform: translateY(-2px);
+        }
+
+        .choice-btn:active {
+            transform: translateY(0);
+        }
+
+        /* 結果表示モーダル/オーバーレイ */
+        .feedback-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.6);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.25s ease;
+        }
+
+        .feedback-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .feedback-card {
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            width: 80%;
+            max-width: 400px;
+            text-align: center;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transform: scale(0.9);
+            transition: transform 0.25s ease;
+        }
+
+        .feedback-overlay.show .feedback-card {
+            transform: scale(1);
+        }
+
+        .feedback-title {
+            font-size: 1.6rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+
+        .feedback-title.correct {
+            color: #2e7d32;
+        }
+
+        .feedback-title.incorrect {
+            color: #d32f2f;
+        }
+
+        .feedback-desc {
+            font-size: 0.95rem;
+            color: #555;
+            margin-bottom: 20px;
+            line-height: 1.5;
+            text-align: left;
+            background: #f5f5f5;
+            padding: 10px;
+            border-radius: 6px;
+        }
+
+        /* スコア画面 */
+        .score-display {
+            font-size: 2.5rem;
+            font-weight: bold;
+            color: var(--primary-color);
+            margin: 20px 0;
+        }
+
+        .score-comment {
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+            color: #444;
+            line-height: 1.6;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- スタート画面 -->
+        <div id="start-screen" class="screen active">
+            <h1>蝉（セミ）の種類当てクイズ</h1>
+            <p class="subtitle">ウェザーニュース監修「よく見られるセミ7種類」に基づく検定</p>
+            <div class="start-desc">
+                日本の夏を彩るおなじみのセミたち。<br>
+                大きさ、特徴、鳴き声のヒントから、どのセミか当てられますか？<br>
+                全5問のクイズに挑戦して、セミ博士を目指そう！
+            </div>
+            <button class="btn" onclick="startGame()">クイズをはじめる</button>
+        </div>
+
+        <!-- クイズ画面 -->
+        <div id="quiz-screen" class="screen">
+            <div class="quiz-header">
+                <span id="question-count">第 1 問 / 全 5 問</span>
+                <span id="score-counter">スコア: 0pt</span>
+            </div>
+
+            <div class="semi-art-container" id="semi-art-box">
+                <!-- 動的にセミのアイコン/ビジュアルが挿入されます -->
+            </div>
+
+            <div class="hint-box">
+                <div class="hint-title">🔍 ここをチェック！</div>
+                <div id="hint-text">ヒントテキストがここに表示されます。</div>
+            </div>
+
+            <div class="choices-grid" id="choices-container">
+                <!-- 選択肢ボタンが動的に挿入されます -->
+            </div>
+        </div>
+
+        <!-- 結果・解説オーバーレイ -->
+        <div class="feedback-overlay" id="feedback-overlay">
+            <div class="feedback-card">
+                <div class="feedback-title" id="fb-title">正解！</div>
+                <div class="feedback-desc" id="fb-desc">解説文がここに表示されます。</div>
+                <button class="btn" onclick="nextQuestion()">つぎの問題へ</button>
+            </div>
+        </div>
+
+        <!-- スコア・リザルト画面 -->
+        <div id="result-screen" class="screen">
+            <h1>クイズ終了！</h1>
+            <p class="subtitle">お疲れ様でした！あなたの結果は…</p>
+            <div class="score-display" id="final-score">500 pt</div>
+            <div class="score-comment" id="final-comment">コメントがここに表示されます。</div>
+            <button class="btn" onclick="restartGame()">もう一度挑戦する</button>
+        </div>
+    </div>
+
+    <script>
+        // セミのデータ定義（7種類）
+        const semidb = [
+            {
+                name: "ニイニイゼミ",
+                size: "小型（体長約3.2〜3.8cm）",
+                feature: "体全体が樹皮のようなまだら模様で小型。翅は透明部分と茶色のまだら模様がある。",
+                voice: "「チー……」と細く連続して鳴く",
+                class: "semi-niinii"
+            },
+            {
+                name: "アブラゼミ",
+                size: "中型（体長約5.5〜6.0cm）",
+                feature: "茶色の翅（羽）が特徴。油紙のような透けない茶褐色。",
+                voice: "「ジリジリ」と小刻みに力強く鳴く",
+                class: "semi-abura"
+            },
+            {
+                name: "ミンミンゼミ",
+                size: "中型（体長約5.5〜6.3cm）",
+                feature: "透明な翅と、胸部の鮮やかな緑色の模様が特徴。",
+                voice: "「ミーンミンミン」と鳴く",
+                class: "semi-minmin"
+            },
+            {
+                name: "クマゼミ",
+                size: "大型（体長約6.3〜7.0cm）",
+                feature: "大型で、透明な翅と黒くがっしりした体を持つ。",
+                voice: "「ワシワシ」と強いリズムで鳴く",
+                class: "semi-kumazemi"
+            },
+            {
+                name: "ヒグラシ",
+                size: "中型（体長約4.1〜5.0cm）",
+                feature: "透明な翅と薄茶色の腹部、緑と茶色の胸。体型は細身。",
+                voice: "「カナカナカナ」と哀愁漂う声で鳴く",
+                class: "semi-higurashi"
+            },
+            {
+                name: "ツクツクボウシ",
+                size: "中型（体長約4.1〜4.7cm）",
+                feature: "翅は透明で胸は黒っぽい。体型は細身。",
+                voice: "「ツクツクボウシ、ツクツクボウシ」と特徴的なリズムで鳴く",
+                class: "semi-tsukutsuku"
+            },
+            {
+                name: "エゾゼミ",
+                size: "大型（体長約5.9〜6.6cm）",
+                feature: "胸は黒っぽい地色に鮮やかな赤や黄色、がっしりとした体型。",
+                voice: "「ギー……」と単調に鳴く",
+                class: "semi-ezozemi"
+            }
+        ];
+
+        let currentQuestions = [];
+        let currentIndex = 0;
+        let score = 0;
+        const totalQuizCount = 5;
+
+        function startGame() {
+            // ランダムに5問選出
+            currentQuestions = shuffleArray([...semidb]).slice(0, totalQuizCount);
+            currentIndex = 0;
+            score = 0;
+
+            document.getElementById('start-screen').classList.remove('active');
+            document.getElementById('quiz-screen').classList.add('active');
+            document.getElementById('result-screen').classList.remove('active');
+
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            const q = currentQuestions[currentIndex];
+            
+            // ヘッダー更新
+            document.getElementById('question-count').innerText = `第 ${currentIndex + 1} 問 / 全 ${totalQuizCount} 問`;
+            document.getElementById('score-counter').innerText = `スコア: ${score}pt`;
+
+            // セミのビジュアル設定
+            const artBox = document.getElementById('semi-art-box');
+            artBox.innerHTML = `
+                <div class="semi-body ${q.class}">
+                    <div class="semi-wing-left"></div>
+                    <div class="semi-wing-right"></div>
+                    <div class="semi-head"></div>
+                    <div class="semi-thorax"></div>
+                    <div class="semi-abdomen"></div>
+                </div>
+            `;
+
+            // ヒント設定
+            document.getElementById('hint-text').innerHTML = `
+                <b>大きさ:</b> ${q.size}<br>
+                <b>見分けるポイント:</b> ${q.feature}<br>
+                <b>鳴き声:</b> <em>${q.voice}</em>
+            `;
+
+            // 選択肢作成（正解1つ + 不正解3つ）
+            const wrongChoices = semidb.filter(item => item.name !== q.name);
+            const shuffledWrong = shuffleArray(wrongChoices).slice(0, 3);
+            const choices = shuffleArray([q.name, ...shuffledWrong.map(w => w.name)]);
+
+            const choicesContainer = document.getElementById('choices-container');
+            choicesContainer.innerHTML = '';
+
+            choices.forEach(choiceName => {
+                const btn = document.createElement('button');
+                btn.className = 'choice-btn';
+                btn.innerText = choiceName;
+                btn.onclick = () => checkAnswer(choiceName, q.name);
+                choicesContainer.appendChild(btn);
+            });
+        }
+
+        function checkAnswer(selected, correct) {
+            const isCorrect = selected === correct;
+            if (isCorrect) {
+                score += 20;
+                document.getElementById('fb-title').innerText = "正解！🎉";
+                document.getElementById('fb-title').className = "feedback-title correct";
+            } else {
+                document.getElementById('fb-title').innerText = "ざんねん…❌";
+                document.getElementById('fb-title').className = "feedback-title incorrect";
+            }
+
+            const q = currentQuestions[currentIndex];
+            document.getElementById('fb-desc').innerHTML = `
+                <b>正解は「${correct}」でした！</b><br><br>
+                <b>【特徴】</b> ${q.feature}<br>
+                <b>【鳴き声】</b> ${q.voice}
+            `;
+
+            document.getElementById('feedback-overlay').classList.add('show');
+        }
+
+        function nextQuestion() {
+            document.getElementById('feedback-overlay').classList.remove('show');
+            currentIndex++;
+            if (currentIndex < totalQuizCount) {
+                loadQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            document.getElementById('quiz-screen').classList.remove('active');
+            document.getElementById('result-screen').classList.add('active');
+
+            document.getElementById('final-score').innerText = `${score} pt`;
+
+            let comment = "";
+            if (score === 100) {
+                comment = "パーフェクト！あなたは間違いなく「セミ博士」です！日本の7大セミを完璧に見分けられますね！";
+            } else if (score >= 60) {
+                comment = "素晴らしい正解率です！夏の森に行けば、鳴き声や姿ですぐにセミの種類が分かりそうですね。";
+            } else if (score >= 20) {
+                comment = "いい勝負でした！アブラゼミやミンミンゼミなど、身近なセミからもう一度復習してみよう！";
+            } else {
+                comment = "まだまだこれから！イラストや特徴を覚えて、もう一度チャレンジしてみよう！";
+            }
+            document.getElementById('final-comment').innerText = comment;
+        }
+
+        function restartGame() {
+            startGame();
+        }
+
+        function shuffleArray(array) {
+            for (let i = array.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [array[i], array[j]] = [array[j], array[i]];
+            }
+            return array;
+        }
+    </script>
+</body>
+</html>

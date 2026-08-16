@@ -47,3 +47,4 @@ Deno/Web games collection.
 - [34. レトロWindowsディスクデフラグゲーム (Retro Windows Defrag Game)](./34/index.html)
 - [35. タイマンだって言っただろうが！ (3x3 O vs Gyoku Shogi)](./35/index.html)
 - [36. サイトウさんだぞゲーム (Saito-san da zo Game)](./36/index.html)
+- [37. よく見られるセミ7種類の見分け方クイズ (7 Cicadas Species Quiz Game)](./37/index.html)
