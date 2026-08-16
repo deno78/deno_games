@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ガチタイマン勝負だぞ！ (3x3 王 vs 玉)</title>
+    <style>
+        :root {
+            --board-bg: #deb887;
+            --board-border: #5c2c16;
+            --cell-size: min(80vw, 80vh, 110px);
+            --text-color: #333;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #2c1810 0%, #1a0c08 100%);
+            color: #fff;
+            margin: 0;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            touch-action: manipulation;
+        }
+
+        h1 {
+            font-size: 1.6rem;
+            margin: 5px 0 15px 0;
+            color: #ff5252;
+            text-align: center;
+            font-weight: 900;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+            letter-spacing: 0.05em;
+        }
+
+        .game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: #fff;
+            color: var(--text-color);
+            padding: 20px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-width: 400px;
+            width: 100%;
+            box-sizing: border-box;
+            border: 3px solid #8b4513;
+        }
+
+        .status-bar {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 15px;
+            padding: 8px 16px;
+            border-radius: 20px;
+            background: #fff3e0;
+            color: #e65100;
+            text-align: center;
+            width: 100%;
+            box-sizing: border-box;
+            border: 1px solid #ffe0b2;
+        }
+
+        .status-bar.sente {
+            background: #e3f2fd;
+            color: #1565c0;
+            border-color: #bbdefb;
+        }
+
+        .status-bar.gote {
+            background: #ffebee;
+            color: #c62828;
+            border-color: #ffcdd2;
+        }
+
+        .board {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 4px;
+            background-color: var(--board-border);
+            border: 5px solid var(--board-border);
+            border-radius: 8px;
+            width: 100%;
+            aspect-ratio: 1;
+            margin: 10px 0;
+            box-shadow: inset 0 3px 8px rgba(0,0,0,0.3);
+        }
+
+        .cell {
+            background-color: var(--board-bg);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: calc(var(--cell-size) * 0.45);
+            font-weight: bold;
+            cursor: pointer;
+            user-select: none;
+            position: relative;
+            transition: background-color 0.15s;
+        }
+
+        .cell:hover {
+            background-color: #e6c280;
+        }
+
+        .cell.highlight {
+            background-color: #aed581 !important;
+        }
+
+        .cell.selected {
+            background-color: #fff176 !important;
+        }
+
+        .piece {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 90%;
+            height: 90%;
+            background: #fff8dc;
+            border-radius: 4px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+            position: relative;
+            font-family: 'Kozuka Mincho Pro', 'MS Mincho', serif;
+            border: 1px solid #c7a15a;
+        }
+
+        .piece.gote {
+            transform: rotate(180deg);
+        }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            width: 100%;
+        }
+
+        button.btn {
+            flex: 1;
+            padding: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 8px;
+            background: #6d4c41;
+            color: white;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: background 0.15s, transform 0.1s;
+        }
+
+        button.btn:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 3px rgba(0,0,0,0.2);
+        }
+
+        button.btn:hover {
+            background: #5d4037;
+        }
+
+        /* Modal Overlay */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s;
+        }
+
+        .modal.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: white;
+            color: #333;
+            padding: 24px;
+            border-radius: 12px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+            max-width: 300px;
+            width: 90%;
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            color: #d32f2f;
+        }
+
+        .rules {
+            font-size: 0.85rem;
+            color: #555;
+            margin-top: 15px;
+            text-align: left;
+            background: #f9f9f9;
+            padding: 12px;
+            border-radius: 8px;
+            line-height: 1.4;
+            border: 1px solid #ddd;
+        }
+
+        .rules ul {
+            margin: 0;
+            padding-left: 18px;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <h1>ガチタイマン勝負だぞ！</h1>
+
+        <div id="status" class="status-bar sente">先手の番です（王）</div>
+
+        <!-- 盤面 -->
+        <div id="board" class="board"></div>
+
+        <div class="controls">
+            <button class="btn" onclick="toggleCpuMode()" id="cpu-mode-btn">対戦: CPU (後手)</button>
+            <button class="btn" onclick="resetGame()">リセット</button>
+        </div>
+
+        <div class="rules">
+            <strong>【ガチタイマンルール】</strong>
+            <ul>
+                <li>歩や持ち駒は一切なし！王と玉の純粋なタイマン勝負</li>
+                <li>王・玉は全方向（8方向）に1マス移動可能</li>
+                <li>相手の王（玉）を取れば直ちに勝利！</li>
+                <li>一歩も譲らない極限の読み合いを制せ！</li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- 勝敗モーダル -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <h2 id="modal-title">先手の勝ち！</h2>
+            <p id="modal-desc">完全なるタイマン勝利！</p>
+            <button class="btn" onclick="resetGame()">もう一度勝負</button>
+        </div>
+    </div>
+
+    <script>
+        // 状態管理
+        // 盤面: 3x3 array
+        let board = [];
+        let turn = 0; // 0: 先手, 1: 後手
+        let selectedPiece = null; // { r, c }
+        let validMoves = []; // [{r, c}]
+        let isCpuMode = true; // デフォルトCPU対戦
+
+        function toggleCpuMode() {
+            isCpuMode = !isCpuMode;
+            document.getElementById('cpu-mode-btn').textContent = isCpuMode ? '対戦: CPU (後手)' : '対戦: 2人プレイ';
+            resetGame();
+        }
+
+        function initGame() {
+            // 初期配置: 後手玉が上段、先手王が下段
+            board = [
+                [{ type: 'gyoku', player: 1 }, null, null],
+                [null, null, null],
+                [null, null, { type: 'ou', player: 0 }]
+            ];
+            turn = 0;
+            selectedPiece = null;
+            validMoves = [];
+            document.getElementById('modal').classList.remove('show');
+            render();
+        }
+
+        function render() {
+            const statusEl = document.getElementById('status');
+            if (turn === 0) {
+                statusEl.className = 'status-bar sente';
+                statusEl.textContent = isCpuMode ? 'あなたの番です（王☗）' : '先手の番です（王☗）';
+            } else {
+                statusEl.className = 'status-bar gote';
+                statusEl.textContent = isCpuMode ? 'CPU思案中...（玉☖）' : '後手の番です（玉☖）';
+            }
+
+            const boardEl = document.getElementById('board');
+            boardEl.innerHTML = '';
+
+            for (let r = 0; r < 3; r++) {
+                for (let c = 0; c < 3; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    
+                    if (validMoves.some(m => m.r === r && m.c === c)) {
+                        cell.classList.add('highlight');
+                    }
+                    if (selectedPiece && selectedPiece.r === r && selectedPiece.c === c) {
+                        cell.classList.add('selected');
+                    }
+
+                    const piece = board[r][c];
+                    if (piece) {
+                        const pieceEl = document.createElement('div');
+                        pieceEl.className = `piece ${piece.player === 1 ? 'gote' : ''}`;
+                        pieceEl.textContent = piece.type === 'ou' ? '王' : '玉';
+                        cell.appendChild(pieceEl);
+                    }
+
+                    cell.addEventListener('click', () => onCellClick(r, c));
+                    boardEl.appendChild(cell);
+                }
+            }
+        }
+
+        function onCellClick(r, c) {
+            // CPUターンの時はクリック無効
+            if (isCpuMode && turn === 1) return;
+
+            const piece = board[r][c];
+
+            if (selectedPiece) {
+                if (selectedPiece.r === r && selectedPiece.c === c) {
+                    selectedPiece = null;
+                    validMoves = [];
+                    render();
+                    return;
+                }
+
+                if (validMoves.some(m => m.r === r && m.c === c)) {
+                    movePiece(selectedPiece.r, selectedPiece.sc || selectedPiece.c, r, c);
+                    return;
+                }
+
+                if (piece && piece.player === turn) {
+                    selectPiece(r, c);
+                    return;
+                } else {
+                    selectedPiece = null;
+                    validMoves = [];
+                    render();
+                    return;
+                }
+            }
+
+            if (piece && piece.player === turn) {
+                selectPiece(r, c);
+            }
+        }
+
+        function selectPiece(r, c) {
+            selectedPiece = { r, c };
+            validMoves = getValidMoves(r, c);
+            render();
+        }
+
+        function getValidMoves(r, c) {
+            const piece = board[r][c];
+            const moves = [];
+            if (!piece) return moves;
+
+            // 王・玉は全方向1マス
+            const dirs = [
+                [-1, -1], [-1, 0], [-1, 1],
+                [0, -1],           [0, 1],
+                [1, -1],  [1, 0],  [1, 1]
+            ];
+            for (let [dr, dc] of dirs) {
+                const nr = r + dr;
+                const nc = c + dc;
+                if (nr >= 0 && nr < 3 && nc >= 0 && nc < 3) {
+                    const target = board[nr][nc];
+                    if (!target || target.player !== piece.player) {
+                        moves.push({ r: nr, c: nc });
+                    }
+                }
+            }
+            return moves;
+        }
+
+        function movePiece(sr, sc, tr, tc) {
+            const piece = board[sr][sc];
+            const target = board[tr][tc];
+
+            // 相手を取ったら勝利
+            if (target && target.player !== piece.player) {
+                board[tr][tc] = piece;
+                board[sr][sc] = null;
+                render();
+                endGame(piece.player);
+                return;
+            }
+
+            board[tr][tc] = piece;
+            board[sr][sc] = null;
+
+            selectedPiece = null;
+            validMoves = [];
+            turn = 1 - turn;
+            render();
+
+            if (isCpuMode && turn === 1 && !document.getElementById('modal').classList.contains('show')) {
+                setTimeout(cpuMove, 400);
+            }
+        }
+
+        function cpuMove() {
+            if (turn !== 1) return;
+
+            // 後手（玉 player 1）の王を探す
+            let rCoord = -1, cCoord = -1;
+            for (let r = 0; r < 3; r++) {
+                for (let c = 0; c < 3; c++) {
+                    if (board[r][c] && board[r][c].player === 1) {
+                        rCoord = r;
+                        cCoord = c;
+                    }
+                }
+            }
+
+            if (rCoord === -1) return;
+
+            const moves = getValidMoves(rCoord, cCoord);
+            if (moves.length === 0) return;
+
+            // 評価: 王を取れる手があれば最優先、なければランダムか先手王に近づく手
+            let winningMove = moves.find(m => {
+                const target = board[m.r][m.c];
+                return target && target.player === 0;
+            });
+
+            let chosen = winningMove;
+            if (!chosen) {
+                // 少し賢く：先手王の位置を探して近づく手を優先
+                let senteR = -1, senteC = -1;
+                for (let r = 0; r < 3; r++) {
+                    for (let c = 0; c < 3; c++) {
+                        if (board[r][c] && board[r][c].player === 0) {
+                            senteR = r; senteC = c;
+                        }
+                    }
+                }
+
+                // 最も距離が縮まる手を優先
+                let bestMoves = [];
+                let minDst = 99;
+                for (let m of moves) {
+                    let dst = Math.abs(m.r - senteR) + Math.abs(m.c - senteC);
+                    if (dst < minDst) {
+                        minDst = dst;
+                        bestMoves = [m];
+                    } else if (dst === minDst) {
+                        bestMoves.push(m);
+                    }
+                }
+                chosen = bestMoves[Math.floor(Math.random() * bestMoves.length)];
+            }
+
+            const target = board[chosen.r][chosen.c];
+            const piece = board[rCoord][cCoord];
+
+            if (target && target.player === 0) {
+                board[chosen.r][chosen.c] = piece;
+                board[rCoord][cCoord] = null;
+                render();
+                endGame(1);
+                return;
+            }
+
+            board[chosen.r][chosen.c] = piece;
+            board[rCoord][cCoord] = null;
+
+            turn = 0;
+            render();
+        }
+
+        function endGame(winnerPlayer) {
+            const modal = document.getElementById('modal');
+            const title = document.getElementById('modal-title');
+            const desc = document.getElementById('modal-desc');
+
+            if (winnerPlayer === 0) {
+                title.textContent = '先手の勝利（王）！';
+                desc.textContent = '見事なガチタイマン制覇！';
+            } else {
+                title.textContent = '後手の勝利（玉）！';
+                desc.textContent = 'CPUの猛攻に敗北…！';
+            }
+            modal.classList.add('show');
+        }
+
+        function resetGame() {
+            initGame();
+        }
+
+        initGame();
+    </script>
+</body>
+</html>
