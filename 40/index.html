@@ -1,0 +1,681 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ラジオ体操第1シミュレーター</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: #111;
+            color: #fff;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            overflow: hidden;
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 900px;
+            height: 100%;
+            max-height: 450px;
+            background: linear-gradient(135deg, #2c3e50, #3498db);
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border-radius: 10px;
+        }
+        @media (orientation: portrait) {
+            #game-container {
+                width: 100vw;
+                height: 100vh;
+                max-width: none;
+                max-height: none;
+                border-radius: 0;
+            }
+        }
+        /* Header UI */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 20px;
+            background: rgba(0,0,0,0.4);
+            z-index: 10;
+        }
+        .score-board, .combo-board, .judge-board {
+            font-size: 1.1rem;
+            font-weight: bold;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+        }
+        .judge-board {
+            font-size: 1.4rem;
+            min-width: 100px;
+            text-align: center;
+            color: #f1c40f;
+        }
+        /* Main Stage */
+        .stage {
+            position: relative;
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        /* Character & Guides */
+        canvas {
+            background: #222;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.5);
+            border-radius: 8px;
+        }
+        /* Virtual Pads */
+        .pad-container {
+            display: flex;
+            justify-content: space-between;
+            padding: 15px 30px;
+            background: rgba(0,0,0,0.5);
+            z-index: 10;
+            align-items: center;
+        }
+        .pad-title {
+            font-size: 0.8rem;
+            text-align: center;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+        .virtual-pad {
+            position: relative;
+            width: 110px;
+            height: 110px;
+            background: rgba(255,255,255,0.1);
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            touch-action: none;
+        }
+        .stick {
+            position: absolute;
+            width: 50px;
+            height: 50px;
+            background: radial-gradient(circle, #f39c12, #d35400);
+            border-radius: 50%;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
+            transition: transform 0.05s ease-out;
+            pointer-events: none;
+        }
+        .pad-directions {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+        .dir-mark {
+            position: absolute;
+            font-size: 12px;
+            color: rgba(255,255,255,0.4);
+            font-weight: bold;
+        }
+        .dir-mark.up { top: 5px; left: 50%; transform: translateX(-50%); }
+        .dir-mark.down { bottom: 5px; left: 50%; transform: translateX(-50%); }
+        .dir-mark.left { left: 8px; top: 50%; transform: translateY(-50%); }
+        .dir-mark.right { right: 8px; top: 50%; transform: translateY(-50%); }
+
+        /* Overlays */
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            text-align: center;
+            padding: 20px;
+        }
+        .overlay h1 {
+            font-size: 2.2rem;
+            margin-bottom: 10px;
+            color: #f1c40f;
+            text-shadow: 0 0 10px rgba(241, 196, 15, 0.5);
+        }
+        .overlay p {
+            font-size: 1rem;
+            margin-bottom: 25px;
+            color: #ddd;
+            line-height: 1.5;
+        }
+        .btn {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(231, 76, 60, 0.4);
+            transition: transform 0.1s, background 0.2s;
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Instructions list */
+        .instructions {
+            background: rgba(255,255,255,0.05);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            text-align: left;
+            font-size: 0.9rem;
+            max-width: 400px;
+        }
+        .instructions ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .instructions li {
+            margin-bottom: 5px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <!-- Header -->
+    <div class="header">
+        <div class="score-board">スコア: <span id="score">0</span></div>
+        <div class="judge-board" id="judge-text">READY</div>
+        <div class="combo-board">コンボ: <span id="combo">0</span></div>
+    </div>
+
+    <!-- Main Stage -->
+    <div class="stage">
+        <canvas id="canvas" width="600" height="300"></canvas>
+    </div>
+
+    <!-- Virtual Pads -->
+    <div class="pad-container">
+        <div>
+            <div class="pad-title">左腕パッド (←↓↑→)</div>
+            <div class="virtual-pad" id="pad-left">
+                <div class="pad-directions">
+                    <span class="dir-mark up">▲</span>
+                    <span class="dir-mark down">▼</span>
+                    <span class="dir-mark left">◀</span>
+                    <span class="dir-mark right">▶</span>
+                </div>
+                <div class="stick" id="stick-left"></div>
+            </div>
+        </div>
+
+        <div style="text-align:center;">
+            <div style="font-size: 0.85rem; color: #f1c40f; font-weight: bold;" id="pose-name">ラジオ体操 第1</div>
+            <div style="font-size: 0.75rem; color: #aaa;" id="song-progress">曲の進行: 0%</div>
+        </div>
+
+        <div>
+            <div class="pad-title">右腕パッド (←↓↑→)</div>
+            <div class="virtual-pad" id="pad-right">
+                <div class="pad-directions">
+                    <span class="dir-mark up">▲</span>
+                    <span class="dir-mark down">▼</span>
+                    <span class="dir-mark left">◀</span>
+                    <span class="dir-mark right">▶</span>
+                </div>
+                <div class="stick" id="stick-right"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Start Overlay -->
+    <div id="start-overlay" class="overlay">
+        <h1>ラジオ体操シミュレーター</h1>
+        <div class="instructions">
+            <ul>
+                <li>横持ち推奨！左右のバーチャルパッドを操作します。</li>
+                <li>画面中央のキャラクター（またはガイド）の指示通りに左右のスティックを合わせよう！</li>
+                <li>タイミングよく正しい方向に向けると高得点！</li>
+            </ul>
+        </div>
+        <button class="btn" id="start-btn">体操をはじめる</button>
+    </div>
+
+    <!-- Result Overlay -->
+    <div id="result-overlay" class="overlay" style="display: none;">
+        <h1>体操終了！お疲れ様でした！</h1>
+        <p id="result-text">スコア: 0<br>評価: 優秀</p>
+        <button class="btn" id="restart-btn">もう一度体操する</button>
+    </div>
+</div>
+
+<script>
+    // Audio synthesizer for BGM and FX using Web Audio API
+    class SoundManager {
+        constructor() {
+            this.ctx = null;
+        }
+        init() {
+            if (!this.ctx) {
+                this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+        playBeep(freq, duration, type = 'sine') {
+            if (!this.ctx) return;
+            try {
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.value = freq;
+                gain.gain.setValueAtTime(0.1, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            } catch(e) {}
+        }
+        playJudge(type) {
+            if (type === 'PERFECT') this.playBeep(880, 0.15, 'triangle');
+            else if (type === 'GREAT') this.playBeep(660, 0.12, 'sine');
+            else if (type === 'GOOD') this.playBeep(440, 0.1, 'sine');
+            else if (type === 'MISS') this.playBeep(200, 0.15, 'sawtooth');
+        }
+    }
+    const sound = new SoundManager();
+
+    // Game choreography (Radio Taiso Dai 1 simplified routine)
+    // Time in seconds, target left/right directions: 'UP', 'DOWN', 'LEFT', 'RIGHT', 'NEUTRAL'
+    const routine = [
+        { time: 2.0, name: "1. 背伸びの運動", left: 'UP', right: 'UP', desc: "腕を上に大きく伸ばす！" },
+        { time: 4.5, name: "1. 背伸びの運動", left: 'DOWN', right: 'DOWN', desc: "腕を下ろす" },
+        { time: 7.0, name: "2. 腕を回す運動", left: 'LEFT', right: 'RIGHT', desc: "両腕を横に広げる" },
+        { time: 9.5, name: "2. 腕を回す運動", left: 'UP', right: 'UP', desc: "腕を上に回す" },
+        { time: 12.0, name: "3. 胸を反らす運動", left: 'UP', right: 'UP', desc: "胸を反らして上を向く" },
+        { time: 14.5, name: "3. 胸を反らす運動", left: 'DOWN', right: 'DOWN', desc: "元に戻す" },
+        { time: 17.0, name: "4. 体を回す運動", left: 'LEFT', right: 'LEFT', desc: "左へ体をひねる" },
+        { time: 19.5, name: "4. 体を回す運動", left: 'RIGHT', right: 'RIGHT', desc: "右へ体をひねる" },
+        { time: 22.0, name: "5. 前屈の運動", left: 'DOWN', right: 'DOWN', desc: "大きく前屈！" },
+        { time: 24.5, name: "5. 前屈の運動", left: 'UP', right: 'UP', desc: "上体を起こす" },
+        { time: 27.0, name: "6. 体を前後に曲げる運動", left: 'UP', right: 'UP', desc: "上体を後ろに反らす" },
+        { time: 29.5, name: "6. 体を前後に曲げる運動", left: 'DOWN', right: 'DOWN', desc: "前に曲げる" },
+        { time: 32.0, name: "7. 腕を振る運動", left: 'LEFT', right: 'RIGHT', desc: "腕を左右に振る" },
+        { time: 34.5, name: "7. 腕を振る運動", left: 'RIGHT', right: 'LEFT', desc: "クロスして振る" },
+        { time: 37.0, name: "8. 深呼吸", left: 'UP', right: 'UP', desc: "大きく息を吸って背伸び" },
+        { time: 40.0, name: "8. 深呼吸", left: 'DOWN', right: 'DOWN', desc: "息を吐いてリラックス" }
+    ];
+
+    const totalDuration = 44.0; // Total song duration in seconds
+
+    // State variables
+    let gameState = 'START'; // START, PLAYING, RESULT
+    let startTime = 0;
+    let score = 0;
+    let combo = 0;
+    let maxCombo = 0;
+    let currentRoutineIndex = 0;
+    let currentJudge = '';
+    let judgeTimer = 0;
+
+    // Input states
+    const input = {
+        left: { x: 0, y: 0, dir: 'NEUTRAL' },
+        right: { x: 0, y: 0, dir: 'NEUTRAL' }
+    };
+
+    // Canvas setup
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+
+    // Resize canvas to fit screen nicely
+    function resizeCanvas() {
+        const container = canvas.parentElement;
+        canvas.width = container.clientWidth - 20;
+        canvas.height = 240;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // Virtual Pad Touch/Mouse handlers
+    function setupPad(padId, stickId, side) {
+        const pad = document.getElementById(padId);
+        const stick = document.getElementById(stickId);
+        let activeTouchId = null;
+
+        function handleMove(clientX, clientY) {
+            const rect = pad.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            
+            let dx = clientX - centerX;
+            let dy = clientY - centerY;
+            const dist = Math.sqrt(dx * dx + dy * dy);
+            const maxDist = rect.width / 2 - 15;
+
+            if (dist > maxDist) {
+                dx = (dx / dist) * maxDist;
+                dy = (dy / dist) * maxDist;
+            }
+
+            stick.style.transform = `translate(${dx}px, ${dy}px)`;
+
+            // Determine direction
+            const threshold = 15;
+            let dir = 'NEUTRAL';
+            if (Math.abs(dx) > Math.abs(dy)) {
+                if (dx > threshold) dir = 'RIGHT';
+                else if (dx < -threshold) dir = 'LEFT';
+            } else {
+                if (dy > threshold) dir = 'DOWN';
+                else if (dy < -threshold) dir = 'UP';
+            }
+
+            input[side].x = dx / maxDist;
+            input[side].y = dy / maxDist;
+            input[side].dir = dir;
+        }
+
+        function resetStick() {
+            stick.style.transform = `translate(0px, 0px)`;
+            input[side].x = 0;
+            input[side].y = 0;
+            input[side].dir = 'NEUTRAL';
+            activeTouchId = null;
+        }
+
+        pad.addEventListener('pointerdown', (e) => {
+            activeTouchId = e.pointerId;
+            pad.setPointerCapture(e.pointerId);
+            handleMove(e.clientX, e.clientY);
+        });
+
+        pad.addEventListener('pointermove', (e) => {
+            if (e.pointerId === activeTouchId) {
+                handleMove(e.clientX, e.clientY);
+            }
+        });
+
+        pad.addEventListener('pointerup', (e) => {
+            if (e.pointerId === activeTouchId) {
+                resetStick();
+            }
+        });
+
+        pad.addEventListener('pointercancel', (e) => {
+            if (e.pointerId === activeTouchId) {
+                resetStick();
+            }
+        });
+    }
+
+    setupPad('pad-left', 'stick-left', 'left');
+    setupPad('pad-right', 'stick-right', 'right');
+
+    // UI elements
+    const scoreEl = document.getElementById('score');
+    const comboEl = document.getElementById('combo');
+    const judgeEl = document.getElementById('judge-text');
+    const poseNameEl = document.getElementById('pose-name');
+    const songProgressEl = document.getElementById('song-progress');
+    const startOverlay = document.getElementById('start-overlay');
+    const resultOverlay = document.getElementById('result-overlay');
+    const resultText = document.getElementById('result-text');
+
+    document.getElementById('start-btn').addEventListener('click', startGame);
+    document.getElementById('restart-btn').addEventListener('click', startGame);
+
+    function startGame() {
+        sound.init();
+        startOverlay.style.display = 'none';
+        resultOverlay.style.display = 'none';
+        score = 0;
+        combo = 0;
+        maxCombo = 0;
+        currentRoutineIndex = 0;
+        startTime = performance.now();
+        gameState = 'PLAYING';
+        updateUI();
+    }
+
+    function updateUI() {
+        scoreEl.innerText = score;
+        comboEl.innerText = combo;
+    }
+
+    function showJudge(text) {
+        currentJudge = text;
+        judgeTimer = 30; // frames
+        judgeEl.innerText = text;
+        if (text === 'PERFECT') judgeEl.style.color = '#f1c40f';
+        else if (text === 'GREAT') judgeEl.style.color = '#2ecc71';
+        else if (text === 'GOOD') judgeEl.style.color = '#3498db';
+        else if (text === 'MISS') judgeEl.style.color = '#e74c3c';
+    }
+
+    // Main Game Loop
+    function loop() {
+        if (gameState === 'PLAYING') {
+            const now = performance.now();
+            const elapsed = (now - startTime) / 1000;
+            const progress = Math.min(100, (elapsed / totalDuration) * 100);
+            songProgressEl.innerText = `曲の進行: ${progress.toFixed(0)}%`;
+
+            // Check routine events
+            if (currentRoutineIndex < routine.length) {
+                const currentAction = routine[currentRoutineIndex];
+                poseNameEl.innerText = currentAction.name;
+
+                // Window of timing: +/- 0.6 seconds around target time
+                const timeDiff = elapsed - currentAction.time;
+
+                if (timeDiff > 0.6) {
+                    // Missed timing
+                    showJudge('MISS');
+                    sound.playJudge('MISS');
+                    combo = 0;
+                    currentRoutineIndex++;
+                } else if (Math.abs(timeDiff) <= 0.6) {
+                    // Check if input matches
+                    const leftMatch = (input.left.dir === currentAction.left);
+                    const rightMatch = (input.right.dir === currentAction.right);
+
+                    if (leftMatch && rightMatch) {
+                        let judge = 'GOOD';
+                        let pts = 100;
+                        if (Math.abs(timeDiff) <= 0.2) {
+                            judge = 'PERFECT';
+                            pts = 300;
+                        } else if (Math.abs(timeDiff) <= 0.4) {
+                            judge = 'GREAT';
+                            pts = 200;
+                        }
+
+                        showJudge(judge);
+                        sound.playJudge(judge);
+                        score += pts + (combo * 10);
+                        combo++;
+                        if (combo > maxCombo) maxCombo = combo;
+                        currentRoutineIndex++;
+                    }
+                }
+            } else if (elapsed >= totalDuration) {
+                endGame();
+            }
+
+            updateUI();
+        }
+
+        // Render Graphics
+        render();
+
+        if (judgeTimer > 0) {
+            judgeTimer--;
+            if (judgeTimer === 0) {
+                judgeEl.innerText = '';
+            }
+        }
+
+        requestAnimationFrame(loop);
+    }
+
+    function endGame() {
+        gameState = 'RESULT';
+        resultOverlay.style.display = 'flex';
+        let rank = '皆勤賞！パーフェクト！';
+        if (score < 2000) rank = 'もう少しがんばりましょう！';
+        else if (score < 4000) rank = 'なかなかの健康体！';
+        else if (score < 6000) rank = '素晴らしい柔軟性！';
+
+        resultText.innerHTML = `最終スコア: ${score}<br>最大コンボ: ${maxCombo}<br><br><b>${rank}</b>`;
+    }
+
+    // Helper for direction symbol
+    function getDirSymbol(dir) {
+        switch(dir) {
+            case 'UP': return '▲';
+            case 'DOWN': return '▼';
+            case 'LEFT': return '◀';
+            case 'RIGHT': return '▶';
+            default: return '・';
+        }
+    }
+
+    // Render Stick Figure and Guides
+    function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2 + 10;
+
+        // Draw Stage Background grid or elements
+        ctx.fillStyle = '#1e272e';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Stage floor
+        ctx.strokeStyle = '#485460';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        ctx.moveTo(0, cy + 80);
+        ctx.lineTo(canvas.width, cy + 80);
+        ctx.stroke();
+
+        // Current Action Guide Display
+        if (gameState === 'PLAYING' && currentRoutineIndex < routine.length) {
+            const action = routine[currentRoutineIndex];
+            
+            // Draw instruction text
+            ctx.fillStyle = '#f1c40f';
+            ctx.font = 'bold 16px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(action.desc, cx, 35);
+
+            // Draw guide arrows
+            ctx.fillStyle = '#fff';
+            ctx.font = '14px sans-serif';
+            ctx.fillText(`左: [ ${getDirSymbol(action.left)} ]  /  右: [ ${getDirSymbol(action.right)} ]`, cx, 60);
+
+            // Timeline bar
+            const elapsed = (performance.now() - startTime) / 1000;
+            const timeToTarget = action.time - elapsed;
+            
+            ctx.fillStyle = 'rgba(255,255,255,0.2)';
+            ctx.fillRect(cx - 100, 75, 200, 8);
+
+            if (timeToTarget >= -0.6 && timeToTarget <= 2.0) {
+                const barX = cx + (timeToTarget * 80);
+                ctx.fillStyle = '#e74c3c';
+                ctx.fillRect(barX - 4, 72, 8, 14);
+            }
+        }
+
+        // Draw Character (Stickman) reacting to input & animation
+        const time = performance.now() / 200;
+        const bounce = gameState === 'PLAYING' ? Math.sin(time * 2) * 3 : 0;
+
+        // Head
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 4;
+        ctx.beginPath();
+        ctx.arc(cx, cy - 40 + bounce, 18, 0, Math.PI * 2);
+        ctx.fillStyle = '#f5cd79';
+        ctx.fill();
+        ctx.stroke();
+
+        // Body
+        ctx.beginPath();
+        ctx.moveTo(cx, cy - 22 + bounce);
+        ctx.lineTo(cx, cy + 30 + bounce);
+        ctx.stroke();
+
+        // Legs
+        const legAnim = gameState === 'PLAYING' ? Math.sin(time * 4) * 15 : 0;
+        ctx.beginPath();
+        ctx.moveTo(cx, cy + 30 + bounce);
+        ctx.lineTo(cx - 20 + legAnim, cy + 80);
+        ctx.moveTo(cx, cy + 30 + bounce);
+        ctx.lineTo(cx + 20 - legAnim, cy + 80);
+        ctx.stroke();
+
+        // Arms based on input or character pose
+        let leftArmAngle = -Math.PI / 4;
+        let rightArmAngle = -Math.PI * 3 / 4;
+
+        if (input.left.dir === 'UP') leftArmAngle = -Math.PI / 2;
+        if (input.left.dir === 'DOWN') leftArmAngle = Math.PI / 4;
+        if (input.left.dir === 'LEFT') leftArmAngle = -Math.PI;
+        if (input.left.dir === 'RIGHT') leftArmAngle = 0;
+
+        if (input.right.dir === 'UP') rightArmAngle = -Math.PI / 2;
+        if (input.right.dir === 'DOWN') rightArmAngle = Math.PI * 3 / 4;
+        if (input.right.dir === 'LEFT') rightArmAngle = -Math.PI;
+        if (input.right.dir === 'RIGHT') rightArmAngle = 0;
+
+        // Left arm
+        const shoulderLX = cx;
+        const shoulderLY = cy - 15 + bounce;
+        const armLength = 40;
+        const handLX = shoulderLX + Math.cos(leftArmAngle) * armLength;
+        const handLY = shoulderLY + Math.sin(leftArmAngle) * armLength;
+
+        ctx.beginPath();
+        ctx.moveTo(shoulderLX, shoulderLY);
+        ctx.lineTo(handLX, handLY);
+        ctx.stroke();
+
+        // Right arm
+        const shoulderRX = cx;
+        const shoulderRY = cy - 15 + bounce;
+        const handRX = shoulderRX + Math.cos(rightArmAngle) * armLength;
+        const handRY = shoulderRY + Math.sin(rightArmAngle) * armLength;
+
+        ctx.beginPath();
+        ctx.moveTo(shoulderRX, shoulderRY);
+        ctx.lineTo(handRX, handRY);
+        ctx.stroke();
+    }
+
+    // Initial render call
+    render();
+</script>
+
+</body>
+</html>
