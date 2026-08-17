@@ -49,3 +49,4 @@ Deno/Web games collection.
 - [36. サイトウさんだぞゲーム (Saito-san da zo Game)](./36/index.html)
 - [37. よく見られるセミ7種類の見分け方クイズ (7 Cicadas Species Quiz Game)](./37/index.html)
 - [38. ガチタイマン勝負だぞ！ (Gachi Taiman Shogi)](./38/index.html)
+- [39. メジエドさまと会話の神殿 (Medjed Conversation Game)](./39/index.html)

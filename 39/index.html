@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>39. メジエドさまと会話の神殿 - Medjed Conversation Game</title>
+    <style>
+        :root {
+            --bg-color: #1a140f;
+            --panel-bg: #2c221a;
+            --gold: #d4af37;
+            --gold-light: #f3e5ab;
+            --sand: #e6c9a8;
+            --text-color: #fdf6e2;
+            --accent-red: #c0392b;
+            --accent-green: #27ae60;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow-x: hidden;
+            background-image: radial-gradient(circle at center, #3d2e22 0%, #1a140f 100%);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 600px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: var(--gold);
+            font-size: 1.8rem;
+            margin-bottom: 8px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+            letter-spacing: 1px;
+        }
+
+        .subtitle {
+            color: var(--sand);
+            font-size: 0.95rem;
+        }
+
+        /* 神殿ステージ */
+        .temple {
+            width: 100%;
+            background: var(--panel-bg);
+            border: 3px solid var(--gold);
+            border-radius: 16px;
+            padding: 24px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7), inset 0 0 20px rgba(212, 175, 55, 0.1);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        /* ステータスバー */
+        .status-bar {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            border-bottom: 1px solid rgba(212, 175, 55, 0.3);
+            padding-bottom: 10px;
+        }
+
+        .score-box, .mistake-box {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .heart {
+            color: var(--accent-red);
+            font-size: 1.2rem;
+        }
+
+        .star {
+            color: var(--gold);
+            font-size: 1.2rem;
+        }
+
+        /* メジエドさまエリア */
+        .medjed-area {
+            height: 180px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        /* 吹き出し */
+        .speech-bubble {
+            background: var(--text-color);
+            color: var(--bg-color);
+            padding: 12px 24px;
+            border-radius: 20px;
+            font-size: 1.8rem;
+            font-weight: bold;
+            letter-spacing: 6px;
+            position: relative;
+            margin-bottom: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            animation: floatBubble 3s ease-in-out infinite;
+        }
+
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 10px 10px 0;
+            border-style: solid;
+            border-color: var(--text-color) transparent;
+            display: block;
+            width: 0;
+        }
+
+        @keyframes floatBubble {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-5px); }
+        }
+
+        /* メジエドさま本体 */
+        .medjed-container {
+            position: relative;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .medjed {
+            width: 90px;
+            height: 120px;
+            background: #fff;
+            border-radius: 45px 45px 10px 10px;
+            position: relative;
+            box-shadow: inset -8px -8px 0px rgba(0,0,0,0.1), 0 5px 15px rgba(0,0,0,0.3);
+            animation: medjedIdle 3s ease-in-out infinite;
+        }
+
+        /* 目 */
+        .medjed-eye {
+            position: absolute;
+            top: 25px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+        }
+
+        .eye-dot {
+            width: 12px;
+            height: 18px;
+            background: #111;
+            border-radius: 50%;
+        }
+
+        /* 足 */
+        .medjed-feet {
+            position: absolute;
+            bottom: -8px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 24px;
+        }
+
+        .foot {
+            width: 14px;
+            height: 10px;
+            background: #e6c9a8;
+            border-radius: 50%;
+        }
+
+        @keyframes medjedIdle {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(1deg); }
+        }
+
+        /* メジエドさまのビームアニメーション */
+        .beam {
+            position: absolute;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 6px;
+            height: 0;
+            background: #ff3333;
+            box-shadow: 0 0 15px #ff0000, 0 0 30px #ff6666;
+            z-index: 10;
+            opacity: 0;
+        }
+
+        .beam.fire {
+            animation: shootBeam 0.5s ease-out;
+        }
+
+        @keyframes shootBeam {
+            0% { height: 0; opacity: 1; }
+            50% { height: 150px; opacity: 1; }
+            100% { height: 150px; opacity: 0; }
+        }
+
+        /* 踊りアニメーション */
+        .medjed.dance {
+            animation: medjedDance 0.6s ease-in-out infinite alternate;
+        }
+
+        @keyframes medjedDance {
+            0% { transform: translateY(0) rotate(-10deg) scale(1); }
+            100% { transform: translateY(-20px) rotate(10deg) scale(1.1); }
+        }
+
+        /* メッセージ表示 */
+        .message-box {
+            font-size: 1.1rem;
+            color: var(--gold-light);
+            text-align: center;
+            margin-bottom: 20px;
+            min-height: 30px;
+            font-weight: bold;
+        }
+
+        /* 捧げものボタンエリア */
+        .offerings-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            width: 100%;
+        }
+
+        .offering-btn {
+            background: linear-gradient(135deg, #3d2e22 0%, #241a12 100%);
+            border: 2px solid var(--gold);
+            border-radius: 12px;
+            padding: 15px;
+            color: var(--text-color);
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+
+        .offering-btn:hover:not(:disabled) {
+            background: linear-gradient(135deg, #523f30 0%, #3d2e22 100%);
+            border-color: var(--gold-light);
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(212, 175, 55, 0.3);
+        }
+
+        .offering-btn:active:not(:disabled) {
+            transform: translateY(1px);
+        }
+
+        .offering-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .offering-icon {
+            font-size: 1.6rem;
+        }
+
+        /* ヒント・ルール説明 */
+        .rules-hint {
+            margin-top: 15px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 8px;
+            padding: 12px;
+            width: 100%;
+            font-size: 0.85rem;
+            color: var(--sand);
+            line-height: 1.5;
+        }
+
+        .rules-hint h3 {
+            color: var(--gold);
+            margin-bottom: 4px;
+            font-size: 0.95rem;
+        }
+
+        /* モーダル (ゲームオーバー / クリア) */
+        .modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .modal.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .modal-content {
+            background: var(--panel-bg);
+            border: 3px solid var(--gold);
+            border-radius: 20px;
+            padding: 30px;
+            text-align: center;
+            max-width: 400px;
+            width: 90%;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.8);
+            animation: modalPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        @keyframes modalPop {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .modal-title {
+            font-size: 1.8rem;
+            color: var(--gold);
+            margin-bottom: 15px;
+        }
+
+        .modal-desc {
+            font-size: 1.05rem;
+            margin-bottom: 25px;
+            line-height: 1.6;
+            color: var(--text-color);
+        }
+
+        .restart-btn {
+            background: var(--gold);
+            color: var(--bg-color);
+            border: none;
+            border-radius: 30px;
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(212, 175, 55, 0.4);
+        }
+
+        .restart-btn:hover {
+            background: var(--gold-light);
+            transform: scale(1.05);
+        }
+
+        /* 紙吹雪エフェクト */
+        .confetti {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: var(--gold);
+            animation: fall 3s linear infinite;
+            z-index: 101;
+        }
+
+        @keyframes fall {
+            0% { transform: translateY(-50vh) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
+
+        /* レスポンシブ調整 */
+        @media (max-width: 480px) {
+            h1 { font-size: 1.5rem; }
+            .speech-bubble { font-size: 1.4rem; padding: 10px 18px; }
+            .temple { padding: 16px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>メジエドさまと会話の神殿</h1>
+            <p class="subtitle">古代エジプトの神様のご機嫌を取れ！</p>
+        </header>
+
+        <div class="temple">
+            <!-- ステータス -->
+            <div class="status-bar">
+                <div class="score-box">
+                    <span>正解数:</span>
+                    <span id="score-display">0</span> / 3
+                    <div id="stars-container" style="display:inline-flex; gap:2px; margin-left: 5px;"></div>
+                </div>
+                <div class="mistake-box">
+                    <span>ミス:</span>
+                    <div id="hearts-container" style="display:inline-flex; gap:4px;"></div>
+                </div>
+            </div>
+
+            <!-- メジエドさまセクション -->
+            <div class="medjed-area">
+                <div class="speech-bubble" id="medjed-speech">𓃭𓃰𓅃𓆣</div>
+                <div class="medjed-container" onclick="pokeMedjed()">
+                    <div class="beam" id="medjed-beam"></div>
+                    <div class="medjed" id="medjed-body">
+                        <div class="medjed-eye">
+                            <div class="eye-dot"></div>
+                            <div class="eye-dot"></div>
+                        </div>
+                        <div class="medjed-feet">
+                            <div class="foot"></div>
+                            <div class="foot"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- メッセージ -->
+            <div class="message-box" id="message-display">
+                メジエドさまが何かおっしゃっています。正しい捧げものを選びましょう。
+            </div>
+
+            <!-- 捧げものボタン -->
+            <div class="offerings-grid">
+                <button class="offering-btn" onclick="selectOffering('bread')">
+                    <span class="offering-icon">🍞</span>
+                    <span>パンを捧げる</span>
+                </button>
+                <button class="offering-btn" onclick="selectOffering('fish')">
+                    <span class="offering-icon">🐟</span>
+                    <span>魚を捧げる</span>
+                </button>
+                <button class="offering-btn" onclick="selectOffering('meat')">
+                    <span class="offering-icon">🍖</span>
+                    <span>肉を捧げる</span>
+                </button>
+                <button class="offering-btn" onclick="selectOffering('wine')">
+                    <span class="offering-icon">🍷</span>
+                    <span>酒を捧げる</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="rules-hint">
+            <h3>📖 遊び方・ルール</h3>
+            <p>メジエドさまが話す<strong>4文字のエジプト絵文字</strong>に対応する捧げものを見つけましょう。組み合わせはゲーム開始時にランダムで決定（全4パターン）されます。3回正解でクリア、3回間違えるとゲームオーバーです！</p>
+        </div>
+    </div>
+
+    <!-- モーダルウィンドウ -->
+    <div class="modal" id="result-modal">
+        <div class="modal-content">
+            <h2 class="modal-title" id="modal-title">ゲームクリア！</h2>
+            <p class="modal-desc" id="modal-desc">お見事！メジエドさまと完全に心を通わせることができました！神殿で喜びの舞を踊っています。</p>
+            <button class="restart-btn" onclick="initGame()">もう一度プレイする</button>
+        </div>
+    </div>
+
+    <script>
+        // 絵文字の候補（エジプト・ヒエログリフ風）
+        const HIEROGLYPHS = ['👁️', '𓃭', '𓃰', '𓅃', '𓆣', '𓇌', '𓈖', '𓉔', '𓊪', '𓋴', '🏺', '🐈', '🦅', '🐍', '☀️', '🐪', '𓀀', '𓁐', '𓂋', '𓄿'];
+
+        // 捧げものの種類
+        const OFFERINGS = [
+            { id: 'bread', name: 'パン', icon: '🍞' },
+            { id: 'fish', name: '魚', icon: '🐟' },
+            { id: 'meat', name: '肉', icon: '🍖' },
+            { id: 'wine', name: '酒', icon: '🍷' }
+        ];
+
+        let patterns = {}; // { patternString: offeringId }
+        let currentPattern = '';
+        let score = 0;
+        let mistakes = 0;
+        const maxScore = 3;
+        const maxMistakes = 3;
+        let isGameOver = false;
+
+        // 配列をシャッフル
+        function shuffle(array) {
+            const arr = [...array];
+            for (let i = arr.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [arr[i], arr[j]] = [arr[j], arr[i]];
+            }
+            return arr;
+        }
+
+        // 4文字のランダム絵文字パターンを生成
+        function generateRandomPattern() {
+            const shuffled = shuffle(HIEROGLYPHS);
+            let res = '';
+            for (let i = 0; i < 4; i++) {
+                res += shuffled[i];
+            }
+            return res;
+        }
+
+        // ゲーム初期化
+        function initGame() {
+            score = 0;
+            mistakes = 0;
+            isGameOver = false;
+            patterns = {};
+
+            // 4つの捧げものに対してそれぞれユニークな4文字パターンを割り当てる
+            const shuffledOfferings = shuffle(OFFERINGS);
+            shuffledOfferings.forEach(offering => {
+                let pattern;
+                do {
+                    pattern = generateRandomPattern();
+                } while (Object.keys(patterns).includes(pattern));
+                patterns[pattern] = offering.id;
+            });
+
+            // モーダルを閉じる
+            document.getElementById('result-modal').classList.remove('active');
+            
+            // メジエドさまのポーズをリセット
+            const medjedBody = document.getElementById('medjed-body');
+            medjedBody.classList.remove('dance');
+
+            updateUI();
+            nextTurn();
+        }
+
+        // 次のターン（問題の提示）
+        function nextTurn() {
+            if (isGameOver) return;
+
+            // パターンキーのリストからランダムに1つ選んでメジエドさまに喋らせる
+            const patternKeys = Object.keys(patterns);
+            const randomIndex = Math.floor(Math.random() * patternKeys.length);
+            currentPattern = patternKeys[randomIndex];
+
+            document.getElementById('medjed-speech').textContent = currentPattern;
+            document.getElementById('message-display').textContent = "メジエドさまが何かおっしゃっています。正しい捧げものを選びましょう。";
+            
+            // ボタンを有効化
+            setButtonsEnabled(true);
+        }
+
+        // UIの更新（スコア、ハート等）
+        function updateUI() {
+            document.getElementById('score-display').textContent = score;
+
+            // 星の表示
+            let starsHtml = '';
+            for (let i = 0; i < score; i++) {
+                starsHtml += '<span class="star">★</span>';
+            }
+            document.getElementById('stars-container').innerHTML = starsHtml;
+
+            // ハート（ミス許容数）の表示
+            let heartsHtml = '';
+            const remainingHearts = maxMistakes - mistakes;
+            for (let i = 0; i < maxMistakes; i++) {
+                if (i < remainingHearts) {
+                    heartsHtml += '<span class="heart">❤️</span>';
+                } else {
+                    heartsHtml += '<span class="heart" style="opacity: 0.3;">🖤</span>';
+                }
+            }
+            document.getElementById('hearts-container').innerHTML = heartsHtml;
+        }
+
+        // ボタンの有効・無効切り替え
+        function setButtonsEnabled(enabled) {
+            const btns = document.querySelectorAll('.offering-btn');
+            btns.forEach(btn => btn.disabled = !enabled);
+        }
+
+        // プレイヤーが捧げものを選んだとき
+        function selectOffering(selectedId) {
+            if (isGameOver) return;
+            setButtonsEnabled(false);
+
+            const correctId = patterns[currentPattern];
+            const messageEl = document.getElementById('message-display');
+
+            if (selectedId === correctId) {
+                // 正解
+                score++;
+                messageEl.style.color = 'var(--accent-green)';
+                messageEl.textContent = '正解！ メジエドさまはご機嫌です✨';
+                
+                // 少し弾むアニメーション
+                const medjedBody = document.getElementById('medjed-body');
+                medjedBody.style.transform = 'scale(1.15)';
+                setTimeout(() => {
+                    medjedBody.style.transform = 'scale(1)';
+                }, 300);
+
+                updateUI();
+
+                if (score >= maxScore) {
+                    // ゲームクリア
+                    setTimeout(gameClear, 800);
+                } else {
+                    setTimeout(nextTurn, 1200);
+                }
+            } else {
+                // 不正解
+                mistakes++;
+                messageEl.style.color = 'var(--accent-red)';
+                const correctObj = OFFERINGS.find(o => o.id === correctId);
+                messageEl.textContent = `不正解…！ 正しくは「${correctObj.name} (${correctObj.icon})」でした！`;
+
+                // 目からビーム発射
+                fireBeam();
+
+                updateUI();
+
+                if (mistakes >= maxMistakes) {
+                    // ゲームオーバー
+                    setTimeout(gameOver, 1200);
+                } else {
+                    setTimeout(nextTurn, 1500);
+                }
+            }
+        }
+
+        // 目からビーム演出
+        function fireBeam() {
+            const beam = document.getElementById('medjed-beam');
+            beam.classList.add('fire');
+            setTimeout(() => {
+                beam.classList.remove('fire');
+            }, 500);
+        }
+
+        // メジエドさまを突いたときのお遊び
+        function pokeMedjed() {
+            if (isGameOver) return;
+            const messageEl = document.getElementById('message-display');
+            messageEl.style.color = 'var(--gold-light)';
+            messageEl.textContent = '「メッ！ お布施をさっさと持ってきなさい！」と怒っている気がする…';
+        }
+
+        // ゲームクリア処理
+        function gameClear() {
+            isGameOver = true;
+            document.getElementById('medjed-body').classList.add('dance');
+            
+            document.getElementById('modal-title').textContent = '🎉 神殿クリア！ 🎉';
+            document.getElementById('modal-desc').textContent = 'お見事です！3回正解し、メジエドさまと完全に心を通わせました。メジエドさまが神殿でキレッキレの踊りを踊っています！';
+            document.getElementById('result-modal').classList.add('active');
+
+            createConfetti();
+        }
+
+        // ゲームオーバー処理
+        function gameOver() {
+            isGameOver = true;
+            document.getElementById('modal-title').textContent = '⚡ ゲームオーバー ⚡';
+            document.getElementById('modal-desc').textContent = 'メジエドさまの逆鱗に触れ、目からビームで焼き尽くされてしまいました…。次はもっとパターンを記憶しましょう！';
+            document.getElementById('result-modal').classList.add('active');
+        }
+
+        // 紙吹雪生成
+        function createConfetti() {
+            for (let i = 0; i < 50; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti');
+                confetti.style.left = Math.random() * 100 + 'vw';
+                confetti.style.animationDuration = (Math.random() * 2 + 2) + 's';
+                confetti.style.backgroundColor = ['#d4af37', '#f3e5ab', '#e6c9a8', '#ffffff', '#27ae60'][Math.floor(Math.random() * 5)];
+                document.body.appendChild(confetti);
+
+                setTimeout(() => {
+                    confetti.remove();
+                }, 4000);
+            }
+        }
+
+        // 初回ロード時にゲーム開始
+        window.onload = initGame;
+    </script>
+</body>
+</html>
