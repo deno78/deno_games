@@ -150,7 +150,7 @@ let shakeIntensity = 0;
 
 // ボールオブジェクト (超低摩擦設定)
 const ball = {
-    x: 412,
+    x: 388,
     y: 570,
     vx: 0,
     vy: 0,
@@ -197,12 +197,12 @@ const slingshots = [
     { x1: 350, y1: 450, x2: 310, y2: 520, normal: {x: -0.8, y: -0.6} }
 ];
 
-// ガイド壁（天井とプランジャーレーンの壁を改善：ボールが引っかからないようスロープを最適化）
+// ガイド壁（プランジャー上部 y < 100 をオープンにし、発射されたボールがスムーズに左側フィールドへ飛び出す構造）
 const walls = [
     { x1: 40, y1: 80, x2: 40, y2: 580 },
     { x1: 40, y1: 80, x2: 220, y2: 30 },
-    { x1: 220, y1: 30, x2: 375, y2: 80 },
-    { x1: 375, y1: 80, x2: 375, y2: 600 }, // プランジャーレーン仕切り壁を明確に分離
+    { x1: 220, y1: 30, x2: 375, y2: 90 }, // 右天井スロープ（上端をy=90にして発射ボールを左側へ逃がす）
+    { x1: 375, y1: 110, x2: 375, y2: 600 }, // プランジャー仕切り壁（y=110より下のみに制限し、上部は自由に出入り可能に）
     { x1: 400, y1: 80, x2: 400, y2: 580 },
     { x1: 40, y1: 580, x2: 110, y2: 640 },
     { x1: 400, y1: 580, x2: 330, y2: 640 }
@@ -232,7 +232,7 @@ window.addEventListener('keyup', e => {
     }
 });
 
-// ポインターイベントによる確実なボタン・画面タッチ操作
+// ポインターイベントによるボタン・画面タッチ操作
 const setupPointerButton = (id, actionType) => {
     const btn = document.getElementById(id);
     
@@ -272,7 +272,6 @@ setupPointerButton('leftBtn', 'left');
 setupPointerButton('rightBtn', 'right');
 setupPointerButton('launchBtn', 'launch');
 
-// キャンバス自体のタッチ/クリック操作
 canvas.addEventListener('pointerdown', (e) => {
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
@@ -317,7 +316,9 @@ canvas.addEventListener('pointerleave', () => {
 function releasePlunger() {
     plungerCharging = false;
     if (gameState === 'READY') {
-        ball.vy = -Math.max(plungerPower, 16);
+        // 発射時の初速を強力にし、少し左向きの初速（vx = -1.5）も与えてスムーズにフィールドへ飛び出させる
+        ball.vy = -Math.max(plungerPower, 18);
+        ball.vx = -1.5;
         plungerPower = 0;
         gameState = 'PLAYING';
     }
@@ -347,15 +348,18 @@ function triggerShake(intensity, duration) {
 
 function update() {
     if (plungerCharging) {
-        plungerPower = Math.min(plungerPower + 0.7, 28);
+        plungerPower = Math.min(plungerPower + 0.8, 30);
     }
 
     if (gameState === 'PLAYING') {
-        ball.vy += ball.gravity;
+        // 発射直後（プランジャーレーン内 x > 375 かつ y > 110）の間は重力を弱くしてスムーズに昇らせる
+        let currentGravity = (ball.x > 375 && ball.y > 110) ? ball.gravity * 0.2 : ball.gravity;
+        ball.vy += currentGravity;
+
         ball.vx *= ball.friction;
         ball.vy *= ball.friction;
 
-        // アンチ・スタック（上部エリア y < 100 でボールが停滞したら強制的に押し出す）
+        // アンチ・スタック
         if (ball.y < 100 && Math.abs(ball.vy) < 0.8) {
             ball.vy += 1.2;
             ball.vx += (Math.random() - 0.5) * 3;
