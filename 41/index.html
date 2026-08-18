@@ -2,25 +2,27 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>マッハピンボール！音速を越えろ！</title>
     <style>
         * {
             box-sizing: border-box;
             user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
         }
         body {
             margin: 0;
-            padding: 0;
+            padding: 10px;
             background: radial-gradient(circle, #1a2e1a 0%, #0a120a 100%);
             color: #ffd700;
             font-family: 'Cinzel', 'Times New Roman', serif, sans-serif;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             min-height: 100vh;
-            overflow: hidden;
+            overflow-x: hidden;
         }
         header {
             text-align: center;
@@ -28,33 +30,38 @@
         }
         h1 {
             margin: 0;
-            font-size: 24px;
+            font-size: 22px;
             text-shadow: 0 0 10px #ff4500, 0 0 20px #ffd700;
             letter-spacing: 2px;
         }
         .subtitle {
-            font-size: 12px;
+            font-size: 11px;
             color: #aaa;
             letter-spacing: 1px;
         }
         #game-container {
             position: relative;
-            border: 8px ridge #ffd700;
-            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8), inset 0 0 20px rgba(0,0,0,0.8);
+            border: 6px ridge #ffd700;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8), inset 0 0 15px rgba(0,0,0,0.8);
             background: #0f2212;
             border-radius: 6px;
+            width: 100%;
+            max-width: 440px;
         }
         canvas {
             display: block;
+            width: 100%;
+            height: auto;
             background: radial-gradient(circle at center, #1b4d2b 0%, #0c2614 100%);
         }
         .ui-panel {
             display: flex;
             justify-content: space-between;
-            width: 440px;
+            width: 100%;
+            max-width: 440px;
             margin-top: 8px;
-            font-size: 14px;
-            background: rgba(0,0,0,0.6);
+            font-size: 13px;
+            background: rgba(0,0,0,0.7);
             padding: 6px 12px;
             border: 2px solid #ffd700;
             border-radius: 4px;
@@ -64,32 +71,33 @@
             font-size: 11px;
             color: #b0c4de;
             text-align: center;
+            max-width: 440px;
         }
         .mobile-controls {
-            display: none;
+            display: flex;
             justify-content: space-between;
-            width: 440px;
+            width: 100%;
+            max-width: 440px;
             margin-top: 10px;
+            gap: 8px;
         }
         .m-btn {
+            flex: 1;
             background: linear-gradient(to bottom, #d4af37, #8b6508);
             border: 2px solid #fff;
             color: #000;
             font-weight: bold;
-            padding: 12px 24px;
-            font-size: 16px;
+            padding: 14px 0;
+            font-size: 14px;
             border-radius: 8px;
             cursor: pointer;
             box-shadow: 0 4px #4a3304;
+            text-align: center;
         }
-        .m-btn:active {
+        .m-btn:active, .m-btn.active {
             transform: translateY(4px);
             box-shadow: 0 0 #4a3304;
-        }
-        @media (max-width: 500px) {
-            .mobile-controls {
-                display: flex;
-            }
+            background: linear-gradient(to bottom, #ffd700, #b8860b);
         }
     </style>
 </head>
@@ -111,13 +119,14 @@
     </div>
 
     <div class="controls-hint">
-        [← / Z] 左フリッパー | [→ / M] 右フリッパー | [SPACE] プランジャー発射 (長押しでパワー)
+        [←/Z] 左フリッパー | [→/M] 右フリッパー | [SPACE] 発射<br>
+        ※スマホでは下のボタン、または画面左右タップでも操作可能！
     </div>
 
     <div class="mobile-controls">
-        <button class="m-btn" id="leftBtn">LEFT FLIP</button>
-        <button class="m-btn" id="launchBtn">LAUNCH</button>
-        <button class="m-btn" id="rightBtn">RIGHT FLIP</button>
+        <button class="m-btn" id="leftBtn">◀ LEFT</button>
+        <button class="m-btn" id="launchBtn">🚀 LAUNCH</button>
+        <button class="m-btn" id="rightBtn">RIGHT ▶</button>
     </div>
 
 <script>
@@ -141,15 +150,15 @@ let shakeIntensity = 0;
 
 // ボールオブジェクト (超低摩擦設定)
 const ball = {
-    x: 410,
-    y: 580,
+    x: 412,
+    y: 570,
     vx: 0,
     vy: 0,
     radius: 9,
     gravity: 0.18,
-    friction: 0.9992, // 摩擦係数が非常に小さいため減衰しにくい
-    restitution: 0.96, // 高反発
-    maxSpeed: 45
+    friction: 0.9992,
+    restitution: 0.96,
+    maxSpeed: 48
 };
 
 // フリッパー
@@ -160,8 +169,7 @@ const leftFlipper = {
     angle: 0.35,
     baseAngle: 0.35,
     maxAngle: -0.45,
-    pressed: false,
-    angularVelocity: 0
+    pressed: false
 };
 
 const rightFlipper = {
@@ -171,11 +179,10 @@ const rightFlipper = {
     angle: Math.PI - 0.35,
     baseAngle: Math.PI - 0.35,
     maxAngle: Math.PI + 0.45,
-    pressed: false,
-    angularVelocity: 0
+    pressed: false
 };
 
-// バンパー（カジノ風ルーレット・チップバンパー）
+// バンパー
 const bumpers = [
     { x: 160, y: 180, radius: 24, color: '#ff2222', type: 'roulette', score: 1000, pulse: 0 },
     { x: 280, y: 180, radius: 24, color: '#ffd700', type: 'chip', score: 1500, pulse: 0 },
@@ -184,106 +191,145 @@ const bumpers = [
     { x: 320, y: 380, radius: 20, color: '#ff8800', type: 'card', score: 800, pulse: 0 }
 ];
 
-// スリングショット（三角ゴム）
+// スリングショット
 const slingshots = [
     { x1: 90, y1: 450, x2: 130, y2: 520, normal: {x: 0.8, y: -0.6} },
     { x1: 350, y1: 450, x2: 310, y2: 520, normal: {x: -0.8, y: -0.6} }
 ];
 
-// 障害物 / ガイド壁 (ラインの集合)
+// ガイド壁
 const walls = [
-    // 外周フレーム
     { x1: 40, y1: 80, x2: 40, y2: 580 },
     { x1: 40, y1: 80, x2: 220, y2: 30 },
     { x1: 220, y1: 30, x2: 400, y2: 80 },
     { x1: 400, y1: 80, x2: 400, y2: 580 },
-    // プランジャーレーン仕切り
     { x1: 390, y1: 120, x2: 390, y2: 600 },
-    // アウトホールへ向かうスロープ
     { x1: 40, y1: 580, x2: 110, y2: 640 },
     { x1: 400, y1: 580, x2: 330, y2: 640 }
 ];
 
-// キー入力管理
-const keys = {};
+// キー入力
 window.addEventListener('keydown', e => {
-    if (e.code === 'ArrowLeft' || e.code === 'KeyZ') {
-        leftFlipper.pressed = true;
-        keys['left'] = true;
-    }
-    if (e.code === 'ArrowRight' || e.code === 'KeyM' || e.code === 'KeyX') {
-        rightFlipper.pressed = true;
-        keys['right'] = true;
-    }
+    if (e.code === 'ArrowLeft' || e.code === 'KeyZ') leftFlipper.pressed = true;
+    if (e.code === 'ArrowRight' || e.code === 'KeyM' || e.code === 'KeyX') rightFlipper.pressed = true;
     if (e.code === 'Space') {
         e.preventDefault();
         if (gameState === 'READY' && ball.x > 380) {
             plungerCharging = true;
+        } else if (gameState === 'GAMEOVER') {
+            restartGame();
         }
     }
 });
 
 window.addEventListener('keyup', e => {
-    if (e.code === 'ArrowLeft' || e.code === 'KeyZ') {
-        leftFlipper.pressed = false;
-        keys['left'] = false;
-    }
-    if (e.code === 'ArrowRight' || e.code === 'KeyM' || e.code === 'KeyX') {
-        rightFlipper.pressed = false;
-        keys['right'] = false;
-    }
+    if (e.code === 'ArrowLeft' || e.code === 'KeyZ') leftFlipper.pressed = false;
+    if (e.code === 'ArrowRight' || e.code === 'KeyM' || e.code === 'KeyX') rightFlipper.pressed = false;
     if (e.code === 'Space') {
         if (plungerCharging) {
-            plungerCharging = false;
-            if (gameState === 'READY') {
-                ball.vy = -plungerPower;
-                plungerPower = 0;
-                gameState = 'PLAYING';
-            }
+            releasePlunger();
         }
     }
 });
 
-// タッチ操作
-const setupTouchButton = (id, keyName) => {
+// ポインターイベントによる確実なボタン・画面タッチ操作
+const setupPointerButton = (id, actionType) => {
     const btn = document.getElementById(id);
-    btn.addEventListener('touchstart', (e) => {
+    
+    const press = (e) => {
         e.preventDefault();
-        if (keyName === 'left') leftFlipper.pressed = true;
-        if (keyName === 'right') rightFlipper.pressed = true;
-        if (keyName === 'launch') {
-            if (gameState === 'READY') plungerCharging = true;
-        }
-    });
-    btn.addEventListener('touchend', (e) => {
-        e.preventDefault();
-        if (keyName === 'left') leftFlipper.pressed = false;
-        if (keyName === 'right') rightFlipper.pressed = false;
-        if (keyName === 'launch') {
-            if (plungerCharging) {
-                plungerCharging = false;
-                if (gameState === 'READY') {
-                    ball.vy = -plungerPower;
-                    plungerPower = 0;
-                    gameState = 'PLAYING';
-                }
+        btn.classList.add('active');
+        if (actionType === 'left') leftFlipper.pressed = true;
+        if (actionType === 'right') rightFlipper.pressed = true;
+        if (actionType === 'launch') {
+            if (gameState === 'READY') {
+                plungerCharging = true;
+            } else if (gameState === 'GAMEOVER') {
+                restartGame();
             }
         }
-    });
-};
-setupTouchButton('leftBtn', 'left');
-setupTouchButton('rightBtn', 'right');
-setupTouchButton('launchBtn', 'launch');
+    };
 
-// 画面クリックでの発射・フリッパー操作補助
-canvas.addEventListener('click', (e) => {
+    const release = (e) => {
+        e.preventDefault();
+        btn.classList.remove('active');
+        if (actionType === 'left') leftFlipper.pressed = false;
+        if (actionType === 'right') rightFlipper.pressed = false;
+        if (actionType === 'launch') {
+            if (plungerCharging) {
+                releasePlunger();
+            }
+        }
+    };
+
+    btn.addEventListener('pointerdown', press);
+    btn.addEventListener('pointerup', release);
+    btn.addEventListener('pointerleave', release);
+    btn.addEventListener('pointercancel', release);
+};
+
+setupPointerButton('leftBtn', 'left');
+setupPointerButton('rightBtn', 'right');
+setupPointerButton('launchBtn', 'launch');
+
+// キャンバス自体のタッチ/クリック操作（画面左右タップでフリッパー、READY時は発射）
+canvas.addEventListener('pointerdown', (e) => {
     const rect = canvas.getBoundingClientRect();
     const x = e.clientX - rect.left;
-    if (gameState === 'READY' && x > 380) {
-        ball.vy = -18;
-        gameState = 'PLAYING';
+    const y = e.clientY - rect.top;
+
+    if (gameState === 'READY') {
+        if (x > 380 || y > 500) {
+            plungerCharging = true;
+        }
+    } else if (gameState === 'GAMEOVER') {
+        restartGame();
+    } else {
+        // 画面左半分なら左フリッパー、右半分なら右フリッパー
+        if (x < canvas.width / 2) {
+            leftFlipper.pressed = true;
+        } else {
+            rightFlipper.pressed = true;
+        }
     }
 });
+
+canvas.addEventListener('pointerup', (e) => {
+    const rect = canvas.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    
+    if (plungerCharging) {
+        releasePlunger();
+    }
+    
+    if (x < canvas.width / 2) {
+        leftFlipper.pressed = false;
+    } else {
+        rightFlipper.pressed = false;
+    }
+});
+
+canvas.addEventListener('pointerleave', () => {
+    leftFlipper.pressed = false;
+    rightFlipper.pressed = false;
+    if (plungerCharging) releasePlunger();
+});
+
+function releasePlunger() {
+    plungerCharging = false;
+    if (gameState === 'READY') {
+        ball.vy = -Math.max(plungerPower, 15);
+        plungerPower = 0;
+        gameState = 'PLAYING';
+    }
+}
+
+function restartGame() {
+    score = 0;
+    ballsLeft = 3;
+    ballValElem.textContent = ballsLeft;
+    resetBall();
+}
 
 function resetBall() {
     ball.x = 412;
@@ -291,6 +337,8 @@ function resetBall() {
     ball.vx = 0;
     ball.vy = 0;
     gameState = 'READY';
+    plungerPower = 0;
+    plungerCharging = false;
 }
 
 function triggerShake(intensity, duration) {
@@ -298,20 +346,16 @@ function triggerShake(intensity, duration) {
     shakeTimer = duration;
 }
 
-// 衝突判定と物理演算の更新
 function update() {
-    // プランジャーチャージ
     if (plungerCharging) {
-        plungerPower = Math.min(plungerPower + 0.6, 26);
+        plungerPower = Math.min(plungerPower + 0.7, 28);
     }
 
     if (gameState === 'PLAYING') {
-        // 重力と摩擦
         ball.vy += ball.gravity;
         ball.vx *= ball.friction;
         ball.vy *= ball.friction;
 
-        // 速度制限とマッハ計算
         let speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
         if (speed > ball.maxSpeed) {
             ball.vx = (ball.vx / speed) * ball.maxSpeed;
@@ -322,24 +366,22 @@ function update() {
         ball.x += ball.vx;
         ball.y += ball.vy;
 
-        // --- フリッパーの動き ---
+        // フリッパー回転
         if (leftFlipper.pressed) {
-            leftFlipper.angle = Math.max(leftFlipper.angle - 0.25, leftFlipper.baseAngle + leftFlipper.maxAngle);
+            leftFlipper.angle = Math.max(leftFlipper.angle - 0.28, leftFlipper.baseAngle + leftFlipper.maxAngle);
         } else {
-            leftFlipper.angle = Math.min(leftFlipper.angle + 0.15, leftFlipper.baseAngle);
+            leftFlipper.angle = Math.min(leftFlipper.angle + 0.16, leftFlipper.baseAngle);
         }
 
         if (rightFlipper.pressed) {
-            rightFlipper.angle = Math.min(rightFlipper.angle + 0.25, rightFlipper.baseAngle + rightFlipper.maxAngle);
+            rightFlipper.angle = Math.min(rightFlipper.angle + 0.28, rightFlipper.baseAngle + rightFlipper.maxAngle);
         } else {
-            rightFlipper.angle = Math.max(rightFlipper.angle - 0.15, rightFlipper.baseAngle);
+            rightFlipper.angle = Math.max(rightFlipper.angle - 0.16, rightFlipper.baseAngle);
         }
 
-        // --- フリッパーとの衝突と「マッハ加速」特徴 ---
         checkFlipperCollision(leftFlipper, -1);
         checkFlipperCollision(rightFlipper, 1);
 
-        // --- バンパーとの衝突 ---
         bumpers.forEach(b => {
             if (b.pulse > 0) b.pulse--;
             let dx = ball.x - b.x;
@@ -349,36 +391,31 @@ function update() {
                 let nx = dx / dist;
                 let ny = dy / dist;
                 let dot = ball.vx * nx + ball.vy * ny;
-                // バンパーに当たると強烈に押し出され、かつ「どんどん加速する」特徴に合わせてブースト！
-                ball.vx = (ball.vx - 2 * dot * nx) * 1.15 + nx * 4;
-                ball.vy = (ball.vy - 2 * dot * ny) * 1.15 + ny * 4;
+                ball.vx = (ball.vx - 2 * dot * nx) * 1.18 + nx * 5;
+                ball.vy = (ball.vy - 2 * dot * ny) * 1.18 + ny * 5;
                 
-                // 位置修正
                 ball.x = b.x + nx * (b.radius + ball.radius);
                 ball.y = b.y + ny * (b.radius + ball.radius);
 
                 score += b.score;
-                b.pulse = 10;
-                triggerShake(4, 8);
+                b.pulse = 12;
+                triggerShake(5, 8);
             }
         });
 
-        // --- スリングショットとの衝突 ---
         slingshots.forEach(s => {
-            // 線分との当たり判定簡易版
             let cx = (s.x1 + s.x2) / 2;
             let cy = (s.y1 + s.y2) / 2;
             let dx = ball.x - cx;
             let dy = ball.y - cy;
             if (Math.abs(dx) < 25 && Math.abs(dy) < 40) {
-                ball.vx += s.normal.x * 6;
-                ball.vy += s.normal.y * 6;
+                ball.vx += s.normal.x * 7;
+                ball.vy += s.normal.y * 7;
                 score += 500;
                 triggerShake(3, 5);
             }
         });
 
-        // --- 壁との衝突 ---
         walls.forEach(w => {
             let collision = lineIntersection(w.x1, w.y1, w.x2, w.y2, ball.x, ball.y, ball.radius);
             if (collision.hit) {
@@ -394,7 +431,6 @@ function update() {
             }
         });
 
-        // --- 落下判定 (アウトホール) ---
         if (ball.y > 670) {
             ballsLeft--;
             ballValElem.textContent = ballsLeft;
@@ -407,74 +443,50 @@ function update() {
     }
 }
 
-// 線分衝突計算
 function lineIntersection(x1, y1, x2, y2, bx, by, r) {
     let A = bx - x1;
     let B = by - y1;
     let C = x2 - x1;
     let D = y2 - y1;
-
     let lenSq = C * C + D * D;
     let param = lenSq !== 0 ? (A * C + B * D) / lenSq : -1;
-
     let xx, yy;
-    if (param < 0) {
-        xx = x1;
-        yy = y1;
-    } else if (param > 1) {
-        xx = x2;
-        yy = y2;
-    } else {
-        xx = x1 + param * C;
-        yy = y1 + param * D;
-    }
+    if (param < 0) { xx = x1; yy = y1; }
+    else if (param > 1) { xx = x2; yy = y2; }
+    else { xx = x1 + param * C; yy = y1 + param * D; }
 
     let dx = bx - xx;
     let dy = by - yy;
     let distSq = dx * dx + dy * dy;
-
     if (distSq < r * r) {
         let dist = Math.sqrt(distSq);
         let nx = dist > 0 ? dx / dist : 0;
         let ny = dist > 0 ? dy / dist : 0;
-        return {
-            hit: true,
-            x: xx + nx * r,
-            y: yy + ny * r,
-            nx: nx,
-            ny: ny
-        };
+        return { hit: true, x: xx + nx * r, y: yy + ny * r, nx: nx, ny: ny };
     }
     return { hit: false };
 }
 
-// フリッパー衝突
 function checkFlipperCollision(flipper, side) {
     let tipX = flipper.x + Math.cos(flipper.angle) * flipper.length;
     let tipY = flipper.y + Math.sin(flipper.angle) * flipper.length;
-
     let collision = lineIntersection(flipper.x, flipper.y, tipX, tipY, ball.x, ball.y, ball.radius);
     if (collision.hit) {
         let nx = collision.nx;
         let ny = collision.ny;
         let dot = ball.vx * nx + ball.vy * ny;
-        
-        // ★特長: パドル（フリッパー）に触れたボールはどんどん加速していく！
-        let paddleBoost = flipper.pressed ? 1.45 : 1.18; 
-        ball.vx = (ball.vx - (1 + ball.restitution) * dot * nx) * paddleBoost + (flipper.pressed ? side * 4 : 0);
-        ball.vy = (ball.vy - (1 + ball.restitution) * dot * ny) * paddleBoost - (flipper.pressed ? 5 : 0);
-        
+        let paddleBoost = flipper.pressed ? 1.5 : 1.2; 
+        ball.vx = (ball.vx - (1 + ball.restitution) * dot * nx) * paddleBoost + (flipper.pressed ? side * 5 : 0);
+        ball.vy = (ball.vy - (1 + ball.restitution) * dot * ny) * paddleBoost - (flipper.pressed ? 6 : 0);
         ball.x = collision.x;
         ball.y = collision.y;
         score += 100;
-        triggerShake(2, 4);
+        triggerShake(3, 5);
     }
 }
 
-// 描画処理
 function draw() {
     ctx.save();
-    // 画面シェイク
     if (shakeTimer > 0) {
         shakeTimer--;
         let sx = (Math.random() - 0.5) * shakeIntensity;
@@ -482,11 +494,9 @@ function draw() {
         ctx.translate(sx, sy);
     }
 
-    // 背景（カジノ風グリーンフェルト）
     ctx.fillStyle = '#0f381f';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // カジノ装飾模様（トランプマークなど背景に薄く）
     ctx.font = '24px serif';
     ctx.fillStyle = 'rgba(255, 255, 255, 0.05)';
     ctx.fillText('♠', 70, 150);
@@ -494,20 +504,18 @@ function draw() {
     ctx.fillText('♦', 100, 480);
     ctx.fillText('♣', 340, 450);
 
-    // バンパー描画
     bumpers.forEach(b => {
         ctx.save();
         ctx.beginPath();
-        ctx.arc(b.x, b.y, b.radius + (b.pulse > 0 ? 4 : 0), 0, Math.PI * 2);
+        ctx.arc(b.x, b.y, b.radius + (b.pulse > 0 ? 5 : 0), 0, Math.PI * 2);
         ctx.fillStyle = b.color;
         ctx.shadowColor = b.color;
-        ctx.shadowBlur = b.pulse > 0 ? 25 : 10;
+        ctx.shadowBlur = b.pulse > 0 ? 30 : 10;
         ctx.fill();
         ctx.lineWidth = 3;
         ctx.strokeStyle = '#ffd700';
         ctx.stroke();
 
-        // チップの模様
         ctx.beginPath();
         ctx.arc(b.x, b.y, b.radius * 0.6, 0, Math.PI * 2);
         ctx.fillStyle = '#111';
@@ -515,7 +523,6 @@ function draw() {
         ctx.restore();
     });
 
-    // スリングショット描画
     ctx.fillStyle = '#cc3333';
     slingshots.forEach(s => {
         ctx.beginPath();
@@ -529,7 +536,6 @@ function draw() {
         ctx.stroke();
     });
 
-    // 壁・ガイド描画
     ctx.lineWidth = 4;
     ctx.strokeStyle = '#ffd700';
     walls.forEach(w => {
@@ -539,17 +545,16 @@ function draw() {
         ctx.stroke();
     });
 
-    // フリッパー描画
     drawFlipper(leftFlipper);
     drawFlipper(rightFlipper);
 
-    // プランジャーレーン発射台
+    // プランジャーレーン
     ctx.fillStyle = '#8b6508';
     ctx.fillRect(395, 520, 25, 120 + (plungerCharging ? plungerPower : 0));
     ctx.strokeStyle = '#ffd700';
     ctx.strokeRect(395, 520, 25, 120);
 
-    // ボール描画（光るゴールド・カジノチップボール）
+    // ボール
     ctx.beginPath();
     ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
     let grad = ctx.createRadialGradient(ball.x - 3, ball.y - 3, 1, ball.x, ball.y, ball.radius);
@@ -562,7 +567,6 @@ function draw() {
     ctx.fill();
     ctx.restore();
 
-    // 速度計算とマッハ表示
     let speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
     let mach = (speed / 3.5).toFixed(1);
     scoreValElem.textContent = score;
@@ -579,28 +583,27 @@ function draw() {
         machValElem.style.textShadow = 'none';
     }
 
-    // 状態メッセージ
     if (gameState === 'READY') {
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
-        ctx.fillRect(40, 280, 360, 80);
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
+        ctx.fillRect(40, 270, 360, 90);
         ctx.lineWidth = 2;
         ctx.strokeStyle = '#ffd700';
-        ctx.strokeRect(40, 280, 360, 80);
+        ctx.strokeRect(40, 270, 360, 90);
 
         ctx.fillStyle = '#ffd700';
-        ctx.font = 'bold 18px sans-serif';
+        ctx.font = 'bold 17px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('SPACEキー長押しで発射！', 220, 315);
+        ctx.fillText('LAUNCHボタン長押しで発射！', 220, 305);
         ctx.font = '12px sans-serif';
         ctx.fillStyle = '#fff';
-        ctx.fillText('パドルに当てるとどんどん加速するぞ！', 220, 340);
+        ctx.fillText('画面左右タップでもフリッパーが動くよ', 220, 335);
         ctx.textAlign = 'left';
     } else if (gameState === 'GAMEOVER') {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
-        ctx.fillRect(30, 220, 380, 180);
+        ctx.fillRect(30, 220, 380, 190);
         ctx.lineWidth = 3;
         ctx.strokeStyle = '#ff0055';
-        ctx.strokeRect(30, 220, 380, 180);
+        ctx.strokeRect(30, 220, 380, 190);
 
         ctx.fillStyle = '#ff0055';
         ctx.font = 'bold 26px sans-serif';
@@ -609,13 +612,12 @@ function draw() {
         ctx.fillStyle = '#ffd700';
         ctx.font = '18px sans-serif';
         ctx.fillText(`最終スコア: ${score}`, 220, 315);
-        ctx.font = '12px sans-serif';
-        ctx.fillStyle = '#aaa';
-        ctx.fillText('リロードして再挑戦してください', 220, 350);
+        ctx.font = '13px sans-serif';
+        ctx.fillStyle = '#fff';
+        ctx.fillText('LAUNCHボタンまたは画面タップで再挑戦！', 220, 355);
         ctx.textAlign = 'left';
     }
 
-    // 音速突破エフェクト表示
     if (mach >= 1.0 && gameState === 'PLAYING') {
         ctx.save();
         ctx.font = 'bold 14px sans-serif';
@@ -644,7 +646,6 @@ function drawFlipper(f) {
     ctx.restore();
 }
 
-// メインループ
 function loop() {
     update();
     draw();
@@ -653,7 +654,6 @@ function loop() {
 
 resetBall();
 loop();
-
 </script>
 </body>
 </html>
