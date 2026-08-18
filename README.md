@@ -52,3 +52,4 @@ Deno/Web games collection.
 - [39. メジエドさまと会話の神殿 (Medjed Conversation Game)](./39/index.html)
 - [40. ラジオ体操シミュレーター (Radio Taiso Simulator)](./40/index.html)
 - [41. マッハピンボール！音速を越えろ！ (Mach Pinball Break the Sound Barrier)](./41/index.html)
+- [42. カラスを探せ！ (Find the Crow Game)](./42/index.html)

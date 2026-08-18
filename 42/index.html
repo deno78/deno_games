@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>カラスを探せ！ (Find the Crow)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #1e1e2f, #2a2a40);
+            color: #ffffff;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        .container {
+            text-align: center;
+            max-width: 420px;
+            width: 100%;
+            padding: 20px;
+        }
+        h1 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+            color: #ffcc00;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .subtitle {
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-bottom: 15px;
+        }
+        .info-panel {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 10px 15px;
+            border-radius: 10px;
+            margin-bottom: 15px;
+            font-size: 1rem;
+        }
+        .timer-box span, .mistake-box span {
+            font-weight: bold;
+            color: #ff4757;
+        }
+        .timer-box span.time-warning {
+            color: #ff6b81;
+            animation: pulse 0.5s infinite alternate;
+        }
+        @keyframes pulse {
+            from { transform: scale(1); }
+            to { transform: scale(1.1); }
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+            background: rgba(0, 0, 0, 0.3);
+            padding: 12px;
+            border-radius: 12px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.4);
+            margin-bottom: 20px;
+            position: relative;
+            min-height: 320px;
+        }
+        .cell {
+            aspect-ratio: 1;
+            background: #3b3b58;
+            border: 2px solid #52527a;
+            border-radius: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            cursor: pointer;
+            transition: transform 0.1s, background 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        .cell:hover {
+            background: #4a4a70;
+            border-color: #ffcc00;
+        }
+        .cell:active {
+            transform: scale(0.92);
+        }
+        .cell.wrong {
+            background: #e74c3c !important;
+            border-color: #c0392b;
+            animation: shake 0.3s;
+        }
+        .cell.correct {
+            background: #2ecc71 !important;
+            border-color: #27ae60;
+        }
+        @keyframes shake {
+            0%, 100% { transform: translateX(0); }
+            20%, 60% { transform: translateX(-5px); }
+            40%, 80% { transform: translateX(5px); }
+        }
+        /* 飛んでいくアニメーション用 */
+        .fly-away {
+            position: absolute !important;
+            z-index: 100;
+            background: #ffffff !important;
+            color: #000000 !important;
+            border-color: #000000 !important;
+            box-shadow: 0 0 20px rgba(255, 255, 255, 0.8);
+            animation: flyAnimation 1.2s cubic-bezier(0.25, 1, 0.5, 1) forwards;
+            pointer-events: none;
+        }
+        @keyframes flyAnimation {
+            0% {
+                transform: scale(1) rotate(0deg);
+                opacity: 1;
+            }
+            30% {
+                transform: scale(1.3) rotate(-15deg);
+                filter: invert(1);
+            }
+            100% {
+                transform: translate(250px, -350px) scale(0.2) rotate(360deg);
+                opacity: 0;
+            }
+        }
+        .btn {
+            background: #ffcc00;
+            color: #1e1e2f;
+            border: none;
+            padding: 12px 25px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(255, 204, 0, 0.3);
+            transition: transform 0.1s, background 0.2s;
+        }
+        .btn:hover {
+            background: #ffd633;
+            transform: translateY(-2px);
+        }
+        .btn:active {
+            transform: translateY(0);
+        }
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+        .modal.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .modal-content {
+            background: #2a2a40;
+            padding: 30px;
+            border-radius: 15px;
+            text-align: center;
+            max-width: 320px;
+            width: 90%;
+            border: 2px solid #ffcc00;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+        }
+        .modal-title {
+            font-size: 1.6rem;
+            margin-bottom: 10px;
+            font-weight: bold;
+        }
+        .modal-text {
+            font-size: 1rem;
+            color: #ccc;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🐦 カラスを探せ！ 🦅</h1>
+        <div class="subtitle">5×5のマスの中から「烏」を1つだけ見つけ出せ！</div>
+
+        <div class="info-panel">
+            <div class="timer-box">残り時間: <span id="timer">10.0</span>秒</div>
+            <div class="mistake-box">ミス残り: <span id="mistakes">2</span>回</div>
+        </div>
+
+        <div class="grid" id="grid"></div>
+
+        <button class="btn" id="startBtn" onclick="startGame()">ゲームスタート</button>
+    </div>
+
+    <!-- 結果モーダル -->
+    <div class="modal" id="resultModal">
+        <div class="modal-content">
+            <div class="modal-title" id="modalTitle">ゲームクリア！</div>
+            <div class="modal-text" id="modalText">素晴らしい動体視力です！</div>
+            <button class="btn" onclick="startGame()">もう一度プレイ</button>
+        </div>
+    </div>
+
+    <script>
+        const GRID_SIZE = 25; // 5x5
+        const TIME_LIMIT = 10.0; // 10秒
+        const MAX_MISTAKES = 2; // 2回までミス許容
+
+        let timeLeft = TIME_LIMIT;
+        let mistakesLeft = MAX_MISTAKES;
+        let timerId = null;
+        let isPlaying = false;
+        let crowIndex = -1;
+
+        const gridEl = document.getElementById('grid');
+        const timerEl = document.getElementById('timer');
+        const mistakesEl = document.getElementById('mistakes');
+        const startBtn = document.getElementById('startBtn');
+        const resultModal = document.getElementById('resultModal');
+        const modalTitle = document.getElementById('modalTitle');
+        const modalText = document.getElementById('modalText');
+
+        function startGame() {
+            resultModal.classList.remove('show');
+            startBtn.style.display = 'none';
+            isPlaying = true;
+            timeLeft = TIME_LIMIT;
+            mistakesLeft = MAX_MISTAKES;
+            mistakesEl.textContent = mistakesLeft;
+            timerEl.textContent = timeLeft.toFixed(1);
+            timerEl.classList.remove('time-warning');
+
+            // 烏の位置をランダム決定 (0 ~ 24)
+            crowIndex = Math.floor(Math.random() * GRID_SIZE);
+
+            // グリッド生成
+            renderGrid();
+
+            // タイマー開始
+            if (timerId) clearInterval(timerId);
+            const startTime = Date.now();
+            timerId = setInterval(() => {
+                const elapsed = (Date.now() - startTime) / 1000;
+                timeLeft = Math.max(0, TIME_LIMIT - elapsed);
+                timerEl.textContent = timeLeft.toFixed(1);
+
+                if (timeLeft <= 3.0) {
+                    timerEl.classList.add('time-warning');
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerId);
+                    gameOverTimeUp();
+                }
+            }, 50);
+        }
+
+        function renderGrid() {
+            gridEl.innerHTML = '';
+            for (let i = 0; i < GRID_SIZE; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                cell.dataset.index = i;
+                cell.textContent = (i === crowIndex) ? '烏' : '鳥';
+                cell.addEventListener('click', () => handleCellClick(i, cell));
+                gridEl.appendChild(cell);
+            }
+        }
+
+        function handleCellClick(index, cellElement) {
+            if (!isPlaying) return;
+
+            if (index === crowIndex) {
+                // 正解 (カラス)
+                isPlaying = false;
+                clearInterval(timerId);
+                cellElement.classList.add('correct');
+                setTimeout(() => {
+                    showModal(true, "🎉 ゲームクリア！", `見事カラスを見つけました！\n残り時間: ${timeLeft.toFixed(1)}秒`);
+                }, 400);
+            } else {
+                // ミス (鳥)
+                if (cellElement.classList.contains('wrong') || cellElement.dataset.clicked === 'true') return;
+                cellElement.dataset.clicked = 'true';
+                cellElement.classList.add('wrong');
+                cellElement.textContent = '✗';
+                mistakesLeft--;
+                mistakesEl.textContent = mistakesLeft;
+
+                if (mistakesLeft < 0) {
+                    isPlaying = false;
+                    clearInterval(timerId);
+                    // 正解のカラスをハイライト
+                    const cells = gridEl.children;
+                    cells[crowIndex].classList.add('correct');
+                    setTimeout(() => {
+                        showModal(false, "💥 ゲームオーバー", "ミスタッチが多すぎました…！");
+                    }, 400);
+                }
+            }
+        }
+
+        function gameOverTimeUp() {
+            isPlaying = false;
+            // タイムアップ：カラスが白黒反転して飛んでいく演出
+            const cells = gridEl.children;
+            const crowCell = cells[crowIndex];
+            
+            // 現在の絶対位置を保持してアブソリュート配置に変換
+            const rect = crowCell.getBoundingClientRect();
+            const gridRect = gridEl.getBoundingClientRect();
+            
+            crowCell.style.position = 'absolute';
+            crowCell.style.left = (rect.left - gridRect.left) + 'px';
+            crowCell.style.top = (rect.top - gridRect.top) + 'px';
+            crowCell.style.width = rect.width + 'px';
+            crowCell.style.height = rect.height + 'px';
+            crowCell.classList.add('fly-away');
+
+            setTimeout(() => {
+                showModal(false, "⏳ タイムアップ！", "10秒以内にカラスが見つかりませんでした…");
+            }, 1200);
+        }
+
+        function showModal(isWin, title, text) {
+            modalTitle.textContent = title;
+            modalTitle.style.color = isWin ? '#2ecc71' : '#ff4757';
+            modalText.innerHTML = text.replace('\n', '<br>');
+            resultModal.classList.add('show');
+            startBtn.style.display = 'inline-block';
+            startBtn.textContent = 'もう一度プレイ';
+        }
+    </script>
+</body>
+</html>
