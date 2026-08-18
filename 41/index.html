@@ -119,7 +119,7 @@
     </div>
 
     <div class="controls-hint">
-        [←/Z] 左フリッパー | [→/M] 右フリッパー | [SPACE] 発射<br>
+        [←/Z] 左フリッパー | [→/M] 右フリッパー | [SPACE] 中央発射<br>
         ※スマホでは下のボタン、または画面左右タップでも操作可能！
     </div>
 
@@ -150,12 +150,12 @@ let shakeIntensity = 0;
 
 // ボールオブジェクト (超低摩擦設定)
 const ball = {
-    x: 388,
-    y: 570,
+    x: 220,
+    y: 580,
     vx: 0,
     vy: 0,
-    radius: 9,
-    gravity: 0.18,
+    radius: 10,
+    gravity: 0.16,
     friction: 0.9992,
     restitution: 0.96,
     maxSpeed: 48
@@ -163,7 +163,7 @@ const ball = {
 
 // フリッパー
 const leftFlipper = {
-    x: 130,
+    x: 140,
     y: 600,
     length: 75,
     angle: 0.35,
@@ -173,7 +173,7 @@ const leftFlipper = {
 };
 
 const rightFlipper = {
-    x: 270,
+    x: 300,
     y: 600,
     length: 75,
     angle: Math.PI - 0.35,
@@ -182,30 +182,29 @@ const rightFlipper = {
     pressed: false
 };
 
-// バンパー
+// バンパー（メインフィールド中央に美しく配置）
 const bumpers = [
     { x: 160, y: 180, radius: 24, color: '#ff2222', type: 'roulette', score: 1000, pulse: 0 },
     { x: 280, y: 180, radius: 24, color: '#ffd700', type: 'chip', score: 1500, pulse: 0 },
-    { x: 220, y: 280, radius: 28, color: '#ffffff', type: 'jackpot', score: 3000, pulse: 0 },
-    { x: 120, y: 380, radius: 20, color: '#ff8800', type: 'card', score: 800, pulse: 0 },
-    { x: 320, y: 380, radius: 20, color: '#ff8800', type: 'card', score: 800, pulse: 0 }
+    { x: 220, y: 260, radius: 28, color: '#ffffff', type: 'jackpot', score: 3000, pulse: 0 },
+    { x: 130, y: 360, radius: 20, color: '#ff8800', type: 'card', score: 800, pulse: 0 },
+    { x: 310, y: 360, radius: 20, color: '#ff8800', type: 'card', score: 800, pulse: 0 }
 ];
 
 // スリングショット
 const slingshots = [
-    { x1: 90, y1: 450, x2: 130, y2: 520, normal: {x: 0.8, y: -0.6} },
-    { x1: 350, y1: 450, x2: 310, y2: 520, normal: {x: -0.8, y: -0.6} }
+    { x1: 100, y1: 440, x2: 140, y2: 520, normal: {x: 0.8, y: -0.6} },
+    { x1: 340, y1: 440, x2: 300, y2: 520, normal: {x: -0.8, y: -0.6} }
 ];
 
-// ガイド壁（プランジャー上部 y < 100 をオープンにし、発射されたボールがスムーズに左側フィールドへ飛び出す構造）
+// リデザインされた外周壁（完全にオープンなメインフィールドで、発射されたボールが必ず中央エリアへ入る構造）
 const walls = [
-    { x1: 40, y1: 80, x2: 40, y2: 580 },
-    { x1: 40, y1: 80, x2: 220, y2: 30 },
-    { x1: 220, y1: 30, x2: 375, y2: 90 }, // 右天井スロープ（上端をy=90にして発射ボールを左側へ逃がす）
-    { x1: 375, y1: 110, x2: 375, y2: 600 }, // プランジャー仕切り壁（y=110より下のみに制限し、上部は自由に出入り可能に）
-    { x1: 400, y1: 80, x2: 400, y2: 580 },
-    { x1: 40, y1: 580, x2: 110, y2: 640 },
-    { x1: 400, y1: 580, x2: 330, y2: 640 }
+    { x1: 40, y1: 90, x2: 40, y2: 580 },   // 左外壁
+    { x1: 40, y1: 90, x2: 220, y2: 30 },   // 左天井ドーム
+    { x1: 220, y1: 30, x2: 400, y2: 90 },  // 右天井ドーム
+    { x1: 400, y1: 90, x2: 400, y2: 580 },  // 右外壁
+    { x1: 40, y1: 580, x2: 120, y2: 640 }, // 左下のアウトホール誘導スロープ
+    { x1: 400, y1: 580, x2: 320, y2: 640 }  // 右下のアウトホール誘導スロープ
 ];
 
 // キー入力
@@ -214,7 +213,7 @@ window.addEventListener('keydown', e => {
     if (e.code === 'ArrowRight' || e.code === 'KeyM' || e.code === 'KeyX') rightFlipper.pressed = true;
     if (e.code === 'Space') {
         e.preventDefault();
-        if (gameState === 'READY' && ball.x > 375) {
+        if (gameState === 'READY') {
             plungerCharging = true;
         } else if (gameState === 'GAMEOVER') {
             restartGame();
@@ -278,9 +277,7 @@ canvas.addEventListener('pointerdown', (e) => {
     const y = e.clientY - rect.top;
 
     if (gameState === 'READY') {
-        if (x > 375 || y > 500) {
-            plungerCharging = true;
-        }
+        plungerCharging = true;
     } else if (gameState === 'GAMEOVER') {
         restartGame();
     } else {
@@ -316,9 +313,9 @@ canvas.addEventListener('pointerleave', () => {
 function releasePlunger() {
     plungerCharging = false;
     if (gameState === 'READY') {
-        // 発射時の初速を強力にし、少し左向きの初速（vx = -1.5）も与えてスムーズにフィールドへ飛び出させる
-        ball.vy = -Math.max(plungerPower, 18);
-        ball.vx = -1.5;
+        // 中央下部からメインフィールドへ直接強力発射！
+        ball.vy = -Math.max(plungerPower, 20);
+        ball.vx = (Math.random() - 0.5) * 4; // わずかにランダムな角度
         plungerPower = 0;
         gameState = 'PLAYING';
     }
@@ -332,8 +329,8 @@ function restartGame() {
 }
 
 function resetBall() {
-    ball.x = 388;
-    ball.y = 570;
+    ball.x = 220;
+    ball.y = 580;
     ball.vx = 0;
     ball.vy = 0;
     gameState = 'READY';
@@ -348,21 +345,18 @@ function triggerShake(intensity, duration) {
 
 function update() {
     if (plungerCharging) {
-        plungerPower = Math.min(plungerPower + 0.8, 30);
+        plungerPower = Math.min(plungerPower + 0.8, 32);
     }
 
     if (gameState === 'PLAYING') {
-        // 発射直後（プランジャーレーン内 x > 375 かつ y > 110）の間は重力を弱くしてスムーズに昇らせる
-        let currentGravity = (ball.x > 375 && ball.y > 110) ? ball.gravity * 0.2 : ball.gravity;
-        ball.vy += currentGravity;
-
+        ball.vy += ball.gravity;
         ball.vx *= ball.friction;
         ball.vy *= ball.friction;
 
         // アンチ・スタック
-        if (ball.y < 100 && Math.abs(ball.vy) < 0.8) {
-            ball.vy += 1.2;
-            ball.vx += (Math.random() - 0.5) * 3;
+        if (ball.y < 120 && Math.abs(ball.vy) < 0.8) {
+            ball.vy += 1.5;
+            ball.vx += (Math.random() - 0.5) * 4;
         }
 
         let speed = Math.sqrt(ball.vx * ball.vx + ball.vy * ball.vy);
@@ -557,11 +551,13 @@ function draw() {
     drawFlipper(leftFlipper);
     drawFlipper(rightFlipper);
 
-    // プランジャーレーン
-    ctx.fillStyle = '#8b6508';
-    ctx.fillRect(375, 520, 25, 120 + (plungerCharging ? plungerPower : 0));
-    ctx.strokeStyle = '#ffd700';
-    ctx.strokeRect(375, 520, 25, 120);
+    // 発射チャージメーター（中央下部）
+    if (plungerCharging) {
+        ctx.fillStyle = 'rgba(255, 215, 0, 0.3)';
+        ctx.fillRect(170, 620, plungerPower * 3.125, 12);
+        ctx.strokeStyle = '#ffd700';
+        ctx.strokeRect(170, 620, 100, 12);
+    }
 
     // ボール
     ctx.beginPath();
@@ -594,18 +590,18 @@ function draw() {
 
     if (gameState === 'READY') {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.75)';
-        ctx.fillRect(40, 270, 360, 90);
+        ctx.fillRect(50, 270, 340, 90);
         ctx.lineWidth = 2;
         ctx.strokeStyle = '#ffd700';
-        ctx.strokeRect(40, 270, 360, 90);
+        ctx.strokeRect(50, 270, 340, 90);
 
         ctx.fillStyle = '#ffd700';
         ctx.font = 'bold 17px sans-serif';
         ctx.textAlign = 'center';
-        ctx.fillText('LAUNCHボタン長押しで発射！', 220, 305);
+        ctx.fillText('LAUNCHボタン長押しで中央発射！', 220, 305);
         ctx.font = '12px sans-serif';
         ctx.fillStyle = '#fff';
-        ctx.fillText('画面左右タップでもフリッパーが動くよ', 220, 335);
+        ctx.fillText('ボールが直接メインフィールドに飛び出すぞ！', 220, 335);
         ctx.textAlign = 'left';
     } else if (gameState === 'GAMEOVER') {
         ctx.fillStyle = 'rgba(0, 0, 0, 0.85)';
