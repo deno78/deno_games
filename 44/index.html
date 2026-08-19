@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>一瞬のシャッターチャンス！撮り鉄シミュレーター</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=DotGothic16&family=M+PLUS+Rounded+1c:wght@700&display=swap');
+        .font-dot { font-family: 'DotGothic16', monospace; }
+        .font-pop { font-family: 'M PLUS Rounded 1c', sans-serif; }
+    </style>
+</head>
+<body class="bg-slate-900 text-white font-pop min-h-screen flex flex-col items-center justify-center p-4 select-none">
+
+    <!-- ゲームコンテナ -->
+    <div id="game-container" class="relative w-full max-w-4xl bg-slate-950 rounded-2xl shadow-2xl border-4 border-slate-700 overflow-hidden flex flex-col items-center">
+        
+        <!-- ヘッダー情報 -->
+        <header class="w-full bg-slate-900 px-6 py-3 flex justify-between items-center border-b border-slate-800">
+            <div class="flex items-center space-x-3">
+                <span class="bg-red-600 text-xs px-2.5 py-1 rounded font-bold uppercase tracking-wider animate-pulse">Live</span>
+                <h1 class="text-lg font-bold tracking-wide text-amber-400">一瞬の絶景・撮り鉄道</h1>
+            </div>
+            <div class="flex items-center space-x-6 text-sm">
+                <div>天気: <span id="weather-display" class="font-bold text-cyan-400">晴れ ☀️</span></div>
+                <div>警戒タイマー: <span id="timer-display" class="font-bold text-yellow-400">20.0s</span></div>
+            </div>
+        </header>
+
+        <!-- メインビューポート（Canvas画面） -->
+        <div class="relative w-full aspect-[16/9] bg-sky-300 overflow-hidden cursor-crosshair" id="viewport-wrapper">
+            <canvas id="gameCanvas" class="w-full h-full block"></canvas>
+
+            <!-- ファインダーオーバーレイ -->
+            <div class="absolute inset-0 pointer-events-none border-[24px] border-black/40 flex flex-col justify-between p-4">
+                <div class="flex justify-between items-start">
+                    <div class="w-8 h-8 border-t-2 border-l-2 border-yellow-400"></div>
+                    <div class="text-yellow-400/80 font-dot text-sm tracking-widest bg-black/50 px-2 py-0.5 rounded">AF [ • ] REC</div>
+                    <div class="w-8 h-8 border-t-2 border-r-2 border-yellow-400"></div>
+                </div>
+                <!-- 中央の撮影ガイド枠 -->
+                <div class="self-center w-3/4 h-2/3 border border-yellow-400/60 border-dashed rounded flex items-center justify-center">
+                    <span class="text-yellow-400/40 font-dot text-xs">ここに電車の先頭〜末尾を収めろ！</span>
+                </div>
+                <div class="flex justify-between items-end">
+                    <div class="w-8 h-8 border-b-2 border-l-2 border-yellow-400"></div>
+                    <div class="text-white/80 font-dot text-xs">ISO 400  1/1000s  F/2.8</div>
+                    <div class="w-8 h-8 border-b-2 border-r-2 border-yellow-400"></div>
+                </div>
+            </div>
+
+            <!-- スタート画面オーバーレイ -->
+            <div id="screen-title" class="absolute inset-0 bg-slate-900/90 flex flex-col items-center justify-center p-6 text-center z-20">
+                <div class="text-4xl md:text-5xl font-extrabold text-amber-400 mb-3 drop-shadow-lg">撮り鉄シミュレーター</div>
+                <p class="text-slate-300 max-w-lg mb-8 text-sm md:text-base leading-relaxed">
+                    田園風景の中を電車が通過する！<br>
+                    電車の先頭から末尾までがファインダーに美しく収まった瞬間を狙い撃て。<br>
+                    <span class="text-red-400 font-bold">⚠️ 注意:</span> 鳥、軽トラ、農民のおしゃべり、乗客の手振り、悪天候はすべて減点対象！<br>
+                    モタモタしていると<span class="text-yellow-400 font-bold">警察に通報されて逮捕</span>されます。シャッターチャンスは一度きり！
+                </p>
+                <button onclick="startGame()" class="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-extxl font-bold px-8 py-4 rounded-full shadow-lg transform transition hover:scale-105 active:scale-95 text-xl tracking-wider">
+                    撮影準備完了・ポジションにつく
+                </button>
+            </div>
+
+            <!-- 逮捕画面オーバーレイ -->
+            <div id="screen-arrest" class="absolute inset-0 bg-red-950/95 hidden flex flex-col items-center justify-center p-6 text-center z-30">
+                <div class="text-6xl mb-4 animate-bounce">🚨🚔🚨</div>
+                <div class="text-4xl font-black text-red-500 mb-2">不審者として逮捕されました！</div>
+                <p class="text-red-200 mb-6 text-lg" id="arrest-reason">長時間うろついていたため、通報されました。</p>
+                <button onclick="resetGame()" class="bg-white text-red-950 font-bold px-6 py-3 rounded-full shadow hover:bg-slate-200 transition">
+                    もう一度やり直す
+                </button>
+            </div>
+        </div>
+
+        <!-- コントロールバー -->
+        <footer class="w-full bg-slate-900 p-4 flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-slate-800">
+            <div class="text-xs text-slate-400 font-dot">
+                SPACEキー または下の「シャッターを切る」ボタンで撮影！
+            </div>
+            <button id="shutter-btn" onclick="takePhoto()" disabled class="bg-slate-700 text-slate-400 cursor-not-allowed font-extrabold px-10 py-4 rounded-xl text-xl shadow-lg transition flex items-center space-x-2">
+                <span>📸</span>
+                <span>シャッターを切る！</span>
+            </button>
+            <div class="text-xs text-slate-400 font-dot">
+                シャッターチャンスは一回のみ
+            </div>
+        </footer>
+    </div>
+
+    <!-- 結果発表モーダル -->
+    <div id="modal-result" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border-2 border-slate-700 rounded-3xl max-w-xl w-full p-6 md:p-8 shadow-2xl flex flex-col max-h-[90vh] overflow-y-auto">
+            <h2 class="text-2xl font-black text-center text-amber-400 mb-6 tracking-wide">🏆 撮り鉄・結果発表 🏆</h2>
+            
+            <div class="flex flex-col md:flex-row gap-6 mb-6">
+                <!-- キャプチャ画像プレビュー -->
+                <div class="w-full md:w-1/2 aspect-[4/3] bg-black rounded-xl overflow-hidden border border-slate-700 relative flex items-center justify-center">
+                    <canvas id="resultCanvas" class="w-full h-full object-cover"></canvas>
+                    <div class="absolute bottom-2 left-2 bg-black/60 text-white font-dot text-xs px-2 py-1 rounded">撮影結果スナップ</div>
+                </div>
+                <!-- スコアとランク -->
+                <div class="w-full md:w-1/2 flex flex-col justify-center items-center bg-slate-950 p-4 rounded-xl border border-slate-800 text-center">
+                    <div class="text-xs text-slate-400 mb-1">総合評価</div>
+                    <div id="result-rank" class="text-5xl font-black text-yellow-400 mb-2">S</div>
+                    <div class="text-3xl font-black text-white mb-2"><span id="result-score">100</span> <span class="text-sm font-normal text-slate-400">点</span></div>
+                </div>
+            </div>
+
+            <!-- ケチのコメントボックス -->
+            <div class="bg-slate-950 border border-slate-800 p-4 rounded-xl mb-6">
+                <div class="text-xs font-bold text-amber-400/80 mb-1">撮り鉄マニア掲示板の辛口レビュー：</div>
+                <p id="result-comment" class="text-sm text-slate-200 leading-relaxed font-medium">
+                    ここにコメントが入ります。
+                </p>
+            </div>
+
+            <!-- 詳細内訳 -->
+            <div class="space-y-2 mb-6 text-sm bg-slate-950 p-4 rounded-xl border border-slate-800" id="breakdown-list">
+                <!-- 内訳がここに動的挿入される -->
+            </div>
+
+            <button onclick="resetGame()" class="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-extrabold py-3.5 rounded-xl shadow-lg transition text-lg">
+                もう一度撮影に挑む
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const resultCanvas = document.getElementById('resultCanvas');
+        const resultCtx = resultCanvas.getContext('2d');
+
+        // キャンバス解像度設定
+        canvas.width = 960;
+        canvas.height = 540;
+        resultCanvas.width = 960;
+        resultCanvas.height = 540;
+
+        let gameState = 'TITLE'; // TITLE, PLAYING, CAPTURED, ARRESTED, RESULT
+        let gameTime = 0;
+        let maxTime = 20.0; // 20秒で警察が来る
+        let weather = 'sunny'; // sunny, cloudy, rainy
+        let weatherTimer = 0;
+
+        // ゲーム内オブジェクト
+        let train = {
+            x: -600,
+            y: 300,
+            speed: 5.5,
+            length: 500, // 先頭から末尾までのピクセル長
+            cars: 4,
+            hasPassengerWaving: true,
+            passengerCarIndex: 2
+        };
+
+        let obstacles = [];
+        let farmer = {
+            x: 650,
+            y: 360,
+            speaking: false,
+            text: "おい、そこで何コソコソしとるんじゃ！",
+            timer: 0
+        };
+
+        let particles = [];
+        let flashAlpha = 0;
+
+        // 音声効果 (Web Audio API)
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playShutterSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'square';
+            osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+            osc.frequency.exponentialRampToValueAtTime(100, audioCtx.currentTime + 0.1);
+            gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.1);
+        }
+
+        function playArrestSound() {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.type = 'sawtooth';
+            osc.frequency.setValueAtTime(600, audioCtx.currentTime);
+            osc.frequency.setValueAtTime(900, audioCtx.currentTime + 0.15);
+            gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            osc.start();
+            osc.stop(audioCtx.currentTime + 0.3);
+        }
+
+        function startGame() {
+            document.getElementById('screen-title').classList.add('hidden');
+            document.getElementById('shutter-btn.disabled')?.classList.remove('cursor-not-allowed');
+            const shutterBtn = document.getElementById('shutter-btn');
+            shutterBtn.disabled = false;
+            shutterBtn.classList.remove('bg-slate-700', 'text-slate-400', 'cursor-not-allowed');
+            shutterBtn.classList.add('bg-amber-500', 'text-slate-950', 'hover:bg-amber-400');
+
+            // 初期化
+            gameState = 'PLAYING';
+            gameTime = 0;
+            train.x = -700;
+            // 天候をランダム決定 (sunny, cloudy, rainy)
+            const weathers = ['sunny', 'cloudy', 'rainy', 'sunny'];
+            weather = weathers[Math.floor(Math.random() * weathers.length)];
+            document.getElementById('weather-display').innerText = 
+                weather === 'sunny' ? '晴れ ☀️' : weather === 'cloudy' ? '曇り ☁️' : '雨 🌧️';
+
+            obstacles = [];
+            // ランダムに鳥や軽トラを配置
+            if (Math.random() < 0.7) {
+                obstacles.push({ type: 'bird', x: 300, y: 120, vx: -2, vy: 0.5 });
+                obstacles.push({ type: 'bird', x: 400, y: 100, vx: -2.2, vy: -0.2 });
+            }
+            if (Math.random() < 0.6) {
+                obstacles.push({ type: 'truck', x: -200, y: 390, vx: 2.5 });
+            }
+
+            farmer.speaking = Math.random() < 0.7;
+            farmer.timer = 0;
+        }
+
+        function resetGame() {
+            document.getElementById('screen-arrest').classList.add('hidden');
+            document.getElementById('modal-result').classList.add('hidden');
+            document.getElementById('screen-title').classList.remove('hidden');
+            const shutterBtn = document.getElementById('shutter-btn');
+            shutterBtn.disabled = true;
+            shutterBtn.classList.add('bg-slate-700', 'text-slate-400', 'cursor-not-allowed');
+            shutterBtn.classList.remove('bg-amber-500', 'text-slate-950', 'hover:bg-amber-400');
+            gameState = 'TITLE';
+        }
+
+        // キーボード操作対応 (スペースキーでシャッター)
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Space' && gameState === 'PLAYING') {
+                e.preventDefault();
+                takePhoto();
+            }
+        });
+
+        // メインループ
+        let lastTime = performance.now();
+        function gameLoop(timestamp) {
+            const dt = (timestamp - lastTime) / 1000;
+            lastTime = timestamp;
+
+            if (gameState === 'PLAYING') {
+                gameTime += dt;
+                const timeLeft = Math.max(0, maxTime - gameTime);
+                document.getElementById('timer-display').innerText = timeLeft.toFixed(1) + 's';
+
+                // タイムアップで逮捕
+                if (gameTime >= maxTime) {
+                    triggerArrest("長時間線路周辺で不審な動きをしていたため、通報により警察官に連行されました。");
+                }
+
+                // 電車移動
+                train.x += train.speed;
+
+                // 障害物移動
+                obstacles.forEach(obs => {
+                    obs.x += obs.vx;
+                });
+
+                // 画面外に出たら消すなど
+            }
+
+            updateAndRender();
+            requestAnimationFrame(gameLoop);
+        }
+        requestAnimationFrame(gameLoop);
+
+        function triggerArrest(reason) {
+            gameState = 'ARRESTED';
+            playArrestSound();
+            document.getElementById('arrest-reason').innerText = reason;
+            document.getElementById('screen-arrest').classList.remove('hidden');
+        }
+
+        // 描画・更新処理
+        function updateAndRender() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 1. 背景（空）
+            let skyGrad = ctx.createLinearGradient(0, 0, 0, 300);
+            if (weather === 'sunny') {
+                skyGrad.addColorStop(0, '#38bdf8');
+                skyGrad.addColorStop(1, '#bae6fd');
+            } else if (weather === 'cloudy') {
+                skyGrad.addColorStop(0, '#64748b');
+                skyGrad.addColorStop(1, '#cbd5e1');
+            } else {
+                skyGrad.addColorStop(0, '#334155');
+                skyGrad.addColorStop(1, '#64748b');
+            }
+            ctx.fillStyle = skyGrad;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 太陽または雲
+            if (weather === 'sunny') {
+                ctx.fillStyle = '#fef08a';
+                ctx.beginPath();
+                ctx.arc(800, 90, 45, 0, Math.PI * 2);
+                ctx.fill();
+            } else {
+                // どんよリした雲
+                ctx.fillStyle = 'rgba(255,255,255,0.4)';
+                ctx.beginPath();
+                ctx.arc(200, 100, 50, 0, Math.PI * 2);
+                ctx.arc(250, 90, 60, 0, Math.PI * 2);
+                ctx.arc(300, 100, 40, 0, Math.PI * 2);
+                ctx.fill();
+            }
+
+            // 遠くの山
+            ctx.fillStyle = weather === 'rainy' ? '#334155' : '#15803d';
+            ctx.beginPath();
+            ctx.moveTo(0, 300);
+            ctx.lineTo(200, 180);
+            ctx.lineTo(500, 260);
+            ctx.lineTo(800, 150);
+            ctx. લાવ쳐 = ctx.lineTo(960, 280);
+            ctx.lineTo(960, 350);
+            ctx.lineTo(0, 350);
+            ctx.fill();
+
+            // 田園風景（緑の牧草地・畑）
+            ctx.fillStyle = weather === 'rainy' ? '#166534' : '#22c55e';
+            ctx.fillRect(0, 330, canvas.width, 210);
+
+            // 田んぼの区画・あぜ道
+            ctx.strokeStyle = '#15803d';
+            ctx.lineWidth = 3;
+            ctx.beginPath();
+            ctx.moveTo(0, 380); ctx.lineTo(960, 380);
+            ctx.moveTo(350, 330); ctx.lineTo(300, 540);
+            ctx.moveTo(700, 330); ctx.lineTo(750, 540);
+            ctx.stroke();
+
+            // 線路
+            ctx.fillStyle = '#78716c';
+            ctx.fillRect(0, 360, canvas.width, 35);
+            // 枕木
+            ctx.fillStyle = '#44403c';
+            for (let x = 0; x < canvas.width; x += 30) {
+                ctx.fillRect(x + ((train.x * 2) % 30), 358, 12, 39);
+            }
+            // レール
+            ctx.fillStyle = '#d4d4d4';
+            ctx.fillRect(0, 364, canvas.width, 4);
+            ctx.fillRect(0, 388, canvas.width, 4);
+
+            // 電柱と電線
+            ctx.fillStyle = '#7c2d12';
+            for (let px = 100; px < canvas.width; px += 250) {
+                ctx.fillRect(px, 150, 12, 210);
+                // 電線
+                ctx.strokeStyle = '#475569';
+                ctx.lineWidth = 1.5;
+                ctx.beginPath();
+                ctx.moveTo(0, 160); ctx.lineTo(canvas.width, 160);
+                ctx.stroke();
+            }
+
+            // 鳥の描画
+            obstacles.forEach(obs => {
+                if (obs.type === 'bird') {
+                    ctx.strokeStyle = '#0f172a';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(obs.x, obs.y, 10, Math.PI, 0, false);
+                    ctx.arc(obs.x + 20, obs.y, 10, Math.PI, 0, false);
+                    ctx.stroke();
+                }
+            });
+
+            // 電車の描画 (先頭〜末尾)
+            drawTrain();
+
+            // 軽トラの描画
+            obstacles.forEach(obs => {
+                if (obs.type === 'truck') {
+                    ctx.fillStyle = '#ef4444'; // 赤い軽トラ
+                    ctx.fillRect(obs.x, 420, 90, 45);
+                    ctx.fillStyle = '#b91c1c';
+                    ctx.fillRect(obs.x + 15, 390, 45, 35); // キャビン
+                    // 荷台
+                    ctx.fillStyle = '#cbd5e1';
+                    // タイヤ
+                    ctx.fillStyle = '#0f172a';
+                    ctx.beginPath();
+                    ctx.arc(obs.x + 20, 465, 12, 0, Math.PI * 2);
+                    ctx.arc(obs.x + 75, 465, 12, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            });
+
+            // 農民の描画
+            ctx.fillStyle = '#eab308'; // 黄色い服
+            ctx.fillRect(farmer.x, 430, 30, 50);
+            ctx.fillStyle = '#fde047';
+            ctx.beginPath(); // 顔
+            ctx.arc(farmer.x + 15, 420, 12, 0, Math.PI * 2);
+            ctx.fill();
+            // 麦わら帽子
+            ctx.fillStyle = '#ca8a04';
+            ctx.fillRect(farmer.x - 2, 406, 34, 6);
+
+            // 農民の吹き出し
+            if (farmer.speaking) {
+                ctx.fillStyle = 'white';
+                ctx.strokeStyle = '#0f172a';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.roundRect(farmer.x - 70, 335, 170, 45, 8);
+                ctx.fill();
+                ctx.stroke();
+
+                ctx.fillStyle = '#0f172a';
+                ctx.font = '13px "M PLUS Rounded 1c"';
+                ctx.fillText(farmer.text, farmer.x - 62, 362);
+            }
+
+            // 雨の描画
+            if (weather === 'rainy') {
+                ctx.strokeStyle = 'rgba(255, 255, 255, 0.6)';
+                ctx.lineWidth = 1.5;
+                for (let i = 0; i < 150; i++) {
+                    let rx = (i * 73 + gameTime * 300) % canvas.width;
+                    let ry = (i * 41 + gameTime * 500) % canvas.height;
+                    ctx.beginPath();
+                    ctx.moveTo(rx, ry);
+                    ctx.lineTo(rx - 5, ry + 15);
+                    ctx.stroke();
+                }
+            }
+
+            // フラッシュ演出
+            if (flashAlpha > 0) {
+                ctx.fillStyle = `rgba(255, 255, 255, ${flashAlpha})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                flashAlpha -= 0.05;
+            }
+        }
+
+        function drawTrain() {
+            const carWidth = 120;
+            const carHeight = 75;
+            const y = 310;
+
+            for (let i = 0; i < train.cars; i++) {
+                let cx = train.x + (i * carWidth);
+                if (cx > -carWidth && cx < canvas.width + carWidth) {
+                    // 車体（青と白のローカル色、特急風）
+                    ctx.fillStyle = '#1d4ed8';
+                    ctx.fillRect(cx, y, carWidth - 4, carHeight);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(cx, y + 25, carWidth - 4, 15); // 帯
+
+                    // 窓
+                    for (let wx = cx + 15; wx < cx + carWidth - 25; wx += 25) {
+                        ctx.fillStyle = '#0f172a';
+                        ctx.fillRect(wx, y + 8, 16, 20);
+                    }
+
+                    // 先頭車両のライト
+                    if (i === train.cars - 1) {
+                        ctx.fillStyle = '#f59e0b';
+                        ctx.fillRect(cx + carWidth - 12, y + 15, 8, 8);
+                        ctx.fillRect(cx + carWidth - 12, y + 50, 8, 8);
+                        // 前面ノーズ
+                        ctx.fillStyle = '#1d4ed8';
+                        ctx.beginPath();
+                        ctx.moveTo(cx + carWidth - 4, y);
+                        ctx.lineTo(cx + carWidth + 25, y + 25);
+                        ctx.lineTo(cx + carWidth + 25, y + 50);
+                        ctx.lineTo(cx + carWidth - 4, y + carHeight);
+                        ctx.fill();
+                    }
+
+                    // 乗客が身を乗り出して手を振る演出（特定車両）
+                    if (train.hasPassengerWaving && i === train.passengerCarIndex) {
+                        let px = cx + 50;
+                        let py = y + 5;
+                        // 頭
+                        ctx.fillStyle = '#fde047';
+                        ctx.beginPath();
+                        ctx.arc(px, py - 5, 8, 0, Math.PI * 2);
+                        ctx.fill();
+                        // 手を振る
+                        ctx.strokeStyle = '#fde047';
+                        ctx.lineWidth = 4;
+                        ctx.beginPath();
+                        ctx.moveTo(px + 4, py + 5);
+                        ctx.lineTo(px + 18, py - 12);
+                        ctx.stroke();
+                    }
+                }
+            }
+        }
+
+        // シャッターボタンクリック / スペースキー
+        function takePhoto() {
+            if (gameState !== 'PLAYING') return;
+            gameState = 'CAPTURED';
+            playShutterSound();
+            flashAlpha = 1.0;
+
+            // 即座に現在のCanvasの内容を結果用Canvasにコピー
+            resultCtx.drawImage(canvas, 0, 0);
+
+            // 判定処理の実行
+            setTimeout(calculateScore, 300);
+        }
+
+        function calculateScore() {
+            let score = 100;
+            let breakdown = [];
+
+            // 判定基準1: 電車がファインダー（中央エリア：x座標 200〜760 の範囲）に完璧に収まっているか？
+            // 電車の全体範囲: 先頭 train.x + train.cars * 120 から 末尾 train.x まで
+            let trainHead = train.x + train.cars * 120;
+            let trainTail = train.x;
+
+            let finderLeft = 240;
+            let finderRight = 720;
+
+            let isFullyInFinder = (trainTail >= finderLeft && trainHead <= finderRight);
+            let isPartiallyInFinder = !(trainHead < finderLeft || trainTail > finderRight);
+
+            if (isFullyInFinder) {
+                score += 50;
+                breakdown.push({ text: "✨ 電車が完璧にファインダー内に収まった！", pts: "+50点" });
+            } else if (isPartiallyInFinder) {
+                score -= 20;
+                breakdown.push({ text: "⚠️ 電車の一部がフレームからはみ出ている", pts: "-20点" });
+            } else {
+                score -= 70;
+                breakdown.push({ text: "❌ 電車がまともに写っていない（タイミング外れ）", pts: "-70点" });
+            }
+
+            // 判定基準2: 天候 (晴れ以外は減点)
+            if (weather === 'cloudy') {
+                score -= 20;
+                breakdown.push({ text: "☁️ 天気が曇りだった", pts: "-20点" });
+            } else if (weather === 'rainy') {
+                score -= 50;
+                breakdown.push({ text: "🌧️ 雨が降っていて最悪のコンディション", pts: "-50点" });
+            } else {
+                breakdown.push({ text: "☀️ 晴天のベストコンディション！", pts: "±0点" });
+            }
+
+            // 判定基準3: 障害物・映り込みチェック
+            // 軽トラが画面内 (x: 0〜960) にいるか
+            let truckVisible = obstacles.some(obs => obs.type === 'truck' && obs.x > -50 && obs.x < 950);
+            if (truckVisible) {
+                score -= 30;
+                breakdown.push({ text: "🚜 赤い軽トラが盛大に映り込んでいる", pts: "-30点" });
+            }
+
+            // 鳥が映り込んでいるか
+            let birdVisible = obstacles.some(obs => obs.type === 'bird' && obs.x > 100 && obs.x < 850);
+            if (birdVisible) {
+                score -= 20;
+                breakdown.push({ text: "🕊️ 鳥がフレームを横切って写り込んだ", pts: "-20点" });
+            }
+
+            // 農民のおしゃべり
+            if (farmer.speaking) {
+                score -= 40;
+                breakdown.push({ text: "🧑‍🌾 農民が話しかけてきて構図が台無し", pts: "-40点" });
+            }
+
+            // 乗客の手振り
+            if (train.hasPassengerWaving) {
+                score -= 30;
+                breakdown.push({ text: "👋 乗客が窓から顔を出して手を振っている（邪魔）", pts: "-30点" });
+            }
+
+            score = Math.max(0, Math.min(200, score));
+
+            // ランク判定
+            let rank = 'S';
+            if (score >= 130) rank = 'S+ (神アングル)';
+            else if (score >= 100) rank = 'A (ベテラン鉄オタ)';
+            else if (score >= 70) rank = 'B (一般人レベル)';
+            else if (score >= 40) rank = 'C (素人撮影)';
+            else rank = 'D (ゴミ写真)';
+
+            // ケチのコメント生成
+            let comment = generateComment(score, isFullyInFinder, weather, truckVisible, birdVisible, farmer.speaking, train.hasPassengerWaving);
+
+            // UI反映
+            document.getElementById('result-score').innerText = score;
+            document.getElementById('result-rank').innerText = rank;
+            document.getElementById('result-comment').innerText = comment;
+
+            let breakdownHtml = '';
+            breakdown.forEach(item => {
+                breakdownHtml += `<div class="flex justify-between items-center text-slate-300 border-b border-slate-800 pb-1"><span>${item.text}</span><span class="font-bold font-dot ${item.pts.startsWith('+') ? 'text-green-400' : 'text-red-400'}">${item.pts}</span></div>`;
+            });
+            document.getElementById('breakdown-list').innerHTML = breakdownHtml;
+
+            document.getElementById('modal-result').classList.remove('hidden');
+            gameState = 'RESULT';
+        }
+
+        function generateComment(score, inFinder, w, truck, bird, farm, passenger) {
+            if (score >= 130) {
+                return "「ほう、見事な編成写真だな。光線状態もバッチリだし、余計なノイズも入っていない。お前、なかなかの玄人だな…嫉妬するわ。」";
+            }
+            let complaints = [];
+            if (!inFinder) complaints.push("電車の位置がズレてて端が切れてるんだが？");
+            if (w === 'rainy') complaints.push("雨の中わざわざ撮影して何が楽しいんだよ、レンズが濡れてるぞ。");
+            if (w === 'cloudy') complaints.push("空がどんより曇ってて写真全体がパッとしないんだよなぁ。");
+            if (truck) complaints.push("せっかくの田園風景にダサい赤い軽トラが被ってて台無し。");
+            if (bird) complaints.push("鳥が余計な位置を飛んでてピントの邪魔。");
+            if (farm) complaints.push("農民のおっさんが話し掛けてきてるシーン写すなよ、誰得だよそれ。");
+            if (passenger) complaints.push("乗客が窓から身を乗り出して手振ってやがる。一般人が写り込むとか素人の証明だな。");
+
+            if (complaints.length === 0) {
+                complaints.push("悪くはないけど、何かこう…魂が感じられないんだよな。");
+            }
+
+            return "「" + complaints.join(" ") + " これだから素人は困るんだよ。出直してきな！」";
+        }
+    </script>
+</body>
+</html>

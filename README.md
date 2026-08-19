@@ -54,3 +54,4 @@ Deno/Web games collection.
 - [41. マッハピンボール！音速を越えろ！ (Mach Pinball Break the Sound Barrier)](./41/index.html)
 - [42. カラスを探せ！ (Find the Crow Game)](./42/index.html)
 - [43. パズドラ風 ナンバー・スライドアクション (Puzzle & Dragons Style Number Slide Action)](./43/index.html)
+- [44. 撮り鉄シミュレーター (Toritetsu Simulator - One-shot Shutter Challenge)](./44/index.html)
