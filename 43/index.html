@@ -38,7 +38,7 @@
         }
 
         /* スタイルごとのカラー・テーマ (4種類の数字表現) */
-        /* 0: アラビア (青系) */
+        /* 0: アラビア数字 (青系) */
         .style-0 {
             background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 50%, #1e3a8a 100%);
             border: 2px solid #93c5fd;
@@ -109,7 +109,7 @@
 
         <!-- 4x4ボード -->
         <div id="board" class="relative grid grid-cols-4 gap-2.5 p-3.5 bg-slate-900/90 backdrop-blur-lg rounded-3xl board-glow border-2 border-indigo-500/40 select-none">
-            <!-- JSで動적生成 -->
+            <!-- JSで動的生成 -->
         </div>
 
         <div class="text-xs text-slate-400 mt-3 text-center">
@@ -196,10 +196,6 @@
         const sfx = new SoundFX();
 
         // 4種類の数字表現スタイル
-        // 0: アラビア数字 (1,2,3,4)
-        // 1: 漢数字 (一,二,三,四)
-        // 2: ローマ数字 (I,II,III,IV)
-        // 3: 〇付数字 (①,②,③,④)
         const NUMBER_STYLES = [
             { name: 'arabic', symbols: ['', '1', '2', '3', '4'] },
             { name: 'kanji',  symbols: ['', '一', '二', '三', '四'] },
@@ -215,7 +211,6 @@
         let gameActive = false;
         let gameTimer = null;
 
-        // パズル操作の状態
         let isHolding = false;
         let holdCoord = null; 
 
@@ -231,8 +226,8 @@
 
         function randomDrop() {
             return {
-                value: Math.floor(Math.random() * 4) + 1, // 1〜4
-                style: Math.floor(Math.random() * 4)     // 0〜3 (種類)
+                value: Math.floor(Math.random() * 4) + 1,
+                style: Math.floor(Math.random() * 4)
             };
         }
 
@@ -245,7 +240,7 @@
                 }
                 board.push(row);
             }
-            // 初期配置で既に3つ揃っている場合は再生成
+            // 初期配置で既に3つ揃っている場合は再生成して綺麗な状態にする
             if (checkMatches().length > 0) {
                 initBoard();
             }
@@ -274,7 +269,7 @@
             }
         }
 
-        // マッチング判定 (同じ種類(style)が縦または横に3つ以上並んだら消える)
+        // マッチング判定
         function checkMatches() {
             let matchedCoords = new Set();
 
@@ -324,7 +319,7 @@
             });
         }
 
-        // 落下 & コンボ処理
+        // 落下 & コンボ処理 (常に4x4マスを隙間なく埋めるように上から補充)
         async function processGravityAndMatches() {
             let comboCount = 0;
             
@@ -347,7 +342,7 @@
 
                 await sleep(250);
 
-                // 落下処理
+                // 重力落下 & 常に4x4の最上段まで新規パネルを補充
                 for (let c = 0; c < BOARD_SIZE; c++) {
                     let writeRow = BOARD_SIZE - 1;
                     for (let r = BOARD_SIZE - 1; r >= 0; r--) {
@@ -359,6 +354,7 @@
                             writeRow--;
                         }
                     }
+                    // 空いた上部に新しいドロップを補充して常に4x4を完全に埋める
                     for (let r = writeRow; r >= 0; r--) {
                         board[r][c] = randomDrop();
                     }
