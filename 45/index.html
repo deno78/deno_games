@@ -25,28 +25,28 @@
         }
         header {
             text-align: center;
-            padding: 10px;
+            padding: 8px;
             width: 100%;
             background: rgba(0, 0, 0, 0.6);
             border-bottom: 3px solid #ff4500;
         }
         h1 {
             margin: 0;
-            font-size: 1.5rem;
+            font-size: 1.4rem;
             color: #ffcc00;
             text-shadow: 2px 2px #ff0000;
             letter-spacing: 2px;
         }
         .subtitle {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             color: #aaa;
-            margin-top: 4px;
+            margin-top: 2px;
         }
         #game-container {
             width: 100%;
             max-width: 480px;
             height: 100vh;
-            max-height: 750px;
+            max-height: 780px;
             display: flex;
             flex-direction: column;
             position: relative;
@@ -60,7 +60,7 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            padding: 12px 20px;
+            padding: 10px 20px;
             background: rgba(0,0,0,0.7);
             border-bottom: 2px dashed #ff4500;
             font-weight: bold;
@@ -103,24 +103,24 @@
             position: relative;
             background: #fff;
             color: #000;
-            padding: 10px 20px;
+            padding: 8px 18px;
             border-radius: 20px;
             font-weight: bold;
-            font-size: 1.5rem;
-            margin-bottom: 15px;
+            font-size: 1.4rem;
+            margin-bottom: 10px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.5);
             border: 3px solid #ff4500;
             animation: bounce 0.5s infinite alternate;
-            min-width: 120px;
+            min-width: 110px;
             text-align: center;
         }
         .speech-bubble::after {
             content: '';
             position: absolute;
-            bottom: -15px;
+            bottom: -12px;
             left: 50%;
             transform: translateX(-50%);
-            border-width: 15px 15px 0;
+            border-width: 12px 12px 0;
             border-style: solid;
             border-color: #fff transparent;
             display: block;
@@ -128,85 +128,117 @@
         }
         @keyframes bounce {
             0% { transform: translateY(0); }
-            100% { transform: translateY(-5px); }
+            100% { transform: translateY(-4px); }
         }
-        /* Trainer Graphic */
+        /* Trainer Graphic - Made larger */
         .trainer-box {
-            width: 220px;
-            height: 220px;
+            width: 280px;
+            height: 280px;
             background: rgba(255, 255, 255, 0.05);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
             position: relative;
-            box-shadow: inset 0 0 20px rgba(255, 69, 0, 0.2);
-            border: 3px solid rgba(255, 69, 0, 0.4);
-            margin-bottom: 15px;
+            box-shadow: inset 0 0 25px rgba(255, 69, 0, 0.3);
+            border: 4px solid rgba(255, 69, 0, 0.5);
+            margin-bottom: 10px;
             transition: transform 0.2s ease;
         }
         .trainer-avatar {
-            font-size: 7rem;
+            font-size: 9.5rem;
             line-height: 1;
-            filter: drop-shadow(0 0 10px rgba(255,165,0,0.5));
+            filter: drop-shadow(0 0 15px rgba(255,165,0,0.6));
         }
-        /* Calculator style abs display */
-        .abs-display {
+
+        /* Six-pack Calculator Abs Display */
+        .abs-calculator-container {
             position: absolute;
             bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 150px;
+            background: #111;
+            border: 3px solid #ffcc00;
+            border-radius: 8px;
+            padding: 6px;
+            box-shadow: 0 0 15px rgba(255, 204, 0, 0.4);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .abs-label {
+            font-size: 0.55rem;
+            color: #ff9900;
+            font-weight: bold;
+            margin-bottom: 3px;
+            letter-spacing: 1px;
+        }
+        /* Six Pack Grid simulation */
+        .six-pack-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 3px;
+            width: 100%;
+            background: #000;
+            padding: 4px;
+            border-radius: 4px;
+            border: 1px solid #444;
+        }
+        .abs-block {
+            background: #1c1c1c;
+            height: 16px;
+            border-radius: 3px;
+            border: 1px solid #333;
+            box-shadow: inset 0 1px 2px rgba(255,255,255,0.1);
+        }
+        /* Calculator LCD Screen */
+        .calculator-lcd {
+            width: 100%;
             background: #000;
             color: #00ff66;
             font-family: 'Courier New', Courier, monospace;
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             font-weight: bold;
-            padding: 4px 16px;
-            border-radius: 6px;
-            border: 2px solid #00ff66;
-            box-shadow: inset 0 0 10px rgba(0,255,102,0.5), 0 0 10px rgba(0,255,102,0.3);
-            letter-spacing: 3px;
-        }
-        .abs-label {
-            position: absolute;
-            top: 5px;
-            font-size: 0.65rem;
-            color: #ffaa00;
-            background: rgba(0,0,0,0.8);
-            padding: 2px 6px;
+            text-align: right;
+            padding: 2px 8px;
+            margin-top: 4px;
             border-radius: 4px;
-            border: 1px solid #ffaa00;
-            text-transform: uppercase;
-            letter-spacing: 1px;
+            border: 2px inset #00ff66;
+            box-shadow: inset 0 0 8px rgba(0,255,102,0.6);
+            letter-spacing: 2px;
         }
+
         /* Message / Action Feedback */
         .feedback-message {
-            height: 30px;
-            font-size: 1.1rem;
+            height: 25px;
+            font-size: 1rem;
             font-weight: bold;
             text-align: center;
             color: #ffcc00;
             text-shadow: 1px 1px #000;
-            margin-bottom: 10px;
+            margin-bottom: 5px;
         }
         /* Buttons Area */
         .button-area {
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            padding: 15px 20px 25px 20px;
-            background: rgba(0, 0, 0, 0.8);
+            gap: 10px;
+            padding: 12px 20px 20px 20px;
+            background: rgba(0, 0, 0, 0.85);
             border-top: 3px solid #ff4500;
         }
         .btn {
             width: 100%;
-            padding: 16px;
-            font-size: 1.2rem;
+            padding: 14px;
+            font-size: 1.1rem;
             font-weight: bold;
             border: none;
             border-radius: 12px;
             cursor: pointer;
             color: #fff;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
-            box-shadow: 0 5px 0 rgba(0,0,0,0.4), 0 6px 15px rgba(0,0,0,0.3);
+            box-shadow: 0 4px 0 rgba(0,0,0,0.4), 0 5px 12px rgba(0,0,0,0.3);
             transition: all 0.1s ease;
             display: flex;
             align-items: center;
@@ -214,8 +246,8 @@
             gap: 10px;
         }
         .btn:active {
-            transform: translateY(4px);
-            box-shadow: 0 1px 0 rgba(0,0,0,0.4), 0 2px 5px rgba(0,0,0,0.3);
+            transform: translateY(3px);
+            box-shadow: 0 1px 0 rgba(0,0,0,0.4), 0 2px 4px rgba(0,0,0,0.3);
         }
         .btn-split {
             background: linear-gradient(135deg, #ff4500, #ff8c00);
@@ -246,23 +278,23 @@
             text-align: center;
         }
         .overlay-screen h2 {
-            font-size: 2rem;
+            font-size: 1.8rem;
             color: #ff4500;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
             text-shadow: 2px 2px #000;
         }
         .overlay-screen p {
-            font-size: 1rem;
+            font-size: 0.95rem;
             line-height: 1.6;
             color: #ddd;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
         .start-btn {
             background: linear-gradient(135deg, #ff3300, #ff9900);
             color: white;
-            font-size: 1.3rem;
+            font-size: 1.2rem;
             font-weight: bold;
-            padding: 15px 40px;
+            padding: 14px 36px;
             border: 3px solid #ffcc00;
             border-radius: 30px;
             cursor: pointer;
@@ -274,7 +306,7 @@
         }
         /* Crunch animation state */
         .crunching .trainer-avatar {
-            transform: translateY(20px) scaleY(0.85);
+            transform: translateY(25px) scaleY(0.8);
         }
     </style>
 </head>
@@ -303,8 +335,20 @@
             
             <div class="trainer-box" id="trainer-box">
                 <div class="trainer-avatar" id="trainer-avatar">🏋️‍♂️</div>
-                <div class="abs-label">腹筋電卓表示</div>
-                <div class="abs-display" id="abs-display">12</div>
+                
+                <!-- Calculator style Six-Pack Abs Display -->
+                <div class="abs-calculator-container">
+                    <div class="abs-label">ABS CALCULATOR</div>
+                    <div class="six-pack-grid">
+                        <div class="abs-block"></div>
+                        <div class="abs-block"></div>
+                        <div class="abs-block"></div>
+                        <div class="abs-block"></div>
+                        <div class="abs-block"></div>
+                        <div class="abs-block"></div>
+                    </div>
+                    <div class="calculator-lcd" id="abs-display">12</div>
+                </div>
             </div>
 
             <div class="feedback-message" id="feedback-message">計算してボタンを押せ！</div>
@@ -313,13 +357,13 @@
         <!-- Button Area -->
         <div class="button-area">
             <button class="btn btn-split" onclick="checkAnswer('split')">
-                🔥 腹筋を割れるボタン <span style="font-size:0.8rem; opacity:0.8;">(割り切れる)</span>
+                🔥 腹筋を割れるボタン <span style="font-size:0.75rem; opacity:0.8;">(割り切れる)</span>
             </button>
             <button class="btn btn-by-split" onclick="checkAnswer('by-split')">
-                💧 腹筋で割れるボタン <span style="font-size:0.8rem; opacity:0.8;">(逆が割り切れる)</span>
+                💧 腹筋で割れるボタン <span style="font-size:0.75rem; opacity:0.8;">(逆が割り切れる)</span>
             </button>
             <button class="btn btn-none" onclick="checkAnswer('none')">
-                ❌ 割れないボタン <span style="font-size:0.8rem; opacity:0.8;">(どちらも割り切れない)</span>
+                ❌ 割れないボタン <span style="font-size:0.75rem; opacity:0.8;">(どちらも割り切れない)</span>
             </button>
         </div>
 
@@ -327,7 +371,7 @@
         <div class="overlay-screen" id="start-screen">
             <h2>🔥 筋肉燃焼バトル 🔥</h2>
             <p>
-                画面中央のトレーナーが腹筋をしながら、電卓の数字（腹筋）と喋る数字（吹き出し）を見せる！<br><br>
+                画面中央のトレーナーが腹筋をしながら、シックスパック型の電卓（腹筋の数字）と吹き出し（喋る数字）を見せる！<br><br>
                 <b>【ルール】</b><br>
                 ・腹筋の数字 ÷ 吹き出しの数字 が割り切れる ➔ <b>腹筋を割れるボタン</b><br>
                 ・吹き出しの数字 ÷ 腹筋の数字 が割り切れる ➔ <b>腹筋で割れるボタン</b><br>
@@ -355,7 +399,7 @@
         const maxTime = 5000;
         let gameActive = false;
         let crunchCounter = 0;
-        let targetCrunchToShow = 3; // 2から5回ごとに見せる
+        let targetCrunchToShow = 3;
 
         const livesDisplay = document.getElementById('lives-display');
         const clearedCountDisplay = document.getElementById('cleared-count');
@@ -373,7 +417,7 @@
             lives = 3;
             clearedCount = 0;
             crunchCounter = 0;
-            targetCrunchToShow = Math.floor(Math.random() * 4) + 2; // 2~5
+            targetCrunchToShow = Math.floor(Math.random() * 4) + 2;
             updateUI();
             startScreen.style.display = 'none';
             endScreen.style.display = 'none';
@@ -387,35 +431,27 @@
         }
 
         function getRandomTwoDigit() {
-            return Math.floor(Math.random() * 90) + 10; // 10~99
+            return Math.floor(Math.random() * 90) + 10;
         }
 
         function generateNumbers() {
-            // パターンを選定: 
-            // 1: 腹筋が吹き出しで割り切れる (split)
-            // 2: 吹き出しが腹筋で割り切れる (by-split)
-            // 3: どちらも割り切れない (none)
             const modeRand = Math.random();
 
             if (modeRand < 0.33) {
-                // 割れる (absNum % speechNum === 0)
-                speechNum = Math.floor(Math.random() * 8 + 2); // 2~9
+                speechNum = Math.floor(Math.random() * 8 + 2);
                 const mult = Math.floor(Math.random() * (99 / speechNum - 10 / speechNum + 1)) + Math.floor(10 / speechNum);
                 absNum = speechNum * mult;
                 if (absNum < 10) absNum = speechNum * Math.ceil(10 / speechNum);
                 if (absNum > 99) absNum = speechNum * Math.floor(99 / speechNum);
             } else if (modeRand < 0.66) {
-                // 逆で割れる (speechNum % absNum === 0)
-                absNum = Math.floor(Math.random() * 8 + 2); // 2~9
+                absNum = Math.floor(Math.random() * 8 + 2);
                 const mult = Math.floor(Math.random() * (99 / absNum - 10 / absNum + 1)) + Math.floor(10 / absNum);
                 speechNum = absNum * mult;
                 if (speechNum < 10) speechNum = absNum * Math.ceil(10 / absNum);
                 if (speechNum > 99) speechNum = absNum * Math.floor(99 / absNum);
             } else {
-                // 割れない
                 absNum = getRandomTwoDigit();
                 speechNum = getRandomTwoDigit();
-                // 偶然割れてしまう場合の調整
                 while (absNum % speechNum === 0 || speechNum % absNum === 0) {
                     absNum = getRandomTwoDigit();
                     speechNum = getRandomTwoDigit();
@@ -429,7 +465,6 @@
             generateNumbers();
             crunchCounter++;
 
-            // トレーナーの動き＆「こちらを向いて腹筋を見せる」演出
             if (crunchCounter >= targetCrunchToShow) {
                 crunchCounter = 0;
                 targetCrunchToShow = Math.floor(Math.random() * 4) + 2;
@@ -449,7 +484,6 @@
             absDisplay.textContent = absNum;
             speechBubble.textContent = `「${speechNum} だッ！」`;
 
-            // タイマー開始
             clearInterval(timerInterval);
             timeLeft = maxTime;
             const startTime = Date.now();
@@ -479,7 +513,6 @@
             else if (isBySplit) correctChoice = 'by-split';
 
             if (playerChoice === correctChoice) {
-                // 正解
                 clearedCount++;
                 feedbackMessage.textContent = "💥 ナイス筋肉！腹筋がバリバリ割れた！！ 💥";
                 updateUI();
@@ -491,10 +524,11 @@
                     setTimeout(nextRound, 800);
                 }
             } else {
-                // 不正解
                 handleMistake("ぬおおお！押し間違えた or 判断ミスだ！！");
             }
         }
+
+        function handleMistage(msg) {} // dummy
 
         function handleMistake(msg) {
             lives--;
@@ -511,7 +545,7 @@
 
         function gameOver() {
             endTitle.textContent = "🔥 ゲームオーバー 🔥";
-            endMessage.innerHTML = "体力尽き果てた……。<br>お前の腹筋はまだプヨプヨだ！<br>もう一度魂を燃やせ！";
+            endMessage.innerHTML = "体力尽き果てた……。<br>お前の腹筋はまだプヨプヨだ！<br>もう一度魂を燃やせ!！";
             endScreen.style.display = 'flex';
         }
 
