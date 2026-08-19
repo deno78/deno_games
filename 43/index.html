@@ -95,7 +95,7 @@
     <!-- ヘッダー -->
     <header class="w-full max-w-md flex justify-between items-center bg-slate-900/80 backdrop-blur-md px-4 py-3 rounded-2xl border border-slate-700 shadow-xl">
         <div>
-            <h1 class="text-xs text-indigo-400 font-bold tracking-widest uppercase">Pazudora Match-3</h1>
+            <h1 class="text-xs text-indigo-400 font-bold tracking-widest uppercase">Pazudora Sequence</h1>
             <div class="title-font text-base sm:text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-300 to-pink-500">
                 NUM-SLIDE ACTION
             </div>
@@ -123,7 +123,7 @@
         </div>
 
         <div class="text-xs text-slate-400 mt-3 text-center">
-            同じ種類の数字を縦か横に <span class="text-pink-400 font-bold">3つ以上</span> 並べて消そう！
+            同じ種類で <span class="text-cyan-400 font-bold">1-2-3</span> や <span class="text-pink-400 font-bold">①-②-③</span> のように連番で3つ以上並べよう！
         </div>
         <div id="combo-display" class="h-6 text-sm font-bold text-pink-400 mt-1"></div>
     </main>
@@ -223,7 +223,7 @@
 
         let isHolding = false;
         let holdCoord = null; 
-        let isProcessing = false; // 処理中フラグ
+        let isProcessing = false;
 
         const boardEl = document.getElementById('board');
         const scoreEl = document.getElementById('score');
@@ -279,38 +279,72 @@
             }
         }
 
-        // 堅牢なマッチ3検出アルゴリズム（水平・垂直の連続3つ以上を正確にスキャン）
+        // 連番マッチ検出パターン (同じ種類(style)かつ値(value)が連番で3つ以上並ぶ)
         function checkMatches() {
             let matchGrid = Array.from({length: BOARD_SIZE}, () => Array(BOARD_SIZE).fill(false));
             let matchedCoords = [];
 
-            // 横方向の連続チェック
+            // 横方向の連番チェック
             for (let r = 0; r < BOARD_SIZE; r++) {
-                for (let c = 0; c < BOARD_SIZE; c++) {
-                    const style = board[r][c].style;
-                    let length = 1;
-                    while (c + length < BOARD_SIZE && board[r][c + length].style === style) {
-                        length++;
-                    }
-                    if (length >= 3) {
-                        for (let i = 0; i < length; i++) {
-                            matchGrid[r][c + i] = true;
+                for (let c = 0; c <= BOARD_SIZE - 3; c++) {
+                    for (let len = 3; len <= BOARD_SIZE - c; len++) {
+                        let style = board[r][c].style;
+                        let valid = true;
+                        let dir = 0; // 1: 昇順, -1: 降順
+
+                        for (let i = 0; i < len; i++) {
+                            if (board[r][c + i].style !== style) {
+                                valid = false;
+                                break;
+                            }
+                            if (i > 0) {
+                                let diff = board[r][c + i].value - board[r][c + i - 1].value;
+                                if (i === 1) {
+                                    if (Math.abs(diff) !== 1) { valid = false; break; }
+                                    dir = diff;
+                                } else {
+                                    if (diff !== dir) { valid = false; break; }
+                                }
+                            }
+                        }
+
+                        if (valid) {
+                            for (let i = 0; i < len; i++) {
+                                matchGrid[r][c + i] = true;
+                            }
                         }
                     }
                 }
             }
 
-            // 縦方向の連続チェック
+            // 縦方向の連番チェック
             for (let c = 0; c < BOARD_SIZE; c++) {
-                for (let r = 0; r < BOARD_SIZE; r++) {
-                    const style = board[r][c].style;
-                    let length = 1;
-                    while (r + length < BOARD_SIZE && board[r + length][c].style === style) {
-                        length++;
-                    }
-                    if (length >= 3) {
-                        for (let i = 0; i < length; i++) {
-                            matchGrid[r + i][c] = true;
+                for (let r = 0; r <= BOARD_SIZE - 3; r++) {
+                    for (let len = 3; len <= BOARD_SIZE - r; len++) {
+                        let style = board[r][c].style;
+                        let valid = true;
+                        let dir = 0;
+
+                        for (let i = 0; i < len; i++) {
+                            if (board[r + i][c].style !== style) {
+                                valid = false;
+                                break;
+                            }
+                            if (i > 0) {
+                                let diff = board[r + i][c].value - board[r + i - 1][c].value;
+                                if (i === 1) {
+                                    if (Math.abs(diff) !== 1) { valid = false; break; }
+                                    dir = diff;
+                                } else {
+                                    if (diff !== dir) { valid = false; break; }
+                                }
+                            }
+                        }
+
+                        if (valid) {
+                            for (let i = 0; i < len; i++) {
+                                matchGrid[r + i][c] = true;
+                            }
                         }
                     }
                 }
@@ -327,7 +361,7 @@
             return matchedCoords;
         }
 
-        // 落下 & 連鎖処理（消去アニメーション付き）
+        // 落下 & 連鎖処理
         async function processGravityAndMatches() {
             if (isProcessing) return;
             isProcessing = true;
@@ -338,14 +372,13 @@
                 if (matches.length === 0) break;
 
                 comboCount++;
-                score += matches.length * 100 * comboCount;
+                score += matches.length * 150 * comboCount; // 連番マッチはスコア高め
                 scoreEl.innerText = score;
                 if (comboCount > maxCombo) maxCombo = comboCount;
 
                 sfx.match(comboCount);
                 showComboPopup(comboCount);
 
-                // 1. マッチしたDOM要素に消滅アニメーションクラスを付与
                 matches.forEach(m => {
                     const cell = boardEl.querySelector(`[data-row="${m.r}"][data-col="${m.c}"]`);
                     if (cell) cell.classList.add('vanishing');
@@ -353,7 +386,6 @@
 
                 await sleep(300);
 
-                // 2. 内部データ上でマッチしたマスをnullにする
                 matches.forEach(m => {
                     board[m.r][m.c] = null;
                 });
@@ -361,7 +393,6 @@
 
                 await sleep(150);
 
-                // 3. 列ごとに重力落下 & 新規ドロップ補充
                 for (let c = 0; c < BOARD_SIZE; c++) {
                     let colDrops = [];
                     for (let r = BOARD_SIZE - 1; r >= 0; r--) {
@@ -492,7 +523,7 @@
         }
 
         startBtn.addEventListener('click', startGame);
-        document.getElementById('restart-btn').addEventListener('click', startGame);
+        document.getElementById('restart-btn'].addEventListener('click', startGame);
 
         initBoard();
         renderBoard();
