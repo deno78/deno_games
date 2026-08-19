@@ -53,3 +53,4 @@ Deno/Web games collection.
 - [40. ラジオ体操シミュレーター (Radio Taiso Simulator)](./40/index.html)
 - [41. マッハピンボール！音速を越えろ！ (Mach Pinball Break the Sound Barrier)](./41/index.html)
 - [42. カラスを探せ！ (Find the Crow Game)](./42/index.html)
+- [43. パズドラ風 ナンバー・スライドアクション (Puzzle & Dragons Style Number Slide Action)](./43/index.html)

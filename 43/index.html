@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>パズドラ風 ナンバー・スライドアクション</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@700&family=M+PLUS+Rounded+1c:wght@700;900&display=swap');
+
+        body {
+            font-family: 'M PLUS Rounded 1c', sans-serif;
+            background: radial-gradient(circle at center, #1e1b4b 0%, #0f172a 100%, #020617 100%);
+            color: #f8fafc;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: none;
+            overflow: hidden;
+        }
+
+        .title-font {
+            font-family: 'Cinzel', 'M PLUS Rounded 1c', sans-serif;
+        }
+
+        /* ドロップのスタイル */
+        .drop {
+            transition: transform 0.1s ease, background-color 0.15s ease;
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.4), inset 0 -4px 6px rgba(0,0,0,0.4), 0 4px 10px rgba(0,0,0,0.5);
+            cursor: grab;
+        }
+        .drop:active {
+            cursor: grabbing;
+        }
+        .drop.dragging {
+            transform: scale(1.15);
+            z-index: 50;
+            box-shadow: inset 0 2px 6px rgba(255,255,255,0.6), 0 10px 25px rgba(0,0,0,0.8);
+        }
+
+        /* スタイルごとのカラー・テーマ */
+        /* 0: アラビア (青系) */
+        .style-0 {
+            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 50%, #1e3a8a 100%);
+            border: 2px solid #93c5fd;
+            color: #ffffff;
+        }
+        /* 1: 漢数字 (赤系) */
+        .style-1 {
+            background: linear-gradient(135deg, #ef4444 0%, #b91c1c 50%, #7f1d1d 100%);
+            border: 2px solid #fca5a5;
+            color: #ffffff;
+        }
+        /* 2: ローマ数字 (緑系) */
+        .style-2 {
+            background: linear-gradient(135deg, #10b981 0%, #047857 50%, #064e3b 100%);
+            border: 2px solid #6ee7b7;
+            color: #ffffff;
+        }
+        /* 3: 〇付数字 (黄・橙系) */
+        .style-3 {
+            background: linear-gradient(135deg, #f59e0b 0%, #b45309 50%, #78350f 100%);
+            border: 2px solid #fde68a;
+            color: #ffffff;
+        }
+
+        /* コンボポップアップ */
+        @keyframes popup {
+            0% { transform: scale(0.5) translateY(0); opacity: 0; }
+            50% { transform: scale(1.3) translateY(-20px); opacity: 1; }
+            100% { transform: scale(1) translateY(-40px); opacity: 0; }
+        }
+        .combo-popup {
+            animation: popup 0.8s ease-out forwards;
+            pointer-events: none;
+        }
+
+        /* グリッドボード光彩 */
+        .board-glow {
+            box-shadow: 0 0 30px rgba(99, 102, 241, 0.3), inset 0 0 20px rgba(15, 23, 42, 0.8);
+        }
+    </style>
+</head>
+<body class="h-screen w-screen flex flex-col justify-between items-center p-4">
+
+    <!-- ヘッダー -->
+    <header class="w-full max-w-md flex justify-between items-center bg-slate-900/80 backdrop-blur-md px-4 py-3 rounded-2xl border border-slate-700 shadow-xl">
+        <div>
+            <h1 class="text-xs text-indigo-400 font-bold tracking-widest uppercase">Pazudora Style</h1>
+            <div class="title-font text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-300 to-pink-500">
+                NUM-SLIDE ACTION
+            </div>
+        </div>
+        <div class="flex gap-3 text-right">
+            <div class="bg-slate-800 px-3 py-1 rounded-xl border border-slate-700">
+                <div class="text-[10px] text-slate-400">SCORE</div>
+                <div id="score" class="text-base font-extrabold text-amber-400">0</div>
+            </div>
+            <div class="bg-slate-800 px-3 py-1 rounded-xl border border-slate-700">
+                <div class="text-[10px] text-slate-400">TIME</div>
+                <div id="timer" class="text-base font-extrabold text-cyan-400">60</div>
+            </div>
+        </div>
+    </header>
+
+    <!-- メインゲームエリア (4x4 ボード) -->
+    <main class="relative flex flex-col items-center justify-center my-auto">
+        <!-- コンボインジケーター / アニメーション用レイヤー -->
+        <div id="effect-layer" class="absolute inset-0 pointer-events-none z-30 flex items-center justify-center"></div>
+
+        <!-- 4x4ボード -->
+        <div id="board" class="relative grid grid-cols-4 gap-2.5 p-3.5 bg-slate-900/90 backdrop-blur-lg rounded-3xl board-glow border-2 border-indigo-500/40 select-none">
+            <!-- JSで動的生成 -->
+        </div>
+
+        <!-- パズル持ち時間ゲージ -->
+        <div class="w-full max-w-[320px] mt-4 bg-slate-800/80 rounded-full h-3 p-0.5 border border-slate-700 overflow-hidden shadow-inner">
+            <div id="puzzle-time-bar" class="bg-gradient-to-r from-emerald-500 via-amber-500 to-rose-500 h-full rounded-full transition-all duration-75 w-full"></div>
+        </div>
+        <div class="text-[11px] text-slate-400 mt-1 flex justify-between w-full max-w-[320px] px-1">
+            <span>HOLD TIME / STAMINA</span>
+            <span id="combo-display" class="text-pink-400 font-bold"></span>
+        </div>
+    </main>
+
+    <!-- フッター / コントロール -->
+    <footer class="w-full max-w-md flex justify-center pb-2">
+        <button id="start-btn" class="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 active:scale-95 text-white font-black text-lg rounded-2xl shadow-lg shadow-indigo-600/40 border border-indigo-400/30 transition-all flex items-center justify-center gap-2">
+            <span>GAME START</span>
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
+            </svg>
+        </button>
+    </footer>
+
+    <!-- ゲームオーバーモーダル -->
+    <div id="gameover-modal" class="fixed inset-0 bg-slate-950/80 backdrop-blur-md hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-slate-700 rounded-3xl p-6 max-w-xs w-full text-center shadow-2xl space-y-4">
+            <div class="title-font text-2xl font-black text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-rose-500">
+                GAME OVER
+            </div>
+            <p class="text-xs text-slate-400">タイムアップ！あなたのパズルスキル結果</p>
+            <div class="bg-slate-800/80 rounded-2xl p-4 border border-slate-700 space-y-2">
+                <div>
+                    <span class="text-xs text-slate-400">FINAL SCORE</span>
+                    <div id="final-score" class="text-3xl font-black text-amber-400">0</div>
+                </div>
+                <div class="flex justify-around pt-2 border-t border-slate-700/50">
+                    <div>
+                        <span class="text-[10px] text-slate-400">MAX COMBO</span>
+                        <div id="final-max-combo" class="text-lg font-bold text-pink-400">0 COMBO</div>
+                    </div>
+                </div>
+            </div>
+            <button id="restart-btn" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 text-white font-bold rounded-xl shadow-lg shadow-indigo-600/30 transition-all">
+                もう一度プレイする
+            </button>
+        </div>
+    </div>
+
+    <script>
+        // 音声合成 (Web Audio API)
+        class SoundFX {
+            constructor() {
+                this.ctx = null;
+            }
+            init() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            }
+            playTone(freq, type, duration, vol = 0.1) {
+                if (!this.ctx) return;
+                try {
+                    const osc = this.ctx.createOscillator();
+                    const gain = this.ctx.createGain();
+                    osc.type = type;
+                    osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                    gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.001, this.ctx.currentTime + duration);
+                    osc.connect(gain);
+                    gain.connect(this.ctx.destination);
+                    osc.start();
+                    osc.stop(this.ctx.currentTime + duration);
+                } catch(e) {}
+            }
+            grab() { this.playTone(300, 'sine', 0.1, 0.05); }
+            swap() { this.playTone(450, 'triangle', 0.08, 0.05); }
+            match(combo) { 
+                const base = 400 + combo * 100;
+                this.playTone(base, 'square', 0.2, 0.08); 
+            }
+            start() { this.playTone(600, 'sine', 0.4, 0.1); }
+            gameover() { 
+                if (!this.ctx) return;
+                [300, 250, 200, 150].forEach((f, i) => {
+                    setTimeout(() => this.playTone(f, 'sawtooth', 0.3, 0.1), i * 150);
+                });
+            }
+        }
+        const sfx = new SoundFX();
+
+        // 数字表現の定義 (4種類)
+        const NUMBER_STYLES = [
+            { name: 'arabic', symbols: ['', '1', '2', '3', '4'] },
+            { name: 'kanji',  symbols: ['', '一', '二', '三', '四'] },
+            { name: 'roman',  symbols: ['', 'I', 'II', 'III', 'IV'] },
+            { name: 'circle', symbols: ['', '①', '②', '③', '④'] }
+        ];
+
+        const BOARD_SIZE = 4;
+        let board = []; // 2次元配列 [row][col] = { value: 1-4, style: 0-3 }
+        let score = 0;
+        let timeLeft = 60;
+        let maxCombo = 0;
+        let gameActive = false;
+        let gameTimer = null;
+
+        // パズル操作の状態
+        let isHolding = false;
+        let holdCoord = null; // {r, c}
+        let currentPointerPos = { x: 0, y: 0 };
+        let puzzleEnergy = 100; // パズル保持可能エネルギー（時間経過で減る or 無制限にする代わりにスムーズな操作感）
+
+        const boardEl = document.getElementById('board');
+        const scoreEl = document.getElementById('score');
+        const timerEl = document.getElementById('timer');
+        const startBtn = document.getElementById('start-btn');
+        const gameoverModal = document.getElementById('gameover-modal');
+        const finalScoreEl = document.getElementById('final-score');
+        const finalMaxComboEl = document.getElementById('final-max-combo');
+        const effectLayer = document.getElementById('effect-layer');
+        const puzzleTimeBar = document.getElementById('puzzle-time-bar');
+        const comboDisplay = document.getElementById('combo-display');
+
+        // ランダムなドロップを生成
+        function randomDrop() {
+            return {
+                value: Math.floor(Math.random() * 4) + 1, // 1, 2, 3, 4
+                style: Math.floor(Math.random() * 4)     // 0, 1, 2, 3
+            };
+        }
+
+        // 初期盤面生成 (マッチがない状態にするか、あるいは初期配置)
+        function initBoard() {
+            board = [];
+            for (let r = 0; r < BOARD_SIZE; r++) {
+                let row = [];
+                for (let c = 0; c < BOARD_SIZE; c++) {
+                    row.push(randomDrop());
+                }
+                board.push(row);
+            }
+            // 初期状態で即マッチがあれば再生成
+            if (checkMatches().length > 0) {
+                initBoard();
+            }
+        }
+
+        // 盤面を描画
+        function renderBoard() {
+            boardEl.innerHTML = '';
+            for (let r = 0; r < BOARD_SIZE; r++) {
+                for (let c = 0; c < BOARD_SIZE; c++) {
+                    const drop = board[r][c];
+                    const div = document.createElement('div');
+                    div.className = `drop style-${drop.style} w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl font-black shadow-lg select-none relative transition-transform duration-100`;
+                    
+                    if (drop && drop.value > 0) {
+                        div.innerText = NUMBER_STYLES[drop.style].symbols[drop.value];
+                    }
+
+                    if (isHolding && holdCoord && holdCoord.r === r && holdCoord.c === c) {
+                        div.classList.add('dragging');
+                    }
+
+                    div.dataset.row = r;
+                    div.dataset.col = c;
+                    boardEl.appendChild(div);
+                }
+            }
+        }
+
+        // マッチング判定 (縦横に 1, 2, 3, 4 の順で並んでいるか)
+        // 今回の仕様：「縦横いずれかに隣接して1,2,3,4を順番に並べたらマスが消えて」
+        // つまり、長さ4の行または列、あるいは4つの連続した並び（1->2->3->4の順）を検出する。
+        // 4x4サイズなので、各行（横4つ）および各列（縦4つ）が対象。
+        // 順方向 (1, 2, 3, 4) または 逆方向 (4, 3, 2, 1) も含めるか、厳密に 1, 2, 3, 4 の順。両方OKにすると爽快。
+        function checkMatches() {
+            let matchedCoords = new Set();
+
+            // 横方向のチェック (各行)
+            for (let r = 0; r < BOARD_SIZE; r++) {
+                const rowVals = [board[r][0].value, board[r][1].value, board[r][2].value, board[r][3].value];
+                // 順方向 [1, 2, 3, 4] または逆方向 [4, 3, 2, 1]
+                if ((rowVals[0] === 1 && rowVals[1] === 2 && rowVals[2] === 3 && rowVals[3] === 4) ||
+                    (rowVals[0] === 4 && rowVals[1] === 3 && rowVals[2] === 2 && rowVals[3] === 1)) {
+                    for (let c = 0; c < BOARD_SIZE; c++) {
+                        matchedCoords.add(`${r},${c}`);
+                    }
+                }
+            }
+
+            // 縦方向のチェック (各列)
+            for (let c = 0; c < BOARD_SIZE; c++) {
+                const colVals = [board[0][c].value, board[1][c].value, board[2][c].value, board[3][c].value];
+                if ((colVals[0] === 1 && colVals[1] === 2 && colVals[2] === 3 && colVals[3] === 4) ||
+                    (colVals[0] === 4 && colVals[1] === 3 && colVals[2] === 2 && colVals[3] === 1)) {
+                    for (let r = 0; r < BOARD_SIZE; r++) {
+                        matchedCoords.add(`${r},${c}`);
+                    }
+                }
+            }
+
+            return Array.from(matchedCoords).map(coordStr => {
+                const [r, c] = coordStr.split(',').map(Number);
+                return {r, c};
+            });
+        }
+
+        // 落下 & 新規補充処理
+        async function processGravityAndMatches() {
+            let comboCount = 0;
+            
+            while (true) {
+                const matches = checkMatches();
+                if (matches.length === 0) break;
+
+                comboCount++;
+                score += matches.length * 100 * comboCount;
+                scoreEl.innerText = score;
+                if (comboCount > maxCombo) maxCombo = comboCount;
+
+                sfx.match(comboCount);
+                showComboPopup(comboCount);
+
+                // マッチしたマスを一時的に空（null）にする
+                matches.forEach(m => {
+                    board[m.r][m.c] = null;
+                });
+                renderBoard();
+
+                await sleep(250);
+
+                // 重力処理：上のドロップを下に落とす
+                for (let c = 0; c < BOARD_SIZE; c++) {
+                    let writeRow = BOARD_SIZE - 1;
+                    for (let r = BOARD_SIZE - 1; r >= 0; r--) {
+                        if (board[r][c] !== null) {
+                            board[writeRow][c] = board[r][c];
+                            if (writeRow !== r) {
+                                board[r][c] = null;
+                            }
+                            writeRow--;
+                        }
+                    }
+                    // 空いた上部に新しいドロップを降らせる
+                    for (let r = writeRow; r >= 0; r--) {
+                        board[r][c] = randomDrop();
+                    }
+                }
+                renderBoard();
+                await sleep(300);
+            }
+
+            if (comboCount > 0) {
+                comboDisplay.innerText = `${comboCount} COMBO!`;
+                setTimeout(() => { comboDisplay.innerText = ''; }, 1500);
+            }
+        }
+
+        function showComboPopup(combo) {
+            const el = document.createElement('div');
+            el.className = 'absolute text-2xl sm:text-3xl font-black text-transparent bg-clip-text bg-gradient-to-r from-pink-400 to-amber-300 combo-popup drop-shadow-lg';
+            el.innerText = `${combo} COMBO!`;
+            effectLayer.appendChild(el);
+            setTimeout(() => el.remove(), 800);
+        }
+
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        // ポインタ / タッチ操作のハンドリング（パズドラ式スワイプ）
+        function getCellFromCoord(clientX, clientY) {
+            const cells = boardEl.querySelectorAll('[data-row]');
+            for (let cell of cells) {
+                const rect = cell.getBoundingClientRect();
+                if (clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom) {
+                    return {
+                        r: parseInt(cell.dataset.row),
+                        c: parseInt(cell.dataset.col)
+                    };
+                }
+            }
+            return null;
+        }
+
+        boardEl.addEventListener('pointerdown', (e) => {
+            if (!gameActive || isHolding) return;
+            sfx.init();
+            const cellCoord = getCellFromCoord(e.clientX, e.clientY);
+            if (cellCoord) {
+                isHolding = true;
+                holdCoord = cellCoord;
+                sfx.grab();
+                renderBoard();
+                boardEl.setPointerCapture(e.pointerId);
+            }
+        });
+
+        boardEl.addEventListener('pointermove', (e) => {
+            if (!gameActive || !isHolding) return;
+            const targetCoord = getCellFromCoord(e.clientX, e.clientY);
+            if (targetCoord && (targetCoord.r !== holdCoord.r || targetCoord.c !== holdCoord.c)) {
+                // 隣接またはスワイプ先のドロップと位置をスワップ
+                const temp = board[holdCoord.r][holdCoord.c];
+                board[holdCoord.r][holdCoord.c] = board[targetCoord.r][targetCoord.c];
+                board[targetCoord.r][targetCoord.c] = temp;
+
+                holdCoord = targetCoord;
+                sfx.swap();
+                renderBoard();
+            }
+        });
+
+        async function endHold() {
+            if (!isHolding) return;
+            isHolding = false;
+            holdCoord = null;
+            renderBoard();
+
+            // 離した後にマッチング＆コンボ処理を実行
+            await processGravityAndMatches();
+        }
+
+        boardEl.addEventListener('pointerup', endHold);
+        boardEl.addEventListener('pointercancel', endHold);
+
+        // ゲーム開始
+        function startGame() {
+            sfx.init();
+            sfx.start();
+            score = 0;
+            timeLeft = 60;
+            maxCombo = 0;
+            gameActive = true;
+            scoreEl.innerText = score;
+            timerEl.innerText = timeLeft;
+            comboDisplay.innerText = '';
+            gameoverModal.classList.add('hidden');
+            startBtn.classList.add('opacity-50', 'pointer-events-none');
+
+            initBoard();
+            renderBoard();
+
+            if (gameTimer) clearInterval(gameTimer);
+            gameTimer = setInterval(() => {
+                timeLeft--;
+                timerEl.innerText = timeLeft;
+                if (timeLeft <= 0) {
+                    clearInterval(gameTimer);
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function endGame() {
+            gameActive = false;
+            sfx.gameover();
+            finalScoreEl.innerText = score;
+            finalMaxComboEl.innerText = `${maxCombo} COMBO`;
+            gameoverModal.classList.remove('hidden');
+            startBtn.classList.remove('opacity-50', 'pointer-events-none');
+        }
+
+        startBtn.addEventListener('click', startGame);
+        document.getElementById('restart-btn').addEventListener('click', startGame);
+
+        // 初期表示
+        initBoard();
+        renderBoard();
+    </script>
+</body>
+</html>
