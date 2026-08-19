@@ -11,13 +11,13 @@
         .font-pop { font-family: 'M PLUS Rounded 1c', sans-serif; }
     </style>
 </head>
-<body class="bg-slate-900 text-white font-pop h-screen w-screen overflow-hidden flex flex-col items-center justify-between p-1 sm:p-2 select-none">
+<body class="bg-slate-900 text-white font-pop h-[100dvh] w-screen overflow-hidden flex flex-col items-center justify-between p-1 sm:p-2 select-none box-border">
 
-    <!-- カメラボディ風コンテナ（見切れ完全防止のフレックス構造） -->
-    <div id="game-container" class="relative w-full max-w-4xl h-full max-h-screen bg-slate-800 rounded-xl sm:rounded-2xl shadow-2xl border-2 sm:border-4 border-slate-700 flex flex-col justify-between overflow-hidden">
+    <!-- カメラボディ風コンテナ（縦幅完全収容型） -->
+    <div id="game-container" class="relative w-full max-w-4xl h-full max-h-[100dvh] bg-slate-800 rounded-xl shadow-2xl border-2 sm:border-4 border-slate-700 flex flex-col justify-between overflow-hidden box-border">
         
         <!-- カメラ上部コントロールバー -->
-        <header class="w-full bg-slate-900 px-3 sm:px-4 py-2 flex justify-between items-center gap-2 border-b border-slate-700 shrink-0 z-10">
+        <header class="w-full bg-slate-900 px-3 py-1.5 flex justify-between items-center gap-2 border-b border-slate-700 shrink-0 z-10">
             <div class="flex items-center space-x-2">
                 <div class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></div>
                 <h1 class="text-xs sm:text-sm font-bold tracking-wider text-amber-400 font-dot">EOS-TORITETSU</h1>
@@ -29,7 +29,7 @@
             </div>
         </header>
 
-        <!-- メインビューポート（Canvas画面） -->
+        <!-- メインビューポート（Canvas画面：縮小可能） -->
         <div class="relative w-full flex-1 bg-sky-300 overflow-hidden flex items-center justify-center cursor-crosshair min-h-0" id="viewport-wrapper">
             <canvas id="gameCanvas" class="w-full h-full object-contain block"></canvas>
 
@@ -46,56 +46,56 @@
             </div>
 
             <!-- ファインダーオーバーレイ -->
-            <div class="absolute inset-0 pointer-events-none border-[10px] sm:border-[16px] border-black/40 flex flex-col justify-between p-2">
+            <div class="absolute inset-0 pointer-events-none border-[8px] sm:border-[16px] border-black/40 flex flex-col justify-between p-2">
                 <div class="flex justify-between items-start">
-                    <div class="w-4 h-4 border-t-2 border-l-2 border-yellow-400"></div>
-                    <div class="text-yellow-400/90 font-dot text-[10px] sm:text-xs tracking-widest bg-black/60 px-2 py-0.5 rounded">AF [ • ] REC ●</div>
-                    <div class="w-4 h-4 border-t-2 border-r-2 border-yellow-400"></div>
+                    <div class="w-3 h-3 border-t-2 border-l-2 border-yellow-400"></div>
+                    <div class="text-yellow-400/90 font-dot text-[10px] tracking-widest bg-black/60 px-2 py-0.5 rounded">AF [ • ] REC ●</div>
+                    <div class="w-3 h-3 border-t-2 border-r-2 border-yellow-400"></div>
                 </div>
                 <!-- 中央の撮影ガイド枠 -->
                 <div class="self-center w-3/4 h-2/3 border border-yellow-400/70 border-dashed rounded flex items-center justify-center bg-yellow-400/5">
                     <span class="text-yellow-300/90 font-dot text-[10px] sm:text-xs bg-black/60 px-2 py-0.5 rounded shadow text-center">ここに電車の先頭〜末尾を完全に収めろ！</span>
                 </div>
                 <div class="flex justify-between items-end">
-                    <div class="w-4 h-4 border-b-2 border-l-2 border-yellow-400"></div>
+                    <div class="w-3 h-3 border-b-2 border-l-2 border-yellow-400"></div>
                     <div class="text-white/90 font-dot text-[10px]">ISO 400 1/1000s F/2.8</div>
-                    <div class="w-4 h-4 border-b-2 border-r-2 border-yellow-400"></div>
+                    <div class="w-3 h-3 border-b-2 border-r-2 border-yellow-400"></div>
                 </div>
             </div>
 
             <!-- スタート画面オーバーレイ -->
             <div id="screen-title" class="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center p-4 text-center z-30 overflow-y-auto">
-                <div class="text-2xl sm:text-4xl font-extrabold text-amber-400 mb-2 drop-shadow-lg font-dot tracking-wider">一瞬の絶景・撮り鉄道</div>
+                <div class="text-xl sm:text-4xl font-extrabold text-amber-400 mb-2 drop-shadow-lg font-dot tracking-wider">一瞬の絶景・撮り鉄道</div>
                 <p class="text-slate-300 max-w-md mb-4 text-xs sm:text-sm leading-relaxed">
                     田園風景の中を一日8本の電車が時刻表通りに運行する。<br>
                     天候は<span class="text-cyan-400 font-bold">1時間おきにランダム変化</span>！農家のおじさんも<span class="text-yellow-400 font-bold">時々ランダムに出没</span>します。<br>
                     <span class="text-red-400 font-bold">⚠️ 注意:</span> 軽トラ、鳥、農民の邪魔、乗客の手振り、悪天候はすべて減点対象！<br>
                     日没（19:00）までモタモタしていると<span class="text-yellow-400 font-bold">警察に通報されて逮捕</span>されます。<span class="text-amber-300 font-bold">シャッターチャンスは一度きり！</span>
                 </p>
-                <button onclick="startGame()" class="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-extrabold px-6 py-3 rounded-xl shadow-xl transform transition hover:scale-105 active:scale-95 text-base sm:text-lg tracking-wider border-2 border-yellow-300">
+                <button onclick="startGame()" class="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-extrabold px-6 py-2.5 rounded-xl shadow-xl transform transition hover:scale-105 active:scale-95 text-base sm:text-lg tracking-wider border-2 border-yellow-300">
                     📷 撮影ポジションにつく（スタート）
                 </button>
             </div>
 
             <!-- 逮捕画面オーバーレイ -->
             <div id="screen-arrest" class="absolute inset-0 bg-red-950/95 hidden flex flex-col items-center justify-center p-4 text-center z-40">
-                <div class="text-5xl mb-2 animate-bounce">🚨🚔🚨</div>
+                <div class="text-4xl mb-2 animate-bounce">🚨🚔🚨</div>
                 <div class="text-2xl sm:text-3xl font-black text-red-500 mb-2">夜間不審者として逮捕されました！</div>
                 <p class="text-red-200 mb-4 text-xs sm:text-sm" id="arrest-reason">日没後も線路周辺をウロついていたため、通報されました。</p>
-                <button onclick="resetGame()" class="bg-white text-red-950 font-bold px-5 py-2.5 rounded-xl shadow hover:bg-slate-200 transition text-sm">
+                <button onclick="resetGame()" class="bg-white text-red-950 font-bold px-5 py-2 rounded-xl shadow hover:bg-slate-200 transition text-sm">
                     もう一度やり直す
                 </button>
             </div>
         </div>
 
-        <!-- カメラ背面操作パネル（見切れ完全防止の下部固定フッター） -->
-        <footer class="w-full bg-slate-900 px-4 py-2.5 sm:py-3 flex justify-between items-center gap-2 border-t border-slate-700 shrink-0 z-10">
+        <!-- カメラ背面操作パネル（確実に画面内に収まる下部固定フッター） -->
+        <footer class="w-full bg-slate-900 px-4 py-2 flex justify-between items-center gap-2 border-t border-slate-700 shrink-0 z-10 box-border">
             <div class="text-[11px] text-slate-400 font-dot hidden sm:block">
                 操作: <span class="text-amber-400">スペースキー</span>
             </div>
             <div class="flex items-center justify-center w-full sm:w-auto">
-                <button id="shutter-btn" onclick="takePhoto()" disabled class="w-full sm:w-auto bg-slate-700 text-slate-400 cursor-not-allowed font-extrabold px-10 sm:px-12 py-2.5 sm:py-3 rounded-xl text-base sm:text-lg shadow-xl transition flex items-center justify-center space-x-2 border-2 border-slate-600">
-                    <span class="text-xl sm:text-2xl">📸</span>
+                <button id="shutter-btn" onclick="takePhoto()" disabled class="w-full sm:w-auto bg-slate-700 text-slate-400 cursor-not-allowed font-extrabold px-10 py-2 sm:py-2.5 rounded-xl text-base sm:text-lg shadow-xl transition flex items-center justify-center space-x-2 border-2 border-slate-600 box-border">
+                    <span class="text-xl">📸</span>
                     <span>シャッターを切る！</span>
                 </button>
             </div>
@@ -107,10 +107,10 @@
 
     <!-- 結果発表モーダル -->
     <div id="modal-result" class="fixed inset-0 bg-black/85 backdrop-blur-sm hidden flex items-center justify-center p-2 sm:p-4 z-50 overflow-y-auto">
-        <div class="bg-slate-900 border-2 border-slate-700 rounded-2xl sm:rounded-3xl max-w-lg w-full p-4 sm:p-6 shadow-2xl flex flex-col max-h-[95vh] overflow-y-auto">
-            <h2 class="text-xl sm:text-2xl font-black text-center text-amber-400 mb-4 tracking-wide font-dot">🏆 撮り鉄・結果発表 🏆</h2>
+        <div class="bg-slate-900 border-2 border-slate-700 rounded-2xl max-w-lg w-full p-4 shadow-2xl flex flex-col max-h-[95vh] overflow-y-auto">
+            <h2 class="text-xl font-black text-center text-amber-400 mb-3 tracking-wide font-dot">🏆 撮り鉄・結果発表 🏆</h2>
             
-            <div class="flex flex-col sm:flex-row gap-4 mb-4">
+            <div class="flex flex-col sm:flex-row gap-3 mb-3">
                 <!-- キャプチャ画像プレビュー -->
                 <div class="w-full sm:w-1/2 aspect-[4/3] bg-black rounded-xl overflow-hidden border border-slate-700 relative flex items-center justify-center">
                     <canvas id="resultCanvas" class="w-full h-full object-cover"></canvas>
@@ -119,13 +119,13 @@
                 <!-- スコアとランク -->
                 <div class="w-full sm:w-1/2 flex flex-col justify-center items-center bg-slate-950 p-3 rounded-xl border border-slate-800 text-center">
                     <div class="text-[11px] text-slate-400 mb-0.5">総合評価ランク</div>
-                    <div id="result-rank" class="text-4xl font-black text-yellow-400 mb-1 font-dot">S</div>
-                    <div class="text-2xl font-black text-white"><span id="result-score">100</span> <span class="text-xs font-normal text-slate-400">点</span></div>
+                    <div id="result-rank" class="text-3xl font-black text-yellow-400 mb-1 font-dot">S</div>
+                    <div class="text-xl font-black text-white"><span id="result-score">100</span> <span class="text-xs font-normal text-slate-400">点</span></div>
                 </div>
             </div>
 
             <!-- ケチのコメントボックス -->
-            <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl mb-4">
+            <div class="bg-slate-950 border border-slate-800 p-3 rounded-xl mb-3">
                 <div class="text-[11px] font-bold text-amber-400/80 mb-1 font-dot">撮り鉄マニア掲示板の辛口レビュー：</div>
                 <p id="result-comment" class="text-xs sm:text-sm text-slate-200 leading-relaxed font-medium">
                     ここにコメントが入ります。
@@ -133,11 +133,11 @@
             </div>
 
             <!-- 詳細内訳 -->
-            <div class="space-y-1.5 mb-4 text-xs bg-slate-950 p-3 rounded-xl border border-slate-800" id="breakdown-list">
+            <div class="space-y-1 mb-3 text-xs bg-slate-950 p-2.5 rounded-xl border border-slate-800 max-h-32 overflow-y-auto" id="breakdown-list">
                 <!-- 内訳 -->
             </div>
 
-            <button onclick="resetGame()" class="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-extrabold py-3 rounded-xl shadow-lg transition text-base tracking-wide">
+            <button onclick="resetGame()" class="w-full bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-extrabold py-2.5 rounded-xl shadow-lg transition text-base tracking-wide">
                 もう一度撮影に挑む
             </button>
         </div>
@@ -172,7 +172,7 @@
         let timeSpeed = 25;
 
         let weather = 'sunny';
-        let lastWeatherChangeMinute = 420; // 07:00 からスタート
+        let lastWeatherChangeMinute = 420;
 
         let train = {
             x: -800,
@@ -256,7 +256,7 @@
             shutterBtn.classList.add('bg-gradient-to-r', 'from-amber-500', 'to-yellow-500', 'text-slate-950', 'hover:from-amber-600', 'hover:to-yellow-600', 'border-yellow-300', 'transform', 'hover:scale-105', 'active:scale-95');
 
             gameState = 'PLAYING';
-            currentGameTimeMinutes = 7 * 60; // 07:00
+            currentGameTimeMinutes = 7 * 60;
             lastWeatherChangeMinute = 7 * 60;
 
             timetable.forEach(t => t.dispatched = false);
@@ -274,9 +274,8 @@
                 obstacles.push({ type: 'truck', x: -200, y: 390, vx: 2.5 });
             }
 
-            // 農民の初回ランダム出没スケジュール（07:15〜08:00の間などでランダムに設定）
             farmer.active = false;
-            farmer.nextSpawnMinute = currentGameTimeMinutes + Math.floor(Math.random() * 60) + 10; // 10〜70分後に初出没
+            farmer.nextSpawnMinute = currentGameTimeMinutes + Math.floor(Math.random() * 60) + 10;
 
             train.active = false;
             train.x = -800;
@@ -314,7 +313,6 @@
                 let timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
                 document.getElementById('clock-display').innerText = timeStr;
 
-                // 1時間（60分）おきに天候をランダムに変更
                 if (currentGameTimeMinutes - lastWeatherChangeMinute >= 60) {
                     lastWeatherChangeMinute = currentGameTimeMinutes;
                     const weathers = ['sunny', 'cloudy', 'rainy', 'sunny'];
@@ -322,17 +320,14 @@
                     updateWeatherDisplay();
                 }
 
-                // 農民のランダム出没・帰宅ロジック
                 if (!farmer.active && currentGameTimeMinutes >= farmer.nextSpawnMinute && currentGameTimeMinutes < endDayMinutes - 60) {
                     farmer.active = true;
                     farmer.spawnTime = currentGameTimeMinutes;
                 } else if (farmer.active && currentGameTimeMinutes >= farmer.spawnTime + farmer.durationMinutes) {
                     farmer.active = false;
-                    // 次の出没時間をランダムに予約（60〜120分後）
                     farmer.nextSpawnMinute = currentGameTimeMinutes + Math.floor(Math.random() * 90) + 60;
                 }
 
-                // 時刻表による電車発車チェック
                 timetable.forEach(item => {
                     if (!item.dispatched && currentGameTimeMinutes >= item.minutes) {
                         item.dispatched = true;
@@ -490,7 +485,7 @@
                 }
             });
 
-            // 農民（ランダムに出没）
+            // 農民
             if (farmer.active) {
                 ctx.fillStyle = '#eab308';
                 ctx.fillRect(farmer.x, 430, 30, 50);
