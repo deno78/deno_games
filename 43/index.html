@@ -256,15 +256,25 @@
             }
         }
 
+        // セーフガード付きのレンダリング関数
         function renderBoard() {
             boardEl.innerHTML = '';
             for (let r = 0; r < BOARD_SIZE; r++) {
+                let row = board[r];
+                if (!row) {
+                    row = [];
+                    board[r] = row;
+                }
                 for (let c = 0; c < BOARD_SIZE; c++) {
-                    const drop = board[r][c];
+                    let drop = row[c];
+                    if (!drop || typeof drop.style === 'undefined' || typeof drop.value === 'undefined') {
+                        drop = randomDrop();
+                        row[c] = drop;
+                    }
                     const div = document.createElement('div');
                     div.className = `drop style-${drop.style} w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl font-black shadow-lg select-none relative transition-transform duration-100`;
                     
-                    if (drop && drop.value > 0) {
+                    if (drop.value > 0) {
                         div.innerText = NUMBER_STYLES[drop.style].symbols[drop.value];
                     }
 
@@ -279,7 +289,7 @@
             }
         }
 
-        // 連番マッチ検出パターン (同じ種類(style)かつ値(value)が連番で3つ以上並ぶ)
+        // 連番マッチ検出パターン
         function checkMatches() {
             let matchGrid = Array.from({length: BOARD_SIZE}, () => Array(BOARD_SIZE).fill(false));
             let matchedCoords = [];
@@ -288,17 +298,19 @@
             for (let r = 0; r < BOARD_SIZE; r++) {
                 for (let c = 0; c <= BOARD_SIZE - 3; c++) {
                     for (let len = 3; len <= BOARD_SIZE - c; len++) {
-                        let style = board[r][c].style;
+                        let style = board[r][c] ? board[r][c].style : -1;
                         let valid = true;
-                        let dir = 0; // 1: 昇順, -1: 降順
+                        let dir = 0;
 
                         for (let i = 0; i < len; i++) {
-                            if (board[r][c + i].style !== style) {
+                            let drop = board[r][c + i];
+                            if (!drop || drop.style !== style) {
                                 valid = false;
                                 break;
                             }
                             if (i > 0) {
-                                let diff = board[r][c + i].value - board[r][c + i - 1].value;
+                                let prevDrop = board[r][c + i - 1];
+                                let diff = drop.value - prevDrop.value;
                                 if (i === 1) {
                                     if (Math.abs(diff) !== 1) { valid = false; break; }
                                     dir = diff;
@@ -321,17 +333,19 @@
             for (let c = 0; c < BOARD_SIZE; c++) {
                 for (let r = 0; r <= BOARD_SIZE - 3; r++) {
                     for (let len = 3; len <= BOARD_SIZE - r; len++) {
-                        let style = board[r][c].style;
+                        let style = board[r][c] ? board[r][c].style : -1;
                         let valid = true;
                         let dir = 0;
 
                         for (let i = 0; i < len; i++) {
-                            if (board[r + i][c].style !== style) {
+                            let drop = board[r + i][c];
+                            if (!drop || drop.style !== style) {
                                 valid = false;
                                 break;
                             }
                             if (i > 0) {
-                                let diff = board[r + i][c].value - board[r + i - 1][c].value;
+                                let prevDrop = board[r + i - 1][c];
+                                let diff = drop.value - prevDrop.value;
                                 if (i === 1) {
                                     if (Math.abs(diff) !== 1) { valid = false; break; }
                                     dir = diff;
@@ -396,7 +410,7 @@
                 for (let c = 0; c < BOARD_SIZE; c++) {
                     let colDrops = [];
                     for (let r = BOARD_SIZE - 1; r >= 0; r--) {
-                        if (board[r][c] !== null) {
+                        if (board[r][c] !== null && board[r][c] !== undefined) {
                             colDrops.push(board[r][c]);
                         }
                     }
