@@ -37,31 +37,21 @@
             box-shadow: inset 0 2px 6px rgba(255,255,255,0.6), 0 12px 30px rgba(0,0,0,0.8);
         }
 
-        /* スタイルごとのカラー・テーマ (4種類の数字表現) */
+        /* スタイルごとのカラー・テーマ (7種類の数字表現) */
         /* 0: アラビア数字 (青系) */
-        .style-0 {
-            background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 50%, #1e3a8a 100%);
-            border: 2px solid #93c5fd;
-            color: #ffffff;
-        }
+        .style-0 { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 50%, #1e3a8a 100%); border: 2px solid #93c5fd; color: #ffffff; }
         /* 1: 漢数字 (赤系) */
-        .style-1 {
-            background: linear-gradient(135deg, #ef4444 0%, #b91c1c 50%, #7f1d1d 100%);
-            border: 2px solid #fca5a5;
-            color: #ffffff;
-        }
+        .style-1 { background: linear-gradient(135deg, #ef4444 0%, #b91c1c 50%, #7f1d1d 100%); border: 2px solid #fca5a5; color: #ffffff; }
         /* 2: ローマ数字 (緑系) */
-        .style-2 {
-            background: linear-gradient(135deg, #10b981 0%, #047857 50%, #064e3b 100%);
-            border: 2px solid #6ee7b7;
-            color: #ffffff;
-        }
+        .style-2 { background: linear-gradient(135deg, #10b981 0%, #047857 50%, #064e3b 100%); border: 2px solid #6ee7b7; color: #ffffff; }
         /* 3: 〇付数字 (黄・橙系) */
-        .style-3 {
-            background: linear-gradient(135deg, #f59e0b 0%, #b45309 50%, #78350f 100%);
-            border: 2px solid #fde68a;
-            color: #ffffff;
-        }
+        .style-3 { background: linear-gradient(135deg, #f59e0b 0%, #b45309 50%, #78350f 100%); border: 2px solid #fde68a; color: #ffffff; }
+        /* 4: サイコロ (紫系) */
+        .style-4 { background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 50%, #4c1d95 100%); border: 2px solid #c4b5fd; color: #ffffff; }
+        /* 5: 大字 (ピンク・マゼンタ系) */
+        .style-5 { background: linear-gradient(135deg, #ec4899 0%, #be185d 50%, #831843 100%); border: 2px solid #fbcfe8; color: #ffffff; }
+        /* 6: 分数記号 (シアン系) */
+        .style-6 { background: linear-gradient(135deg, #06b6d4 0%, #0e7490 50%, #164e63 100%); border: 2px solid #67e8f9; color: #ffffff; }
 
         /* 消滅アニメーション */
         @keyframes vanish {
@@ -128,7 +118,7 @@
         </button>
 
         <div class="text-xs text-slate-400 mt-2 text-center">
-            同じ種類で <span class="text-cyan-400 font-bold">1-2-3</span> や <span class="text-pink-400 font-bold">①-②-③</span> のように連番で3つ以上並べよう！
+            同じ種類で <span class="text-cyan-400 font-bold">1-2-3</span> や <span class="text-pink-400 font-bold">壱-弐-参</span> のように連番で3つ以上並べよう！
         </div>
         <div id="combo-display" class="h-6 text-sm font-bold text-pink-400 mt-1"></div>
     </main>
@@ -210,12 +200,15 @@
         }
         const sfx = new SoundFX();
 
-        // 4種類の数字表現スタイル
+        // 7種類の数字表現スタイル (アラビア・漢数字・ローマ・〇付・サイコロ・大字・分数)
         const NUMBER_STYLES = [
             { name: 'arabic', symbols: ['', '1', '2', '3', '4'] },
             { name: 'kanji',  symbols: ['', '一', '二', '三', '四'] },
             { name: 'roman',  symbols: ['', 'I', 'II', 'III', 'IV'] },
-            { name: 'circle', symbols: ['', '①', '②', '③', '④'] }
+            { name: 'circle', symbols: ['', '①', '②', '③', '④'] },
+            { name: 'dice',   symbols: ['', '⚀', '⚁', '⚂', '⚃'] },
+            { name: 'daiji',  symbols: ['', '壱', '弐', '参', '肆'] },
+            { name: 'frac',   symbols: ['', '½', '⅓', '¼', '⅕'] }
         ];
 
         const BOARD_SIZE = 4;
@@ -244,7 +237,7 @@
         function randomDrop() {
             return {
                 value: Math.floor(Math.random() * 4) + 1,
-                style: Math.floor(Math.random() * 4)
+                style: Math.floor(Math.random() * NUMBER_STYLES.length)
             };
         }
 
