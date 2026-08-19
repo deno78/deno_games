@@ -16,6 +16,8 @@
             -webkit-user-select: none;
             touch-action: none;
             overflow: hidden;
+            height: 100vh;
+            height: 100dvh;
         }
 
         .title-font {
@@ -25,16 +27,16 @@
         /* ドロップのスタイル */
         .drop {
             transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.15s ease;
-            box-shadow: inset 0 2px 4px rgba(255,255,255,0.4), inset 0 -4px 6px rgba(0,0,0,0.4), 0 4px 10px rgba(0,0,0,0.5);
+            box-shadow: inset 0 2px 4px rgba(255,255,255,0.4), inset 0 -4px 6px rgba(0,0,0,0.4), 0 3px 8px rgba(0,0,0,0.5);
             cursor: grab;
         }
         .drop:active {
             cursor: grabbing;
         }
         .drop.dragging {
-            transform: scale(1.18);
+            transform: scale(1.15);
             z-index: 50;
-            box-shadow: inset 0 2px 6px rgba(255,255,255,0.6), 0 12px 30px rgba(0,0,0,0.8);
+            box-shadow: inset 0 2px 6px rgba(255,255,255,0.6), 0 10px 25px rgba(0,0,0,0.8);
         }
 
         /* スタイルごとのカラー・テーマ (7種類の数字表現) */
@@ -66,8 +68,8 @@
         /* コンボポップアップ */
         @keyframes popup {
             0% { transform: scale(0.5) translateY(0); opacity: 0; }
-            50% { transform: scale(1.3) translateY(-20px); opacity: 1; }
-            100% { transform: scale(1) translateY(-40px); opacity: 0; }
+            50% { transform: scale(1.3) translateY(-15px); opacity: 1; }
+            100% { transform: scale(1) translateY(-30px); opacity: 0; }
         }
         .combo-popup {
             animation: popup 0.8s ease-out forwards;
@@ -76,58 +78,58 @@
 
         /* グリッドボード光彩 */
         .board-glow {
-            box-shadow: 0 0 30px rgba(99, 102, 241, 0.3), inset 0 0 20px rgba(15, 23, 42, 0.8);
+            box-shadow: 0 0 25px rgba(99, 102, 241, 0.25), inset 0 0 15px rgba(15, 23, 42, 0.8);
         }
     </style>
 </head>
-<body class="h-screen w-screen flex flex-col justify-between items-center p-4">
+<body class="h-full w-screen flex flex-col justify-between items-center py-2 px-3 box-border">
 
     <!-- ヘッダー -->
-    <header class="w-full max-w-md flex justify-between items-center bg-slate-900/80 backdrop-blur-md px-4 py-3 rounded-2xl border border-slate-700 shadow-xl">
+    <header class="w-full max-w-sm flex justify-between items-center bg-slate-900/85 backdrop-blur-md px-3.5 py-2 rounded-xl border border-slate-700/80 shadow-lg shrink-0">
         <div>
-            <h1 class="text-xs text-indigo-400 font-bold tracking-widest uppercase">Pazudora Sequence</h1>
-            <div class="title-font text-base sm:text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-300 to-pink-500">
-                NUM-SLIDE ACTION
+            <h1 class="text-[10px] text-indigo-400 font-bold tracking-widest uppercase">Pazudora Sequence</h1>
+            <div class="title-font text-sm sm:text-base font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-300 to-pink-500">
+                NUM-SLIDE
             </div>
         </div>
-        <div class="flex gap-3 text-right">
-            <div class="bg-slate-800 px-3 py-1 rounded-xl border border-slate-700">
-                <div class="text-[10px] text-slate-400">SCORE</div>
-                <div id="score" class="text-base font-extrabold text-amber-400">0</div>
+        <div class="flex gap-2.5 text-right">
+            <div class="bg-slate-800/90 px-2.5 py-0.5 rounded-lg border border-slate-700">
+                <div class="text-[9px] text-slate-400">SCORE</div>
+                <div id="score" class="text-sm font-extrabold text-amber-400">0</div>
             </div>
-            <div class="bg-slate-800 px-3 py-1 rounded-xl border border-slate-700">
-                <div class="text-[10px] text-slate-400">TIME</div>
-                <div id="timer" class="text-base font-extrabold text-cyan-400">60</div>
+            <div class="bg-slate-800/90 px-2.5 py-0.5 rounded-lg border border-slate-700">
+                <div class="text-[9px] text-slate-400">TIME</div>
+                <div id="timer" class="text-sm font-extrabold text-cyan-400">60</div>
             </div>
         </div>
     </header>
 
     <!-- メインゲームエリア (4x4 ボード) -->
-    <main class="relative flex flex-col items-center justify-center my-auto">
+    <main class="relative flex flex-col items-center justify-center my-auto shrink-0">
         <!-- コンボインジケーター / アニメーション用レイヤー -->
         <div id="effect-layer" class="absolute inset-0 pointer-events-none z-30 flex items-center justify-center"></div>
 
-        <!-- 4x4ボード -->
-        <div id="board" class="relative grid grid-cols-4 gap-2.5 p-3.5 bg-slate-900/90 backdrop-blur-lg rounded-3xl board-glow border-2 border-indigo-500/40 select-none">
+        <!-- 4x4ボード (コンパクトに一画面に収まるサイズ) -->
+        <div id="board" class="relative grid grid-cols-4 gap-2 p-2.5 bg-slate-900/90 backdrop-blur-lg rounded-2xl board-glow border-2 border-indigo-500/40 select-none">
             <!-- JSで動的生成 -->
         </div>
 
         <!-- パネル補充ボタン -->
-        <button id="refill-btn" class="px-5 py-2.5 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 active:scale-95 text-white font-bold text-xs rounded-xl shadow-lg shadow-cyan-600/30 border border-cyan-400/40 transition-all flex items-center gap-2 mt-3 cursor-pointer">
+        <button id="refill-btn" class="px-4 py-2 bg-gradient-to-r from-cyan-600 to-blue-600 hover:from-cyan-500 hover:to-blue-500 active:scale-95 text-white font-bold text-xs rounded-xl shadow-md shadow-cyan-600/30 border border-cyan-400/40 transition-all flex items-center gap-1.5 mt-2.5 cursor-pointer shrink-0">
             <span>🔄 パネル補充 (リフレッシュ)</span>
         </button>
 
-        <div class="text-xs text-slate-400 mt-2 text-center">
-            同じ種類で <span class="text-cyan-400 font-bold">1-2-3</span> や <span class="text-pink-400 font-bold">壱-弐-参</span> のように連番で3つ以上並べよう！
+        <div class="text-[11px] text-slate-400 mt-1.5 text-center shrink-0">
+            同じ種類で <span class="text-cyan-400 font-bold">1-2-3</span> や <span class="text-pink-400 font-bold">壱-弐-参</span> のように連番で並べよう！
         </div>
-        <div id="combo-display" class="h-6 text-sm font-bold text-pink-400 mt-1"></div>
+        <div id="combo-display" class="h-5 text-xs font-bold text-pink-400 mt-0.5 shrink-0"></div>
     </main>
 
     <!-- フッター / コントロール -->
-    <footer class="w-full max-w-md flex justify-center pb-2">
-        <button id="start-btn" class="w-full py-3.5 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 active:scale-95 text-white font-black text-lg rounded-2xl shadow-lg shadow-indigo-600/40 border border-indigo-400/30 transition-all flex items-center justify-center gap-2">
+    <footer class="w-full max-w-sm flex justify-center pb-1 shrink-0">
+        <button id="start-btn" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-violet-600 hover:from-indigo-500 hover:to-violet-500 active:scale-95 text-white font-black text-base rounded-xl shadow-lg shadow-indigo-600/40 border border-indigo-400/30 transition-all flex items-center justify-center gap-2">
             <span>GAME START</span>
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3" />
             </svg>
         </button>
@@ -200,7 +202,7 @@
         }
         const sfx = new SoundFX();
 
-        // 7種類の数字表現スタイル (アラビア・漢数字・ローマ・〇付・サイコロ・大字・分数)
+        // 7種類の数字表現スタイル
         const NUMBER_STYLES = [
             { name: 'arabic', symbols: ['', '1', '2', '3', '4'] },
             { name: 'kanji',  symbols: ['', '一', '二', '三', '四'] },
@@ -255,7 +257,7 @@
             }
         }
 
-        // セーフガード付きのレンダリング関数
+        // セーフガード付きのレンダリング関数（コンパクトサイズ: w-14 h-14 sm:w-16 sm:h-16）
         function renderBoard() {
             boardEl.innerHTML = '';
             for (let r = 0; r < BOARD_SIZE; r++) {
@@ -271,7 +273,7 @@
                         row[c] = drop;
                     }
                     const div = document.createElement('div');
-                    div.className = `drop style-${drop.style} w-16 h-16 sm:w-20 sm:h-20 rounded-2xl flex items-center justify-center text-3xl sm:text-4xl font-black shadow-lg select-none relative transition-transform duration-100`;
+                    div.className = `drop style-${drop.style} w-14 h-14 sm:w-16 sm:h-16 rounded-xl flex items-center justify-center text-2xl sm:text-3xl font-black shadow-md select-none relative transition-transform duration-100`;
                     
                     if (drop.value > 0) {
                         div.innerText = NUMBER_STYLES[drop.style].symbols[drop.value];
