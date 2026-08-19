@@ -39,7 +39,7 @@
             box-shadow: inset 0 2px 6px rgba(255,255,255,0.6), 0 10px 25px rgba(0,0,0,0.8);
         }
 
-        /* スタイルごとのカラー・テーマ (7種類の数字表現) */
+        /* スタイルごとのカラー・テーマ (5種類の数字表現) */
         /* 0: アラビア数字 (青系) */
         .style-0 { background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 50%, #1e3a8a 100%); border: 2px solid #93c5fd; color: #ffffff; }
         /* 1: 漢数字 (赤系) */
@@ -48,12 +48,8 @@
         .style-2 { background: linear-gradient(135deg, #10b981 0%, #047857 50%, #064e3b 100%); border: 2px solid #6ee7b7; color: #ffffff; }
         /* 3: 〇付数字 (黄・橙系) */
         .style-3 { background: linear-gradient(135deg, #f59e0b 0%, #b45309 50%, #78350f 100%); border: 2px solid #fde68a; color: #ffffff; }
-        /* 4: サイコロ (紫系) */
-        .style-4 { background: linear-gradient(135deg, #8b5cf6 0%, #6d28d9 50%, #4c1d95 100%); border: 2px solid #c4b5fd; color: #ffffff; }
-        /* 5: 大字 (ピンク・マゼンタ系) */
-        .style-5 { background: linear-gradient(135deg, #ec4899 0%, #be185d 50%, #831843 100%); border: 2px solid #fbcfe8; color: #ffffff; }
-        /* 6: 分数記号 (シアン系) */
-        .style-6 { background: linear-gradient(135deg, #06b6d4 0%, #0e7490 50%, #164e63 100%); border: 2px solid #67e8f9; color: #ffffff; }
+        /* 4: 分数記号 (シアン系) */
+        .style-4 { background: linear-gradient(135deg, #06b6d4 0%, #0e7490 50%, #164e63 100%); border: 2px solid #67e8f9; color: #ffffff; }
 
         /* 消滅アニメーション */
         @keyframes vanish {
@@ -109,7 +105,7 @@
         <!-- コンボインジケーター / アニメーション用レイヤー -->
         <div id="effect-layer" class="absolute inset-0 pointer-events-none z-30 flex items-center justify-center"></div>
 
-        <!-- 4x4ボード (コンパクトに一画面に収まるサイズ) -->
+        <!-- 4x4ボード -->
         <div id="board" class="relative grid grid-cols-4 gap-2 p-2.5 bg-slate-900/90 backdrop-blur-lg rounded-2xl board-glow border-2 border-indigo-500/40 select-none">
             <!-- JSで動的生成 -->
         </div>
@@ -120,7 +116,7 @@
         </button>
 
         <div class="text-[11px] text-slate-400 mt-1.5 text-center shrink-0">
-            同じ種類で <span class="text-cyan-400 font-bold">1-2-3</span> や <span class="text-pink-400 font-bold">壱-弐-参</span> のように連番で並べよう！
+            同じ種類で <span class="text-cyan-400 font-bold">1-2-3</span> や <span class="text-pink-400 font-bold">一-二-三</span> のように連番で並べよう！
         </div>
         <div id="combo-display" class="h-5 text-xs font-bold text-pink-400 mt-0.5 shrink-0"></div>
     </main>
@@ -202,14 +198,12 @@
         }
         const sfx = new SoundFX();
 
-        // 7種類の数字表現スタイル
+        // 5種類の数字表現スタイル (アラビア・漢数字・ローマ・〇付・分数)
         const NUMBER_STYLES = [
             { name: 'arabic', symbols: ['', '1', '2', '3', '4'] },
             { name: 'kanji',  symbols: ['', '一', '二', '三', '四'] },
             { name: 'roman',  symbols: ['', 'I', 'II', 'III', 'IV'] },
             { name: 'circle', symbols: ['', '①', '②', '③', '④'] },
-            { name: 'dice',   symbols: ['', '⚀', '⚁', '⚂', '⚃'] },
-            { name: 'daiji',  symbols: ['', '壱', '弐', '参', '肆'] },
             { name: 'frac',   symbols: ['', '½', '⅓', '¼', '⅕'] }
         ];
 
@@ -257,7 +251,7 @@
             }
         }
 
-        // セーフガード付きのレンダリング関数（コンパクトサイズ: w-14 h-14 sm:w-16 sm:h-16）
+        // セーフガード付きのレンダリング関数
         function renderBoard() {
             boardEl.innerHTML = '';
             for (let r = 0; r < BOARD_SIZE; r++) {
