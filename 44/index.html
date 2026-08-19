@@ -14,23 +14,36 @@
 <body class="bg-slate-900 text-white font-pop min-h-screen flex flex-col items-center justify-center p-2 sm:p-4 select-none">
 
     <!-- カメラボディ風コンテナ -->
-    <div id="game-container" class="relative w-full max-w-4xl bg-slate-800 rounded-3xl shadow-2xl border-4 border-slate-700 overflow-hidden flex flex-col">
+    <div id="game-container" class="relative w-full max-w-5xl bg-slate-800 rounded-3xl shadow-2xl border-4 border-slate-700 overflow-hidden flex flex-col">
         
-        <!-- カメラ上部コントロールバー（ダイヤルやロゴ） -->
-        <header class="w-full bg-slate-900 px-6 py-3 flex justify-between items-center border-b border-slate-700">
+        <!-- カメラ上部コントロールバー（ダイヤルや時刻表ボタン等） -->
+        <header class="w-full bg-slate-900 px-6 py-3 flex flex-wrap justify-between items-center gap-3 border-b border-slate-700">
             <div class="flex items-center space-x-3">
                 <div class="w-3 h-3 rounded-full bg-red-500 animate-pulse"></div>
                 <h1 class="text-base sm:text-lg font-bold tracking-wider text-amber-400 font-dot">CANON-G EOS-TORITETSU</h1>
             </div>
-            <div class="flex items-center space-x-4 text-xs sm:text-sm font-dot">
-                <div class="bg-slate-800 px-3 py-1 rounded border border-slate-700">天気: <span id="weather-display" class="text-cyan-400">晴れ ☀️</span></div>
-                <div class="bg-slate-800 px-3 py-1 rounded border border-slate-700">警察警戒: <span id="timer-display" class="text-yellow-400 font-bold">20.0s</span></div>
+            <div class="flex items-center space-x-3 text-xs sm:text-sm font-dot">
+                <div class="bg-slate-800 px-3 py-1.5 rounded border border-slate-700">現在時刻: <span id="clock-display" class="text-amber-300 font-bold">07:00</span></div>
+                <div class="bg-slate-800 px-3 py-1.5 rounded border border-slate-700">天気: <span id="weather-display" class="text-cyan-400">晴れ ☀️</span></div>
+                <button onclick="toggleTimetable()" class="bg-amber-600 hover:bg-amber-500 text-white px-3 py-1 rounded font-bold transition shadow"> 🕒 時刻表 </button>
             </div>
         </header>
 
-        <!-- ファインダー画面（メインビューポート） -->
+        <!-- メインビューポート（Canvas画面） -->
         <div class="relative w-full aspect-[16/9] bg-sky-300 overflow-hidden cursor-crosshair" id="viewport-wrapper">
             <canvas id="gameCanvas" class="w-full h-full block"></canvas>
+
+            <!-- 時刻表オーバーレイ（ボタンでトグル） -->
+            <div id="timetable-modal" class="absolute top-4 right-4 bg-slate-900/95 border-2 border-amber-500/80 rounded-2xl p-4 w-64 shadow-2xl z-20 hidden backdrop-blur">
+                <div class="flex justify-between items-center mb-2 border-b border-slate-700 pb-1">
+                    <span class="text-amber-400 font-bold font-dot text-sm">📅 本日の運行ダイヤ（全8本）</span>
+                    <button onclick="toggleTimetable()" class="text-slate-400 hover:text-white text-xs font-bold px-1">✕</button>
+                </div>
+                <div id="timetable-list" class="space-y-1 text-xs font-dot text-slate-300">
+                    <!-- 動的に生成 -->
+                </div>
+                <div class="mt-2 text-[10px] text-yellow-400 text-center">※日没（19:00）以降に居座ると逮捕されます</div>
+            </div>
 
             <!-- ファインダーオーバーレイ（撮影フレーム） -->
             <div class="absolute inset-0 pointer-events-none border-[20px] sm:border-[28px] border-black/50 flex flex-col justify-between p-2 sm:p-4">
@@ -45,7 +58,7 @@
                 </div>
                 <div class="flex justify-between items-end">
                     <div class="w-6 h-6 border-b-2 border-l-2 border-yellow-400"></div>
-                    <div class="text-white/90 font-dot text-xs">ISO 400  1/1000s  F/2.8  [ █ █ █ █ ░ ]</div>
+                    <div class="text-white/90 font-dot text-xs">ISO 400  1/1000s  F/2.8</div>
                     <div class="w-6 h-6 border-b-2 border-r-2 border-yellow-400"></div>
                 </div>
             </div>
@@ -53,11 +66,11 @@
             <!-- スタート画面オーバーレイ -->
             <div id="screen-title" class="absolute inset-0 bg-slate-950/95 flex flex-col items-center justify-center p-6 text-center z-30">
                 <div class="text-3xl sm:text-5xl font-extrabold text-amber-400 mb-3 drop-shadow-lg font-dot tracking-wider">一瞬の絶景・撮り鉄道</div>
-                <p class="text-slate-300 max-w-lg mb-8 text-xs sm:text-sm leading-relaxed">
-                    田園風景の中を定期的に電車が通過する！<br>
-                    電車の先頭から末尾までがファインダー内に美しく収まった瞬間を狙い撃て。<br>
+                <p class="text-slate-300 max-w-lg mb-6 text-xs sm:text-sm leading-relaxed">
+                    田園風景の中を一日8本の電車が運行する。<br>
+                    時刻表を確認し、狙った便のシャッターチャンスに全力を注げ！<br>
                     <span class="text-red-400 font-bold">⚠️ 注意:</span> 鳥、軽トラ、農民のおしゃべり、乗客の手振り、悪天候はすべて減点対象！<br>
-                    モタモタしていると<span class="text-yellow-400 font-bold">警察に通報されて不審者逮捕</span>されます。シャッターチャンスは一度きり！
+                    撮影せずにモタモタして<span class="text-yellow-400 font-bold">夜（19:00以降）になると警察に通報されて逮捕</span>されます。
                 </p>
                 <button onclick="startGame()" class="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-extrabold px-8 py-4 rounded-2xl shadow-xl transform transition hover:scale-105 active:scale-95 text-lg sm:text-xl tracking-wider border-2 border-yellow-300">
                     📷 撮影ポジションにつく（スタート）
@@ -67,8 +80,8 @@
             <!-- 逮捕画面オーバーレイ -->
             <div id="screen-arrest" class="absolute inset-0 bg-red-950/95 hidden flex flex-col items-center justify-center p-6 text-center z-40">
                 <div class="text-6xl mb-4 animate-bounce">🚨🚔🚨</div>
-                <div class="text-3xl sm:text-4xl font-black text-red-500 mb-2">不審者として逮捕されました！</div>
-                <p class="text-red-200 mb-6 text-sm sm:text-base" id="arrest-reason">長時間うろついていたため、通報されました。</p>
+                <div class="text-3xl sm:text-4xl font-black text-red-500 mb-2">夜間不審者として逮捕されました！</div>
+                <p class="text-red-200 mb-6 text-sm sm:text-base" id="arrest-reason">日没後も線路周辺をウロついていたため、通報されました。</p>
                 <button onclick="resetGame()" class="bg-white text-red-950 font-bold px-6 py-3 rounded-xl shadow hover:bg-slate-200 transition">
                     もう一度やり直す
                 </button>
@@ -78,7 +91,7 @@
         <!-- カメラ背面操作パネル（シャッターボタン等） -->
         <footer class="w-full bg-slate-900 px-6 py-4 flex flex-col sm:flex-row justify-between items-center gap-4 border-t border-slate-700">
             <div class="text-xs text-slate-400 font-dot text-center sm:text-left">
-                操作方法: <span class="text-amber-400">スペースキー</span> または右側の大きなシャッターボタン
+                操作: <span class="text-amber-400">スペースキー</span> または右のボタンで撮影
             </div>
             <div class="flex items-center space-x-4 w-full sm:w-auto justify-center">
                 <button id="shutter-btn" onclick="takePhoto()" disabled class="w-full sm:w-auto bg-slate-700 text-slate-400 cursor-not-allowed font-extrabold px-12 py-4 rounded-2xl text-xl shadow-xl transition flex items-center justify-center space-x-3 border-2 border-slate-600">
@@ -136,18 +149,31 @@
         const resultCanvas = document.getElementById('resultCanvas');
         const resultCtx = resultCanvas.getContext('2d');
 
-        // キャンバス解像度設定
         canvas.width = 960;
         canvas.height = 540;
         resultCanvas.width = 960;
         resultCanvas.height = 540;
 
         let gameState = 'TITLE'; // TITLE, PLAYING, CAPTURED, ARRESTED, RESULT
-        let gameTime = 0;
-        let maxTime = 20.0; // 20秒で警察が来る
+        
+        // 一日8本の運行ダイヤ (時刻表)
+        const timetable = [
+            { id: 1, time: "07:30", dispatched: false },
+            { id: 2, time: "09:00", dispatched: false },
+            { id: 3, time: "10:30", dispatched: false },
+            { id: 4, time: "12:00", dispatched: false },
+            { id: 5, time: "13:30", dispatched: false },
+            { id: 6, time: "15:00", dispatched: false },
+            { id: 7, time: "16:30", dispatched: false },
+            { id: 8, time: "18:00", dispatched: false }
+        ];
+
+        let currentGameTimeMinutes = 7 * 60; // 07:00 スタート
+        const endDayMinutes = 19 * 60; // 19:00以降は夜間逮捕
+        let timeSpeed = 15; // 実時間1秒あたりのゲーム内進行分（調整用）
+
         let weather = 'sunny'; // sunny, cloudy, rainy
 
-        // ゲーム内オブジェクト
         let train = {
             x: -600,
             y: 300,
@@ -155,7 +181,8 @@
             length: 500,
             cars: 4,
             hasPassengerWaving: true,
-            passengerCarIndex: 2
+            passengerCarIndex: 2,
+            activeTrainId: 1
         };
 
         let obstacles = [];
@@ -168,7 +195,7 @@
 
         let flashAlpha = 0;
 
-        // 音声効果 (Web Audio API)
+        // 音声効果
         const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
         function playShutterSound() {
             if (audioCtx.state === 'suspended') audioCtx.resume();
@@ -200,6 +227,22 @@
             osc.stop(audioCtx.currentTime + 0.3);
         }
 
+        function toggleTimetable() {
+            const modal = document.getElementById('timetable-modal');
+            modal.classList.toggle('hidden');
+        }
+
+        function updateTimetableUI() {
+            let html = '';
+            timetable.forEach(item => {
+                html += `<div class="flex justify-between items-center py-0.5 border-b border-slate-800">
+                    <span>${item.id}便: ${item.time}発</span>
+                    <span class="${item.dispatched ? 'text-slate-500' : 'text-green-400 font-bold'}">${item.dispatched ? '通過済' : '運行予定'}</span>
+                </div>`;
+            });
+            document.getElementById('timetable-list').innerHTML = html;
+        }
+
         function startGame() {
             document.getElementById('screen-title').classList.add('hidden');
             const shutterBtn = document.getElementById('shutter-btn');
@@ -207,10 +250,12 @@
             shutterBtn.classList.remove('bg-slate-700', 'text-slate-400', 'cursor-not-allowed', 'border-slate-600');
             shutterBtn.classList.add('bg-gradient-to-r', 'from-amber-500', 'to-yellow-500', 'text-slate-950', 'hover:from-amber-600', 'hover:to-yellow-600', 'border-yellow-300', 'transform', 'hover:scale-105', 'active:scale-95');
 
-            // 初期化
             gameState = 'PLAYING';
-            gameTime = 0;
-            train.x = -700;
+            currentGameTimeMinutes = 7 * 60; // 07:00
+
+            // ダイヤをランダムに1本選ぶ、または最初の方の便を選択
+            train.activeTrainId = Math.floor(Math.random() * 4) + 1; // 1〜4便のいずれか
+
             const weathers = ['sunny', 'cloudy', 'rainy', 'sunny'];
             weather = weathers[Math.floor(Math.random() * weathers.length)];
             document.getElementById('weather-display').innerText = 
@@ -226,6 +271,8 @@
             }
 
             farmer.speaking = Math.random() < 0.7;
+            train.x = -700;
+            updateTimetableUI();
         }
 
         function resetGame() {
@@ -239,7 +286,6 @@
             gameState = 'TITLE';
         }
 
-        // キーボード操作対応 (スペースキーでシャッター)
         window.addEventListener('keydown', (e) => {
             if (e.code === 'Space' && gameState === 'PLAYING') {
                 e.preventDefault();
@@ -247,19 +293,24 @@
             }
         });
 
-        // メインループ
         let lastTime = performance.now();
         function gameLoop(timestamp) {
             const dt = (timestamp - lastTime) / 1000;
             lastTime = timestamp;
 
             if (gameState === 'PLAYING') {
-                gameTime += dt;
-                const timeLeft = Math.max(0, maxTime - gameTime);
-                document.getElementById('timer-display').innerText = timeLeft.toFixed(1) + 's';
+                // 時間進行 (1秒で timeSpeed 分進む)
+                currentGameTimeMinutes += dt * timeSpeed;
 
-                if (gameTime >= maxTime) {
-                    triggerArrest("長時間線路周辺で不審な動きをしていたため、通報により警察官に連行されました。");
+                // 時計文字列フォーマット
+                let hours = Math.floor(currentGameTimeMinutes / 60);
+                let minutes = Math.floor(currentGameTimeMinutes % 60);
+                let timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
+                document.getElementById('clock-display').innerText = timeStr;
+
+                // 夜間（19:00以降）になったら警察登場で逮捕
+                if (currentGameTimeMinutes >= endDayMinutes) {
+                    triggerArrest("日没（19:00）を過ぎても線路周辺をウロついていたため、不審者として通報され逮捕されました。");
                 }
 
                 train.x += train.speed;
@@ -280,41 +331,54 @@
             document.getElementById('screen-arrest').classList.remove('hidden');
         }
 
-        // 描画・更新処理
         function updateAndRender() {
             ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-            // 1. 背景（空）
-            let skyGrad = ctx.createLinearGradient(0, 0, 0, 300);
-            if (weather === 'sunny') {
-                skyGrad.addColorStop(0, '#38bdf8');
-                skyGrad.addColorStop(1, '#bae6fd');
+            // 時間に応じた空のグラデーション（夕方〜夜の演出）
+            let hours = currentGameTimeMinutes / 60;
+            let skyTop = '#38bdf8', skyBottom = '#bae6fd';
+            if (hours >= 17 && hours < 19) {
+                // 夕方
+                skyTop = '#f97316';
+                skyBottom = '#fed7aa';
+            } else if (hours >= 19) {
+                // 夜
+                skyTop = '#020617';
+                skyBottom = '#1e293b';
             } else if (weather === 'cloudy') {
-                skyGrad.addColorStop(0, '#64748b');
-                skyGrad.addColorStop(1, '#cbd5e1');
-            } else {
-                skyGrad.addColorStop(0, '#334155');
-                skyGrad.addColorStop(1, '#64748b');
+                skyTop = '#64748b'; skyBottom = '#cbd5e1';
+            } else if (weather === 'rainy') {
+                skyTop = '#334155'; skyBottom = '#64748b';
             }
+
+            let skyGrad = ctx.createLinearGradient(0, 0, 0, 300);
+            skyGrad.addColorStop(0, skyTop);
+            skyGrad.addColorStop(1, skyBottom);
             ctx.fillStyle = skyGrad;
             ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-            if (weather === 'sunny') {
+            // 太陽・月
+            if (hours < 17 && weather === 'sunny') {
                 ctx.fillStyle = '#fef08a';
                 ctx.beginPath();
                 ctx.arc(800, 90, 45, 0, Math.PI * 2);
                 ctx.fill();
-            } else {
-                ctx.fillStyle = 'rgba(255,255,255,0.4)';
+            } else if (hours >= 17 && hours < 19) {
+                // 夕日
+                ctx.fillStyle = '#ea580c';
                 ctx.beginPath();
-                ctx.arc(200, 100, 50, 0, Math.PI * 2);
-                ctx.arc(250, 90, 60, 0, Math.PI * 2);
-                ctx.arc(300, 100, 40, 0, Math.PI * 2);
+                ctx.arc(750, 150, 40, 0, Math.PI * 2);
+                ctx.fill();
+            } else if (hours >= 19) {
+                // 月
+                ctx.fillStyle = '#f8fafc';
+                ctx.beginPath();
+                ctx.arc(800, 80, 30, 0, Math.PI * 2);
                 ctx.fill();
             }
 
             // 山
-            ctx.fillStyle = weather === 'rainy' ? '#334155' : '#15803d';
+            ctx.fillStyle = hours >= 19 ? '#0f172a' : (weather === 'rainy' ? '#334155' : '#15803d');
             ctx.beginPath();
             ctx.moveTo(0, 300);
             ctx.lineTo(200, 180);
@@ -326,7 +390,7 @@
             ctx.fill();
 
             // 田園風景
-            ctx.fillStyle = weather === 'rainy' ? '#166534' : '#22c55e';
+            ctx.fillStyle = hours >= 19 ? '#064e3b' : (weather === 'rainy' ? '#166534' : '#22c55e');
             ctx.fillRect(0, 330, canvas.width, 210);
 
             ctx.strokeStyle = '#15803d';
@@ -424,6 +488,29 @@
                     ctx.lineTo(rx - 5, ry + 15);
                     ctx.stroke();
                 }
+            }
+
+            // 夜間（19:00以降）ならパトカーと警官が登場して威圧
+            if (hours >= 19) {
+                ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // パトカー描画
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(600, 420, 110, 50);
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(630, 395, 50, 30);
+                // パトランプ点滅
+                ctx.fillStyle = Math.floor(Date.now() / 200) % 2 === 0 ? '#ef4444' : '#3b82f6';
+                ctx.fillRect(650, 385, 15, 10);
+
+                // 警官
+                ctx.fillStyle = '#1e3a8a'; // 警察官制服
+                ctx.fillRect(540, 420, 25, 50);
+                ctx.fillStyle = '#fde047';
+                ctx.beginPath();
+                ctx.arc(552, 410, 10, 0, Math.PI * 2);
+                ctx.fill();
             }
 
             if (flashAlpha > 0) {
