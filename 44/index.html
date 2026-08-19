@@ -13,11 +13,11 @@
 </head>
 <body class="bg-slate-900 text-white font-pop h-screen w-screen overflow-hidden flex flex-col items-center justify-between p-1 sm:p-2 select-none">
 
-    <!-- カメラボディ風コンテナ -->
-    <div id="game-container" class="relative w-full max-w-4xl h-full bg-slate-800 rounded-xl sm:rounded-2xl shadow-2xl border-2 sm:border-4 border-slate-700 flex flex-col justify-between overflow-hidden">
+    <!-- カメラボディ風コンテナ（見切れ完全防止のフレックス構造） -->
+    <div id="game-container" class="relative w-full max-w-4xl h-full max-h-screen bg-slate-800 rounded-xl sm:rounded-2xl shadow-2xl border-2 sm:border-4 border-slate-700 flex flex-col justify-between overflow-hidden">
         
         <!-- カメラ上部コントロールバー -->
-        <header class="w-full bg-slate-900 px-3 sm:px-4 py-2 flex justify-between items-center gap-2 border-b border-slate-700 shrink-0">
+        <header class="w-full bg-slate-900 px-3 sm:px-4 py-2 flex justify-between items-center gap-2 border-b border-slate-700 shrink-0 z-10">
             <div class="flex items-center space-x-2">
                 <div class="w-2.5 h-2.5 rounded-full bg-red-500 animate-pulse"></div>
                 <h1 class="text-xs sm:text-sm font-bold tracking-wider text-amber-400 font-dot">EOS-TORITETSU</h1>
@@ -29,7 +29,7 @@
             </div>
         </header>
 
-        <!-- メインビューポート -->
+        <!-- メインビューポート（Canvas画面） -->
         <div class="relative w-full flex-1 bg-sky-300 overflow-hidden flex items-center justify-center cursor-crosshair min-h-0" id="viewport-wrapper">
             <canvas id="gameCanvas" class="w-full h-full object-contain block"></canvas>
 
@@ -68,8 +68,8 @@
                 <div class="text-2xl sm:text-4xl font-extrabold text-amber-400 mb-2 drop-shadow-lg font-dot tracking-wider">一瞬の絶景・撮り鉄道</div>
                 <p class="text-slate-300 max-w-md mb-4 text-xs sm:text-sm leading-relaxed">
                     田園風景の中を一日8本の電車が時刻表通りに運行する。<br>
-                    農民は朝から<span class="text-yellow-400 font-bold">30分間（07:30まで）</span>だけ話しかけてきます！時間が経てば帰宅します。<br>
-                    <span class="text-red-400 font-bold">⚠️ 注意:</span> 軽トラ、鳥、乗客の手振り、悪天候は減点対象！<br>
+                    天候は<span class="text-cyan-400 font-bold">1時間おきにランダム変化</span>！農家のおじさんも<span class="text-yellow-400 font-bold">時々ランダムに出没</span>します。<br>
+                    <span class="text-red-400 font-bold">⚠️ 注意:</span> 軽トラ、鳥、農民の邪魔、乗客の手振り、悪天候はすべて減点対象！<br>
                     日没（19:00）までモタモタしていると<span class="text-yellow-400 font-bold">警察に通報されて逮捕</span>されます。<span class="text-amber-300 font-bold">シャッターチャンスは一度きり！</span>
                 </p>
                 <button onclick="startGame()" class="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-extrabold px-6 py-3 rounded-xl shadow-xl transform transition hover:scale-105 active:scale-95 text-base sm:text-lg tracking-wider border-2 border-yellow-300">
@@ -88,14 +88,14 @@
             </div>
         </div>
 
-        <!-- カメラ背面操作パネル -->
-        <footer class="w-full bg-slate-900 px-4 py-3 flex justify-between items-center gap-2 border-t border-slate-700 shrink-0">
+        <!-- カメラ背面操作パネル（見切れ完全防止の下部固定フッター） -->
+        <footer class="w-full bg-slate-900 px-4 py-2.5 sm:py-3 flex justify-between items-center gap-2 border-t border-slate-700 shrink-0 z-10">
             <div class="text-[11px] text-slate-400 font-dot hidden sm:block">
                 操作: <span class="text-amber-400">スペースキー</span>
             </div>
             <div class="flex items-center justify-center w-full sm:w-auto">
-                <button id="shutter-btn" onclick="takePhoto()" disabled class="w-full sm:w-auto bg-slate-700 text-slate-400 cursor-not-allowed font-extrabold px-12 py-3 rounded-xl text-lg shadow-xl transition flex items-center justify-center space-x-2 border-2 border-slate-600">
-                    <span class="text-2xl">📸</span>
+                <button id="shutter-btn" onclick="takePhoto()" disabled class="w-full sm:w-auto bg-slate-700 text-slate-400 cursor-not-allowed font-extrabold px-10 sm:px-12 py-2.5 sm:py-3 rounded-xl text-base sm:text-lg shadow-xl transition flex items-center justify-center space-x-2 border-2 border-slate-600">
+                    <span class="text-xl sm:text-2xl">📸</span>
                     <span>シャッターを切る！</span>
                 </button>
             </div>
@@ -172,6 +172,7 @@
         let timeSpeed = 25;
 
         let weather = 'sunny';
+        let lastWeatherChangeMinute = 420; // 07:00 からスタート
 
         let train = {
             x: -800,
@@ -187,9 +188,9 @@
         let farmer = {
             x: 650,
             y: 360,
-            active: true,
-            spawnTime: 7 * 60, // 07:00 出現
-            durationMinutes: 30, // 30分間滞在
+            active: false,
+            nextSpawnMinute: 450,
+            durationMinutes: 30,
             text: "おい、そこで何コソコソしとるんじゃ！"
         };
 
@@ -242,6 +243,11 @@
             document.getElementById('timetable-list').innerHTML = html;
         }
 
+        function updateWeatherDisplay() {
+            document.getElementById('weather-display').innerText = 
+                weather === 'sunny' ? '晴 ☀️' : weather === 'cloudy' ? '曇 ☁️' : '雨 🌧️';
+        }
+
         function startGame() {
             document.getElementById('screen-title').classList.add('hidden');
             const shutterBtn = document.getElementById('shutter-btn');
@@ -251,13 +257,13 @@
 
             gameState = 'PLAYING';
             currentGameTimeMinutes = 7 * 60; // 07:00
+            lastWeatherChangeMinute = 7 * 60;
 
             timetable.forEach(t => t.dispatched = false);
 
-            const weathers = ['sunny', 'cloudy', 'rainy', 'sunny'];
+            const weathers = ['sunny', 'cloudy', 'rainy'];
             weather = weathers[Math.floor(Math.random() * weathers.length)];
-            document.getElementById('weather-display').innerText = 
-                weather === 'sunny' ? '晴 ☀️' : weather === 'cloudy' ? '曇 ☁️' : '雨 🌧️';
+            updateWeatherDisplay();
 
             obstacles = [];
             if (Math.random() < 0.7) {
@@ -268,10 +274,9 @@
                 obstacles.push({ type: 'truck', x: -200, y: 390, vx: 2.5 });
             }
 
-            // 農民は07:00から出現し、30分間（07:30まで）滞在
-            farmer.active = Math.random() < 0.8;
-            farmer.spawnTime = 7 * 60;
-            farmer.durationMinutes = 30;
+            // 農民の初回ランダム出没スケジュール（07:15〜08:00の間などでランダムに設定）
+            farmer.active = false;
+            farmer.nextSpawnMinute = currentGameTimeMinutes + Math.floor(Math.random() * 60) + 10; // 10〜70分後に初出没
 
             train.active = false;
             train.x = -800;
@@ -309,11 +314,25 @@
                 let timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
                 document.getElementById('clock-display').innerText = timeStr;
 
-                // 農民が30分経過したら帰宅して消えるチェック
-                if (farmer.active && currentGameTimeMinutes >= (farmer.spawnTime + farmer.durationMinutes)) {
-                    farmer.active = false;
+                // 1時間（60分）おきに天候をランダムに変更
+                if (currentGameTimeMinutes - lastWeatherChangeMinute >= 60) {
+                    lastWeatherChangeMinute = currentGameTimeMinutes;
+                    const weathers = ['sunny', 'cloudy', 'rainy', 'sunny'];
+                    weather = weathers[Math.floor(Math.random() * weathers.length)];
+                    updateWeatherDisplay();
                 }
 
+                // 農民のランダム出没・帰宅ロジック
+                if (!farmer.active && currentGameTimeMinutes >= farmer.nextSpawnMinute && currentGameTimeMinutes < endDayMinutes - 60) {
+                    farmer.active = true;
+                    farmer.spawnTime = currentGameTimeMinutes;
+                } else if (farmer.active && currentGameTimeMinutes >= farmer.spawnTime + farmer.durationMinutes) {
+                    farmer.active = false;
+                    // 次の出没時間をランダムに予約（60〜120分後）
+                    farmer.nextSpawnMinute = currentGameTimeMinutes + Math.floor(Math.random() * 90) + 60;
+                }
+
+                // 時刻表による電車発車チェック
                 timetable.forEach(item => {
                     if (!item.dispatched && currentGameTimeMinutes >= item.minutes) {
                         item.dispatched = true;
@@ -471,7 +490,7 @@
                 }
             });
 
-            // 農民（アクティブな間だけ描画）
+            // 農民（ランダムに出没）
             if (farmer.active) {
                 ctx.fillStyle = '#eab308';
                 ctx.fillRect(farmer.x, 430, 30, 50);
@@ -643,7 +662,6 @@
                 breakdown.push({ text: "🕊️ 鳥がフレームを横切って写り込んだ", pts: "-20点" });
             }
 
-            // 農民がまだアクティブな状態で写り込んでいるか
             if (farmer.active) {
                 score -= 40;
                 breakdown.push({ text: "🧑‍🌾 農民が話しかけてきて構図が台無し", pts: "-40点" });
