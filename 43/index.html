@@ -240,7 +240,6 @@
                 }
                 board.push(row);
             }
-            // 初期配置で既に3つ揃っている場合は再生成して綺麗な状態にする
             if (checkMatches().length > 0) {
                 initBoard();
             }
@@ -319,7 +318,7 @@
             });
         }
 
-        // 落下 & コンボ処理 (常に4x4マスを隙間なく埋めるように上から補充)
+        // 落下 & コンボ処理 (列ごとに再構築して確実に4x4を埋める)
         async function processGravityAndMatches() {
             let comboCount = 0;
             
@@ -342,21 +341,19 @@
 
                 await sleep(250);
 
-                // 重力落下 & 常に4x4の最上段まで新規パネルを補充
+                // 列ごとに残ったドロップを集め、足りない分を上から新しいドロップで確実に補充
                 for (let c = 0; c < BOARD_SIZE; c++) {
-                    let writeRow = BOARD_SIZE - 1;
+                    let colDrops = [];
                     for (let r = BOARD_SIZE - 1; r >= 0; r--) {
                         if (board[r][c] !== null) {
-                            board[writeRow][c] = board[r][c];
-                            if (writeRow !== r) {
-                                board[r][c] = null;
-                            }
-                            writeRow--;
+                            colDrops.push(board[r][c]);
                         }
                     }
-                    // 空いた上部に新しいドロップを補充して常に4x4を完全に埋める
-                    for (let r = writeRow; r >= 0; r--) {
-                        board[r][c] = randomDrop();
+                    while (colDrops.length < BOARD_SIZE) {
+                        colDrops.unshift(randomDrop());
+                    }
+                    for (let r = 0; r < BOARD_SIZE; r++) {
+                        board[r][c] = colDrops[r];
                     }
                 }
                 renderBoard();
