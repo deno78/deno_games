@@ -37,7 +37,7 @@
             box-shadow: inset 0 2px 6px rgba(255,255,255,0.6), 0 10px 25px rgba(0,0,0,0.8);
         }
 
-        /* スタイルごとのカラー・テーマ */
+        /* スタイルごとのカラー・テーマ (4種類の数字表現) */
         /* 0: アラビア (青系) */
         .style-0 {
             background: linear-gradient(135deg, #3b82f6 0%, #1d4ed8 50%, #1e3a8a 100%);
@@ -85,8 +85,8 @@
     <!-- ヘッダー -->
     <header class="w-full max-w-md flex justify-between items-center bg-slate-900/80 backdrop-blur-md px-4 py-3 rounded-2xl border border-slate-700 shadow-xl">
         <div>
-            <h1 class="text-xs text-indigo-400 font-bold tracking-widest uppercase">Pazudora Style</h1>
-            <div class="title-font text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-300 to-pink-500">
+            <h1 class="text-xs text-indigo-400 font-bold tracking-widest uppercase">Pazudora Match-3</h1>
+            <div class="title-font text-base sm:text-lg font-black text-transparent bg-clip-text bg-gradient-to-r from-cyan-400 via-indigo-300 to-pink-500">
                 NUM-SLIDE ACTION
             </div>
         </div>
@@ -109,17 +109,13 @@
 
         <!-- 4x4ボード -->
         <div id="board" class="relative grid grid-cols-4 gap-2.5 p-3.5 bg-slate-900/90 backdrop-blur-lg rounded-3xl board-glow border-2 border-indigo-500/40 select-none">
-            <!-- JSで動的生成 -->
+            <!-- JSで動적生成 -->
         </div>
 
-        <!-- パズル持ち時間ゲージ -->
-        <div class="w-full max-w-[320px] mt-4 bg-slate-800/80 rounded-full h-3 p-0.5 border border-slate-700 overflow-hidden shadow-inner">
-            <div id="puzzle-time-bar" class="bg-gradient-to-r from-emerald-500 via-amber-500 to-rose-500 h-full rounded-full transition-all duration-75 w-full"></div>
+        <div class="text-xs text-slate-400 mt-3 text-center">
+            同じ種類の数字を縦か横に <span class="text-pink-400 font-bold">3つ以上</span> 並べて消そう！
         </div>
-        <div class="text-[11px] text-slate-400 mt-1 flex justify-between w-full max-w-[320px] px-1">
-            <span>HOLD TIME / STAMINA</span>
-            <span id="combo-display" class="text-pink-400 font-bold"></span>
-        </div>
+        <div id="combo-display" class="h-6 text-sm font-bold text-pink-400 mt-1"></div>
     </main>
 
     <!-- フッター / コントロール -->
@@ -199,7 +195,11 @@
         }
         const sfx = new SoundFX();
 
-        // 数字表現の定義 (4種類)
+        // 4種類の数字表現スタイル
+        // 0: アラビア数字 (1,2,3,4)
+        // 1: 漢数字 (一,二,三,四)
+        // 2: ローマ数字 (I,II,III,IV)
+        // 3: 〇付数字 (①,②,③,④)
         const NUMBER_STYLES = [
             { name: 'arabic', symbols: ['', '1', '2', '3', '4'] },
             { name: 'kanji',  symbols: ['', '一', '二', '三', '四'] },
@@ -208,7 +208,7 @@
         ];
 
         const BOARD_SIZE = 4;
-        let board = []; // 2次元配列 [row][col] = { value: 1-4, style: 0-3 }
+        let board = []; 
         let score = 0;
         let timeLeft = 60;
         let maxCombo = 0;
@@ -217,9 +217,7 @@
 
         // パズル操作の状態
         let isHolding = false;
-        let holdCoord = null; // {r, c}
-        let currentPointerPos = { x: 0, y: 0 };
-        let puzzleEnergy = 100; // パズル保持可能エネルギー（時間経過で減る or 無制限にする代わりにスムーズな操作感）
+        let holdCoord = null; 
 
         const boardEl = document.getElementById('board');
         const scoreEl = document.getElementById('score');
@@ -229,18 +227,15 @@
         const finalScoreEl = document.getElementById('final-score');
         const finalMaxComboEl = document.getElementById('final-max-combo');
         const effectLayer = document.getElementById('effect-layer');
-        const puzzleTimeBar = document.getElementById('puzzle-time-bar');
         const comboDisplay = document.getElementById('combo-display');
 
-        // ランダムなドロップを生成
         function randomDrop() {
             return {
-                value: Math.floor(Math.random() * 4) + 1, // 1, 2, 3, 4
-                style: Math.floor(Math.random() * 4)     // 0, 1, 2, 3
+                value: Math.floor(Math.random() * 4) + 1, // 1〜4
+                style: Math.floor(Math.random() * 4)     // 0〜3 (種類)
             };
         }
 
-        // 初期盤面生成 (マッチがない状態にするか、あるいは初期配置)
         function initBoard() {
             board = [];
             for (let r = 0; r < BOARD_SIZE; r++) {
@@ -250,13 +245,12 @@
                 }
                 board.push(row);
             }
-            // 初期状態で即マッチがあれば再生成
+            // 初期配置で既に3つ揃っている場合は再生成
             if (checkMatches().length > 0) {
                 initBoard();
             }
         }
 
-        // 盤面を描画
         function renderBoard() {
             boardEl.innerHTML = '';
             for (let r = 0; r < BOARD_SIZE; r++) {
@@ -280,34 +274,47 @@
             }
         }
 
-        // マッチング判定 (縦横に 1, 2, 3, 4 の順で並んでいるか)
-        // 今回の仕様：「縦横いずれかに隣接して1,2,3,4を順番に並べたらマスが消えて」
-        // つまり、長さ4の行または列、あるいは4つの連続した並び（1->2->3->4の順）を検出する。
-        // 4x4サイズなので、各行（横4つ）および各列（縦4つ）が対象。
-        // 順方向 (1, 2, 3, 4) または 逆方向 (4, 3, 2, 1) も含めるか、厳密に 1, 2, 3, 4 の順。両方OKにすると爽快。
+        // マッチング判定 (同じ種類(style)が縦または横に3つ以上並んだら消える)
         function checkMatches() {
             let matchedCoords = new Set();
 
-            // 横方向のチェック (各行)
+            // 横方向チェック
             for (let r = 0; r < BOARD_SIZE; r++) {
-                const rowVals = [board[r][0].value, board[r][1].value, board[r][2].value, board[r][3].value];
-                // 順方向 [1, 2, 3, 4] または逆方向 [4, 3, 2, 1]
-                if ((rowVals[0] === 1 && rowVals[1] === 2 && rowVals[2] === 3 && rowVals[3] === 4) ||
-                    (rowVals[0] === 4 && rowVals[1] === 3 && rowVals[2] === 2 && rowVals[3] === 1)) {
-                    for (let c = 0; c < BOARD_SIZE; c++) {
-                        matchedCoords.add(`${r},${c}`);
+                let c = 0;
+                while (c < BOARD_SIZE) {
+                    let startC = c;
+                    let style = board[r][c].style;
+                    let count = 1;
+                    while (c + 1 < BOARD_SIZE && board[r][c + 1].style === style) {
+                        count++;
+                        c++;
                     }
+                    if (count >= 3) {
+                        for (let i = startC; i <= c; i++) {
+                            matchedCoords.add(`${r},${i}`);
+                        }
+                    }
+                    c++;
                 }
             }
 
-            // 縦方向のチェック (各列)
+            // 縦方向チェック
             for (let c = 0; c < BOARD_SIZE; c++) {
-                const colVals = [board[0][c].value, board[1][c].value, board[2][c].value, board[3][c].value];
-                if ((colVals[0] === 1 && colVals[1] === 2 && colVals[2] === 3 && colVals[3] === 4) ||
-                    (colVals[0] === 4 && colVals[1] === 3 && colVals[2] === 2 && colVals[3] === 1)) {
-                    for (let r = 0; r < BOARD_SIZE; r++) {
-                        matchedCoords.add(`${r},${c}`);
+                let r = 0;
+                while (r < BOARD_SIZE) {
+                    let startR = r;
+                    let style = board[r][c].style;
+                    let count = 1;
+                    while (r + 1 < BOARD_SIZE && board[r + 1][c].style === style) {
+                        count++;
+                        r++;
                     }
+                    if (count >= 3) {
+                        for (let i = startR; i <= r; i++) {
+                            matchedCoords.add(`${i},${c}`);
+                        }
+                    }
+                    r++;
                 }
             }
 
@@ -317,7 +324,7 @@
             });
         }
 
-        // 落下 & 新規補充処理
+        // 落下 & コンボ処理
         async function processGravityAndMatches() {
             let comboCount = 0;
             
@@ -333,7 +340,6 @@
                 sfx.match(comboCount);
                 showComboPopup(comboCount);
 
-                // マッチしたマスを一時的に空（null）にする
                 matches.forEach(m => {
                     board[m.r][m.c] = null;
                 });
@@ -341,7 +347,7 @@
 
                 await sleep(250);
 
-                // 重力処理：上のドロップを下に落とす
+                // 落下処理
                 for (let c = 0; c < BOARD_SIZE; c++) {
                     let writeRow = BOARD_SIZE - 1;
                     for (let r = BOARD_SIZE - 1; r >= 0; r--) {
@@ -353,7 +359,6 @@
                             writeRow--;
                         }
                     }
-                    // 空いた上部に新しいドロップを降らせる
                     for (let r = writeRow; r >= 0; r--) {
                         board[r][c] = randomDrop();
                     }
@@ -380,7 +385,6 @@
             return new Promise(resolve => setTimeout(resolve, ms));
         }
 
-        // ポインタ / タッチ操作のハンドリング（パズドラ式スワイプ）
         function getCellFromCoord(clientX, clientY) {
             const cells = boardEl.querySelectorAll('[data-row]');
             for (let cell of cells) {
@@ -412,7 +416,6 @@
             if (!gameActive || !isHolding) return;
             const targetCoord = getCellFromCoord(e.clientX, e.clientY);
             if (targetCoord && (targetCoord.r !== holdCoord.r || targetCoord.c !== holdCoord.c)) {
-                // 隣接またはスワイプ先のドロップと位置をスワップ
                 const temp = board[holdCoord.r][holdCoord.c];
                 board[holdCoord.r][holdCoord.c] = board[targetCoord.r][targetCoord.c];
                 board[targetCoord.r][targetCoord.c] = temp;
@@ -429,14 +432,12 @@
             holdCoord = null;
             renderBoard();
 
-            // 離した後にマッチング＆コンボ処理を実行
             await processGravityAndMatches();
         }
 
         boardEl.addEventListener('pointerup', endHold);
         boardEl.addEventListener('pointercancel', endHold);
 
-        // ゲーム開始
         function startGame() {
             sfx.init();
             sfx.start();
@@ -476,7 +477,6 @@
         startBtn.addEventListener('click', startGame);
         document.getElementById('restart-btn').addEventListener('click', startGame);
 
-        // 初期表示
         initBoard();
         renderBoard();
     </script>
