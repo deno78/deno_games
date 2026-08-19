@@ -24,7 +24,7 @@
 
         /* ドロップのスタイル */
         .drop {
-            transition: transform 0.1s ease, background-color 0.15s ease;
+            transition: transform 0.12s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.15s ease;
             box-shadow: inset 0 2px 4px rgba(255,255,255,0.4), inset 0 -4px 6px rgba(0,0,0,0.4), 0 4px 10px rgba(0,0,0,0.5);
             cursor: grab;
         }
@@ -32,9 +32,9 @@
             cursor: grabbing;
         }
         .drop.dragging {
-            transform: scale(1.15);
+            transform: scale(1.18);
             z-index: 50;
-            box-shadow: inset 0 2px 6px rgba(255,255,255,0.6), 0 10px 25px rgba(0,0,0,0.8);
+            box-shadow: inset 0 2px 6px rgba(255,255,255,0.6), 0 12px 30px rgba(0,0,0,0.8);
         }
 
         /* スタイルごとのカラー・テーマ (4種類の数字表現) */
@@ -61,6 +61,16 @@
             background: linear-gradient(135deg, #f59e0b 0%, #b45309 50%, #78350f 100%);
             border: 2px solid #fde68a;
             color: #ffffff;
+        }
+
+        /* 消滅アニメーション */
+        @keyframes vanish {
+            0% { transform: scale(1); opacity: 1; filter: brightness(1); }
+            50% { transform: scale(1.2); opacity: 0.8; filter: brightness(2); }
+            100% { transform: scale(0); opacity: 0; filter: brightness(3); }
+        }
+        .vanishing {
+            animation: vanish 0.3s ease-out forwards;
         }
 
         /* コンボポップアップ */
@@ -213,6 +223,7 @@
 
         let isHolding = false;
         let holdCoord = null; 
+        let isProcessing = false; // 処理中フラグ
 
         const boardEl = document.getElementById('board');
         const scoreEl = document.getElementById('score');
@@ -268,58 +279,58 @@
             }
         }
 
-        // マッチング判定
+        // 堅牢なマッチ3検出アルゴリズム（水平・垂直の連続3つ以上を正確にスキャン）
         function checkMatches() {
-            let matchedCoords = new Set();
+            let matchGrid = Array.from({length: BOARD_SIZE}, () => Array(BOARD_SIZE).fill(false));
+            let matchedCoords = [];
 
-            // 横方向チェック
+            // 横方向の連続チェック
             for (let r = 0; r < BOARD_SIZE; r++) {
-                let c = 0;
-                while (c < BOARD_SIZE) {
-                    let startC = c;
-                    let style = board[r][c].style;
-                    let count = 1;
-                    while (c + 1 < BOARD_SIZE && board[r][c + 1].style === style) {
-                        count++;
-                        c++;
+                for (let c = 0; c < BOARD_SIZE; c++) {
+                    const style = board[r][c].style;
+                    let length = 1;
+                    while (c + length < BOARD_SIZE && board[r][c + length].style === style) {
+                        length++;
                     }
-                    if (count >= 3) {
-                        for (let i = startC; i <= c; i++) {
-                            matchedCoords.add(`${r},${i}`);
+                    if (length >= 3) {
+                        for (let i = 0; i < length; i++) {
+                            matchGrid[r][c + i] = true;
                         }
                     }
-                    c++;
                 }
             }
 
-            // 縦方向チェック
+            // 縦方向の連続チェック
             for (let c = 0; c < BOARD_SIZE; c++) {
-                let r = 0;
-                while (r < BOARD_SIZE) {
-                    let startR = r;
-                    let style = board[r][c].style;
-                    let count = 1;
-                    while (r + 1 < BOARD_SIZE && board[r + 1][c].style === style) {
-                        count++;
-                        r++;
+                for (let r = 0; r < BOARD_SIZE; r++) {
+                    const style = board[r][c].style;
+                    let length = 1;
+                    while (r + length < BOARD_SIZE && board[r + length][c].style === style) {
+                        length++;
                     }
-                    if (count >= 3) {
-                        for (let i = startR; i <= r; i++) {
-                            matchedCoords.add(`${i},${c}`);
+                    if (length >= 3) {
+                        for (let i = 0; i < length; i++) {
+                            matchGrid[r + i][c] = true;
                         }
                     }
-                    r++;
                 }
             }
 
-            return Array.from(matchedCoords).map(coordStr => {
-                const [r, c] = coordStr.split(',').map(Number);
-                return {r, c};
-            });
+            for (let r = 0; r < BOARD_SIZE; r++) {
+                for (let c = 0; c < BOARD_SIZE; c++) {
+                    if (matchGrid[r][c]) {
+                        matchedCoords.push({r, c});
+                    }
+                }
+            }
+
+            return matchedCoords;
         }
 
-        // 落下 & コンボ処理 (列ごとに再構築して確実に4x4を埋める)
+        // 落下 & 連鎖処理（消去アニメーション付き）
         async function processGravityAndMatches() {
+            if (isProcessing) return;
+            isProcessing = true;
             let comboCount = 0;
             
             while (true) {
@@ -334,14 +345,23 @@
                 sfx.match(comboCount);
                 showComboPopup(comboCount);
 
+                // 1. マッチしたDOM要素に消滅アニメーションクラスを付与
+                matches.forEach(m => {
+                    const cell = boardEl.querySelector(`[data-row="${m.r}"][data-col="${m.c}"]`);
+                    if (cell) cell.classList.add('vanishing');
+                });
+
+                await sleep(300);
+
+                // 2. 内部データ上でマッチしたマスをnullにする
                 matches.forEach(m => {
                     board[m.r][m.c] = null;
                 });
                 renderBoard();
 
-                await sleep(250);
+                await sleep(150);
 
-                // 列ごとに残ったドロップを集め、足りない分を上から新しいドロップで確実に補充
+                // 3. 列ごとに重力落下 & 新規ドロップ補充
                 for (let c = 0; c < BOARD_SIZE; c++) {
                     let colDrops = [];
                     for (let r = BOARD_SIZE - 1; r >= 0; r--) {
@@ -357,13 +377,15 @@
                     }
                 }
                 renderBoard();
-                await sleep(300);
+                await sleep(350);
             }
 
             if (comboCount > 0) {
                 comboDisplay.innerText = `${comboCount} COMBO!`;
                 setTimeout(() => { comboDisplay.innerText = ''; }, 1500);
             }
+
+            isProcessing = false;
         }
 
         function showComboPopup(combo) {
@@ -393,7 +415,7 @@
         }
 
         boardEl.addEventListener('pointerdown', (e) => {
-            if (!gameActive || isHolding) return;
+            if (!gameActive || isProcessing || isHolding) return;
             sfx.init();
             const cellCoord = getCellFromCoord(e.clientX, e.clientY);
             if (cellCoord) {
@@ -406,7 +428,7 @@
         });
 
         boardEl.addEventListener('pointermove', (e) => {
-            if (!gameActive || !isHolding) return;
+            if (!gameActive || !isHolding || isProcessing) return;
             const targetCoord = getCellFromCoord(e.clientX, e.clientY);
             if (targetCoord && (targetCoord.r !== holdCoord.r || targetCoord.c !== holdCoord.c)) {
                 const temp = board[holdCoord.r][holdCoord.c];
@@ -438,6 +460,7 @@
             timeLeft = 60;
             maxCombo = 0;
             gameActive = true;
+            isProcessing = false;
             scoreEl.innerText = score;
             timerEl.innerText = timeLeft;
             comboDisplay.innerText = '';
@@ -449,6 +472,7 @@
 
             if (gameTimer) clearInterval(gameTimer);
             gameTimer = setInterval(() => {
+                if (!gameActive) return;
                 timeLeft--;
                 timerEl.innerText = timeLeft;
                 if (timeLeft <= 0) {
