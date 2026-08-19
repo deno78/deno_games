@@ -13,7 +13,7 @@
 </head>
 <body class="bg-slate-900 text-white font-pop h-screen w-screen overflow-hidden flex flex-col items-center justify-between p-1 sm:p-2 select-none">
 
-    <!-- カメラボディ風コンテナ（全画面にぴったりフィット） -->
+    <!-- カメラボディ風コンテナ -->
     <div id="game-container" class="relative w-full max-w-4xl h-full bg-slate-800 rounded-xl sm:rounded-2xl shadow-2xl border-2 sm:border-4 border-slate-700 flex flex-col justify-between overflow-hidden">
         
         <!-- カメラ上部コントロールバー -->
@@ -29,7 +29,7 @@
             </div>
         </header>
 
-        <!-- メインビューポート（Canvas画面：縮小可能） -->
+        <!-- メインビューポート -->
         <div class="relative w-full flex-1 bg-sky-300 overflow-hidden flex items-center justify-center cursor-crosshair min-h-0" id="viewport-wrapper">
             <canvas id="gameCanvas" class="w-full h-full object-contain block"></canvas>
 
@@ -68,8 +68,8 @@
                 <div class="text-2xl sm:text-4xl font-extrabold text-amber-400 mb-2 drop-shadow-lg font-dot tracking-wider">一瞬の絶景・撮り鉄道</div>
                 <p class="text-slate-300 max-w-md mb-4 text-xs sm:text-sm leading-relaxed">
                     田園風景の中を一日8本の電車が時刻表通りに運行する。<br>
-                    どの便を狙ってシャッターを切るか見極めろ！<br>
-                    <span class="text-red-400 font-bold">⚠️ 注意:</span> 鳥、軽トラ、農民のおしゃべり、乗客の手振り、悪天候はすべて減点対象！<br>
+                    農民は朝から<span class="text-yellow-400 font-bold">30分間（07:30まで）</span>だけ話しかけてきます！時間が経てば帰宅します。<br>
+                    <span class="text-red-400 font-bold">⚠️ 注意:</span> 軽トラ、鳥、乗客の手振り、悪天候は減点対象！<br>
                     日没（19:00）までモタモタしていると<span class="text-yellow-400 font-bold">警察に通報されて逮捕</span>されます。<span class="text-amber-300 font-bold">シャッターチャンスは一度きり！</span>
                 </p>
                 <button onclick="startGame()" class="bg-gradient-to-r from-amber-500 to-yellow-500 hover:from-amber-600 hover:to-yellow-600 text-slate-950 font-extrabold px-6 py-3 rounded-xl shadow-xl transform transition hover:scale-105 active:scale-95 text-base sm:text-lg tracking-wider border-2 border-yellow-300">
@@ -88,7 +88,7 @@
             </div>
         </div>
 
-        <!-- カメラ背面操作パネル（下部固定で確実に収める） -->
+        <!-- カメラ背面操作パネル -->
         <footer class="w-full bg-slate-900 px-4 py-3 flex justify-between items-center gap-2 border-t border-slate-700 shrink-0">
             <div class="text-[11px] text-slate-400 font-dot hidden sm:block">
                 操作: <span class="text-amber-400">スペースキー</span>
@@ -167,8 +167,8 @@
             { id: 8, timeStr: "18:00", minutes: 1080, dispatched: false }
         ];
 
-        let currentGameTimeMinutes = 7 * 60;
-        const endDayMinutes = 19 * 60;
+        let currentGameTimeMinutes = 7 * 60; // 07:00 スタート
+        const endDayMinutes = 19 * 60; // 19:00
         let timeSpeed = 25;
 
         let weather = 'sunny';
@@ -187,7 +187,9 @@
         let farmer = {
             x: 650,
             y: 360,
-            speaking: false,
+            active: true,
+            spawnTime: 7 * 60, // 07:00 出現
+            durationMinutes: 30, // 30分間滞在
             text: "おい、そこで何コソコソしとるんじゃ！"
         };
 
@@ -248,7 +250,7 @@
             shutterBtn.classList.add('bg-gradient-to-r', 'from-amber-500', 'to-yellow-500', 'text-slate-950', 'hover:from-amber-600', 'hover:to-yellow-600', 'border-yellow-300', 'transform', 'hover:scale-105', 'active:scale-95');
 
             gameState = 'PLAYING';
-            currentGameTimeMinutes = 7 * 60;
+            currentGameTimeMinutes = 7 * 60; // 07:00
 
             timetable.forEach(t => t.dispatched = false);
 
@@ -266,7 +268,11 @@
                 obstacles.push({ type: 'truck', x: -200, y: 390, vx: 2.5 });
             }
 
-            farmer.speaking = Math.random() < 0.7;
+            // 農民は07:00から出現し、30分間（07:30まで）滞在
+            farmer.active = Math.random() < 0.8;
+            farmer.spawnTime = 7 * 60;
+            farmer.durationMinutes = 30;
+
             train.active = false;
             train.x = -800;
             updateTimetableUI();
@@ -302,6 +308,11 @@
                 let minutes = Math.floor(currentGameTimeMinutes % 60);
                 let timeStr = `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}`;
                 document.getElementById('clock-display').innerText = timeStr;
+
+                // 農民が30分経過したら帰宅して消えるチェック
+                if (farmer.active && currentGameTimeMinutes >= (farmer.spawnTime + farmer.durationMinutes)) {
+                    farmer.active = false;
+                }
 
                 timetable.forEach(item => {
                     if (!item.dispatched && currentGameTimeMinutes >= item.minutes) {
@@ -460,17 +471,17 @@
                 }
             });
 
-            // 農民
-            ctx.fillStyle = '#eab308';
-            ctx.fillRect(farmer.x, 430, 30, 50);
-            ctx.fillStyle = '#fde047';
-            ctx.beginPath();
-            ctx.arc(farmer.x + 15, 420, 12, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = '#ca8a04';
-            ctx.fillRect(farmer.x - 2, 406, 34, 6);
+            // 農民（アクティブな間だけ描画）
+            if (farmer.active) {
+                ctx.fillStyle = '#eab308';
+                ctx.fillRect(farmer.x, 430, 30, 50);
+                ctx.fillStyle = '#fde047';
+                ctx.beginPath();
+                ctx.arc(farmer.x + 15, 420, 12, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.fillStyle = '#ca8a04';
+                ctx.fillRect(farmer.x - 2, 406, 34, 6);
 
-            if (farmer.speaking) {
                 ctx.fillStyle = 'white';
                 ctx.strokeStyle = '#0f172a';
                 ctx.lineWidth = 2;
@@ -632,7 +643,8 @@
                 breakdown.push({ text: "🕊️ 鳥がフレームを横切って写り込んだ", pts: "-20点" });
             }
 
-            if (farmer.speaking) {
+            // 農民がまだアクティブな状態で写り込んでいるか
+            if (farmer.active) {
                 score -= 40;
                 breakdown.push({ text: "🧑‍🌾 農民が話しかけてきて構図が台無し", pts: "-40点" });
             }
@@ -651,7 +663,7 @@
             else if (score >= 40) rank = 'C (素人撮影)';
             else rank = 'D (ゴミ写真)';
 
-            let comment = generateComment(score, isFullyInFinder, weather, truckVisible, birdVisible, farmer.speaking, train.active && train.hasPassengerWaving);
+            let comment = generateComment(score, isFullyInFinder, weather, truckVisible, birdVisible, farmer.active, train.active && train.hasPassengerWaving);
 
             document.getElementById('result-score').innerText = score;
             document.getElementById('result-rank').innerText = rank;
@@ -667,7 +679,7 @@
             gameState = 'RESULT';
         }
 
-        function generateComment(score, inFinder, w, truck, bird, farm, passenger) {
+        function generateComment(score, inFinder, w, truck, bird, farmActive, passenger) {
             if (score >= 130) {
                 return "「ほう、見事な編成写真だな。光線状態もバッチリだし、余計なノイズも入っていない。お前、なかなかの玄人だな…嫉妬するわ。」";
             }
@@ -677,7 +689,7 @@
             if (w === 'cloudy') complaints.push("空がどんより曇ってて写真全体がパッとしないんだよなぁ。");
             if (truck) complaints.push("せっかくの田園風景にダサい赤い軽トラが被ってて台無し。");
             if (bird) complaints.push("鳥が余計な位置を飛んでてピントの邪魔。");
-            if (farm) complaints.push("農民のおっさんが話し掛けてきてるシーン写すなよ、誰得だよそれ。");
+            if (farmActive) complaints.push("農民のおっさんが話し掛けてきてるシーン写すなよ、誰得だよそれ。");
             if (passenger) complaints.push("乗客が窓から身を乗り出して手振ってやがる。一般人が写り込むとか素人の証明だな。");
 
             if (complaints.length === 0) {
