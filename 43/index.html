@@ -372,7 +372,7 @@
                 if (matches.length === 0) break;
 
                 comboCount++;
-                score += matches.length * 150 * comboCount; // 連番マッチはスコア高め
+                score += matches.length * 150 * comboCount;
                 scoreEl.innerText = score;
                 if (comboCount > maxCombo) maxCombo = comboCount;
 
@@ -523,7 +523,7 @@
         }
 
         startBtn.addEventListener('click', startGame);
-        document.getElementById('restart-btn'].addEventListener('click', startGame);
+        document.getElementById('restart-btn').addEventListener('click', startGame);
 
         initBoard();
         renderBoard();
