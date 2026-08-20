@@ -56,3 +56,4 @@ Deno/Web games collection.
 - [43. パズドラ風 ナンバー・スライドアクション (Puzzle & Dragons Style Number Slide Action)](./43/index.html)
 - [44. 撮り鉄シミュレーター (Toritetsu Simulator - One-shot Shutter Challenge)](./44/index.html)
 - [45. 腹筋を割るゲーム ～暑苦しい筋肉バトル～ (Ab-Crushing Trainer Battle)](./45/index.html)
+- [46. 定時ダッシュゲーム「残業はお断り！」 (Overtime Denied!)](./46/index.html)
