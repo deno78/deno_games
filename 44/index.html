@@ -13,7 +13,7 @@
 </head>
 <body class="bg-slate-900 text-white font-pop h-[100dvh] w-screen overflow-hidden flex flex-col items-center justify-between p-1 sm:p-2 select-none box-border">
 
-    <!-- カメラボディ風コンテナ（縦幅完全収容型） -->
+    <!-- カメラボディ風コンテナ -->
     <div id="game-container" class="relative w-full max-w-4xl h-full max-h-[100dvh] bg-slate-800 rounded-xl shadow-2xl border-2 sm:border-4 border-slate-700 flex flex-col justify-between overflow-hidden box-border">
         
         <!-- カメラ上部コントロールバー -->
@@ -29,7 +29,7 @@
             </div>
         </header>
 
-        <!-- メインビューポート（Canvas画面：縮小可能） -->
+        <!-- メインビューポート -->
         <div class="relative w-full flex-1 bg-sky-300 overflow-hidden flex items-center justify-center cursor-crosshair min-h-0" id="viewport-wrapper">
             <canvas id="gameCanvas" class="w-full h-full object-contain block"></canvas>
 
@@ -88,7 +88,7 @@
             </div>
         </div>
 
-        <!-- カメラ背面操作パネル（確実に画面内に収まる下部固定フッター） -->
+        <!-- カメラ背面操作パネル -->
         <footer class="w-full bg-slate-900 px-4 py-2 flex justify-between items-center gap-2 border-t border-slate-700 shrink-0 z-10 box-border">
             <div class="text-[11px] text-slate-400 font-dot hidden sm:block">
                 操作: <span class="text-amber-400">スペースキー</span>
@@ -618,8 +618,9 @@
             let finderLeft = 240;
             let finderRight = 720;
 
-            let isFullyInFinder = train.active && (trainTail >= finderLeft && trainHead <= finderRight);
-            let isPartiallyInFinder = train.active && !(trainHead < finderLeft || trainTail > finderRight);
+            // 寛容な枠内判定：電車の頭と尾行の大部分がフレーム内に入っていればOK
+            let isFullyInFinder = train.active && (trainTail >= finderLeft - 60 && trainHead <= finderRight + 60);
+            let isPartiallyInFinder = train.active && !(trainHead < finderLeft - 120 || trainTail > finderRight + 120);
 
             if (!train.active) {
                 score -= 80;
@@ -628,11 +629,11 @@
                 score += 50;
                 breakdown.push({ text: "✨ 電車が完璧にファインダー内に収まった！", pts: "+50点" });
             } else if (isPartiallyInFinder) {
-                score -= 20;
-                breakdown.push({ text: "⚠️ 電車の一部がフレームからはみ出ている", pts: "-20点" });
+                score -= 10;
+                breakdown.push({ text: "⚠️ 電車の一部が少しフレームからはみ出ている", pts: "-10点" });
             } else {
-                score -= 70;
-                breakdown.push({ text: "❌ 電車がまともに写っていない（タイミング外れ）", pts: "-70点" });
+                score -= 50;
+                breakdown.push({ text: "❌ 電車がまともに写っていない（タイミング外れ）", pts: "-50点" });
             }
 
             if (weather === 'cloudy') {
