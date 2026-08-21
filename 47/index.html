@@ -673,9 +673,9 @@
             el.classList.remove('show');
         });
 
-        // ボタン無効化（演出中）
-        document.getElementById('btn-ok').disabled = true;
-        document.getElementById('btn-ng').disabled = true;
+        // 読込途中でもボタンを押せるようにする
+        document.getElementById('btn-ok').disabled = false;
+        document.getElementById('btn-ng').disabled = false;
 
         // ワープロ風表示演出（速度を遅く調整: 200ms -> 500msに拡大）
         let delay = 500;
@@ -686,12 +686,6 @@
                 playSound('type');
             }, delay * (index + 1));
         });
-
-        // 表示完了後にボタン有効化
-        setTimeout(() => {
-            document.getElementById('btn-ok').disabled = false;
-            document.getElementById('btn-ng').disabled = false;
-        }, delay * 4 + 200);
 
         // タイマー開始 (15秒)
         timeLeft = 15;
