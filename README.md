@@ -61,3 +61,4 @@ Deno/Web games collection.
 - [48. とんかつをいつでも食えるか試すゲーム (Tonkatsu Lunch Week)](./48/index.html)
 - [49. レトロカンフーバトル (Retro Kung-Fu Battle)](./49/index.html)
 - [50. ゼビウス風縦スクロールシューティング (Xevious Style Retro Shmup)](./50/index.html)
+- [51. ガンヲタ部長と映画鑑賞：めぐりあい宇宙 (Gundam Movie Screening with Fanatic Boss)](./51/index.html)

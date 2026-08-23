@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ガンヲタ部長と映画鑑賞：めぐりあい宇宙</title>
+    <style>
+        :root {
+            --primary: #d32f2f;
+            --secondary: #1976d2;
+            --dark: #121212;
+            --light: #f5f5f5;
+            --accent: #ffa000;
+        }
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: #1e1e1e;
+            color: var(--light);
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            width: 100%;
+            max-width: 800px;
+            background: #2b2b2b;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            border: 2px solid #444;
+        }
+        header {
+            background: var(--primary);
+            color: white;
+            padding: 15px 20px;
+            text-align: center;
+            font-size: 1.2rem;
+            font-weight: bold;
+            letter-spacing: 1px;
+            border-bottom: 4px solid #b71c1c;
+        }
+        .screen {
+            position: relative;
+            height: 300px;
+            background: #000;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            overflow: hidden;
+            border-bottom: 3px solid #444;
+        }
+        .movie-bg {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, #2c3e50 0%, #000000 100%);
+            opacity: 0.8;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .stars {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background-image: radial-gradient(white 1px, transparent 0);
+            background-size: 50px 50px;
+            opacity: 0.3;
+            animation: moveStars 20s linear infinite;
+        }
+        @keyframes moveStars {
+            from { background-position: 0 0; }
+            to { background-position: 100px 100px; }
+        }
+        .theater-overlay {
+            position: absolute;
+            bottom: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-size: 0.85rem;
+            color: #aaa;
+            border: 1px solid #555;
+        }
+        .characters {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            padding: 0 40px;
+            z-index: 2;
+            position: absolute;
+            bottom: 20px;
+        }
+        .char-box {
+            text-align: center;
+            transition: transform 0.3s;
+        }
+        .char-avatar {
+            width: 90px;
+            height: 90px;
+            border-radius: 50%;
+            border: 3px solid #77f;
+            background: #444;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 2.5rem;
+            margin: 0 auto 8px auto;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        .char-box.boss .char-avatar {
+            border-color: var(--accent);
+            background: #533;
+        }
+        .char-box.player .char-avatar {
+            border-color: var(--secondary);
+            background: #335iss;
+        }
+        .char-name {
+            font-size: 0.9rem;
+            background: rgba(0,0,0,0.8);
+            padding: 2px 8px;
+            border-radius: 10px;
+            display: inline-block;
+        }
+        .status-panel {
+            background: #222;
+            padding: 12px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid #333;
+            font-size: 0.95rem;
+        }
+        .affection-bar-container {
+            flex-grow: 1;
+            margin: 0 20px;
+            background: #444;
+            height: 16px;
+            border-radius: 8px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid #555;
+        }
+        .affection-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #ff5252, #ffeb3b, #4caf50);
+            width: 50%;
+            transition: width 0.5s ease;
+        }
+        .affection-text {
+            position: absolute;
+            width: 100%;
+            text-align: center;
+            font-size: 11px;
+            font-weight: bold;
+            line-height: 16px;
+            color: #fff;
+            text-shadow: 1px 1px 1px #000;
+        }
+        .dialogue-area {
+            padding: 20px;
+            background: #333;
+            min-height: 110px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            border-bottom: 2px solid #222;
+        }
+        .speaker {
+            font-size: 0.85rem;
+            color: var(--accent);
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        .dialogue-text {
+            font-size: 1.1rem;
+            line-height: 1.5;
+            color: #fff;
+        }
+        .choices-area {
+            padding: 20px;
+            background: #2b2b2b;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 12px;
+        }
+        button.choice-btn {
+            background: #3a3a3a;
+            color: white;
+            border: 2px solid #555;
+            padding: 14px 20px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            text-align: left;
+            transition: all 0.2s;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        button.choice-btn:hover:not(:disabled) {
+            background: #4a4a4a;
+            border-color: var(--secondary);
+            transform: translateY(-2px);
+        }
+        button.choice-btn:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        button.choice-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        .choice-btn span.tag {
+            font-size: 0.8rem;
+            background: #555;
+            padding: 3px 8px;
+            border-radius: 4px;
+            color: #ccc;
+        }
+        .feedback-modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            display: none;
+        }
+        .modal-content {
+            background: #333;
+            padding: 30px;
+            border-radius: 12px;
+            text-align: center;
+            max-width: 450px;
+            width: 90%;
+            border: 2px solid var(--accent);
+            box-shadow: 0 10px 25px rgba(0,0,0,0.7);
+        }
+        .modal-content h2 {
+            margin-top: 0;
+            color: var(--accent);
+        }
+        .modal-content p {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            margin: 20px 0;
+        }
+        .modal-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            border-radius: 6px;
+            font-size: 1rem;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .modal-btn:hover {
+            background: #b71c1c;
+        }
+        .start-screen {
+            text-align: center;
+            padding: 40px 20px;
+        }
+        .start-screen h1 {
+            color: var(--accent);
+            margin-bottom: 10px;
+        }
+        .start-screen p {
+            color: #ccc;
+            margin-bottom: 30px;
+            line-height: 1.6;
+        }
+        .start-btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            border-radius: 8px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(211, 47, 47, 0.4);
+            transition: background 0.2s;
+        }
+        .start-btn:hover {
+            background: #b71c1c;
+        }
+        .game-ui {
+            display: none;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <header>機動戦士ガンダム III めぐりあい宇宙 同行シミュレーター</header>
+
+    <!-- スタート画面 -->
+    <div id="startScreen" class="start-screen">
+        <h1>ガンヲタ部長と映画鑑賞</h1>
+        <p>平社員のあなたは、ガンヲタの部長に誘われて劇場版『機動戦士ガンダムIII めぐりあい宇宙』を観に来ることになりました。<br>
+        上映中、部長は全10回にわたって<strong>自信満々に間違いまくる名台詞</strong>を連発してきます！<br>
+        適切な応対を選択し、部長の好感度を調整（あるいは維持）して無事に映画鑑賞を終えてください！</p>
+        <button class="start-btn" onclick="startGame()">映画鑑賞を開始する</button>
+    </div>
+
+    <!-- ゲーム画面 -->
+    <div id="gameUi" class="game-ui">
+        <div class="screen">
+            <div class="movie-bg">
+                <div class="stars"></div>
+            </div>
+            <div class="theater-overlay">🎬 映画館（レイトショー） / 第 <span id="currentTurn">1</span> / 10 幕</div>
+            <div class="characters">
+                <div class="char-box player">
+                    <div class="char-avatar">🧑‍💼</div>
+                    <div class="char-name">あなた（平社員）</div>
+                </div>
+                <div class="char-box boss" id="bossBox">
+                    <div class="char-avatar" id="bossAvatar">🧔</div>
+                    <div class="char-name">ガンヲタ部長</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="status-panel">
+            <div>好感度: <span id="affectionNum" style="font-weight:bold;">50</span></div>
+            <div class="affection-bar-container">
+                <div class="affection-bar" id="affectionBar"></div>
+                <div class="affection-text" id="affectionStatusText">普通</div>
+            </div>
+            <div>残り: <span id="remainingTurn">10</span>問</div>
+        </div>
+
+        <div class="dialogue-area">
+            <div class="speaker" id="speakerLabel">ガンヲタ部長</div>
+            <div class="dialogue-text" id="dialogueText">ここにセリフが表示されます。</div>
+        </div>
+
+        <div class="choices-area" id="choicesArea">
+            <button class="choice-btn" onclick="selectChoice(0)">
+                <span>「出た！名台詞」</span>
+                <span class="tag">劇場版にあるならUP / 無ければDOWN</span>
+            </button>
+            <button class="choice-btn" onclick="selectChoice(1)">
+                <span>「それTV版ですよね」</span>
+                <span class="tag">TV版限定ならUP / ただし確率で怒られる</span>
+            </button>
+            <button class="choice-btn" onclick="selectChoice(2)">
+                <span>「やっぱ劇場版っすよね」</span>
+                <span class="tag">劇場版固有なら大幅UP / TV版にもあればDOWN</span>
+            </button>
+        </div>
+    </div>
+</div>
+
+<!-- フィードバックモーダル -->
+<div class="feedback-modal" id="feedbackModal">
+    <div class="modal-content">
+        <h2 id="modalTitle">判定結果</h2>
+        <p id="modalText">ここに解説テキストが表示されます。</p>
+        <button class="modal-btn" onclick="nextTurn()">次へ進む</button>
+    </div>
+</div>
+
+<script>
+    // セリフデータ定義
+    // inMovie: 劇場版三部作にあるか (true/false)
+    // isMovieOnly: 劇場版固有か (true/false, inMovieがtrueの場合のみ有効、または映画版限定のセリフ)
+    // tvOnly: TV版のみにあるか (true/false)
+    const questionsData = [
+        {
+            speaker: "アムロ・レイ",
+            quote: "ララァ、僕を導いてくれ！",
+            inMovie: true,
+            isMovieOnly: false, // 劇場版にもTV版（最終話など）にもある
+            tvOnly: false,
+            desc: "「ララァ、僕を導いてくれ！」はTV版最終話や劇場版IIIのクライマックスなど両方に登場する有名なセリフです。"
+        },
+        {
+            speaker: "シャア・アズナブル",
+            quote: "ララァ、私を導いてくれ！",
+            inMovie: false, // シャアは言わない（アムロのセリフを勘違いしている）
+            isMovieOnly: false,
+            tvOnly: false,
+            desc: "シャアはこんなセリフ言いません！部長の完全な勘違いです。"
+        },
+        {
+            speaker: "アムロ・レイ",
+            quote: "まだだ、たかがメインカメラをやられただけだ！",
+            inMovie: true,
+            isMovieOnly: false,
+            tvOnly: false,
+            desc: "「まだだ、たかがメインカメラをやられただけだ！」はTV版第42話および劇場版III『めぐりあい宇宙』両方に登場する名台詞です。"
+        },
+        {
+            speaker: "アムロ・レイ",
+            quote: "僕にはまだ帰れる場所があるんだ。こんなに嬉しいことはない……。分かってくれるよね、ララァにはいつでも会いに行けるから",
+            inMovie: true,
+            isMovieOnly: true, // 劇場版IIIのラストの追加セリフ
+            tvOnly: false,
+            desc: "「僕にはまだ帰れる場所があるんだ……」は劇場版IIIのラストシーンで追加された非常に有名な劇場版固有のセリフです！"
+        },
+        {
+            speaker: "シャア・アズナブル",
+            quote: "戦いとは、いつも流血の…",
+            inMovie: false,
+            isMovieOnly: false,
+            tvOnly: false,
+            desc: "それデギン公王か別の人のセリフ混ざってますよ部長！"
+        },
+        {
+            speaker: "シャア・アズナブル",
+            quote: "フッ、香水くさいな",
+            inMovie: true,
+            isMovieOnly: false,
+            tvOnly: false,
+            desc: "「フッ、香水くさいな」はララァと出会うシーンなどでシャアが放つ名台詞（TV・劇場両方あり）です。"
+        },
+        {
+            speaker: "アムロ・レイ",
+            quote: "親父にもぶったことないのに！",
+            inMovie: true,
+            isMovieOnly: false,
+            tvOnly: false,
+            desc: "「親父にもぶったことないのに！」はTV版第9話が有名ですが、劇場版I『機動戦士ガンダム』の冒頭（サイド7襲撃後）でもしっかり健在です！"
+        },
+        {
+            speaker: "アムロ・レイ",
+            quote: "アムロ、行きまーす！",
+            inMovie: false, // 実は劇場版では「アムロ、レイ、いきまーす！」か単に発進セリフが変わっており、このお馴染みの掛け声はTV版がメイン。劇場版IIIではほぼ言わない！
+            isMovieOnly: false,
+            tvOnly: true,
+            desc: "実は劇場版三部作においてアムロの「アムロ、行きまーす！」という有名な掛け声はカットされていることが多いTV版限定に近いセリフです！"
+        },
+        {
+            speaker: "シャア・アズナブル",
+            quote: "ララァは賢いな、お前のような子は嫌いだよ",
+            inMovie: false,
+            isMovieOnly: false,
+            tvOnly: false,
+            desc: "「嫌いだよ」って、そんなツンデレなセリフは言ってません！部長の妄想です。"
+        },
+        {
+            speaker: "シャア・アズナブル",
+            quote: "見せてもらおうか、連邦軍のモビルスーツの性能とやらを！",
+            inMovie: true,
+            isMovieOnly: false,
+            tvOnly: false,
+            desc: "「見せてもらおうか、連邦軍のモビルスーツの性能とやらを！」はルウム戦役回想やシャアの登場シーン（TV・劇場両方）の定番名台詞です。"
+        },
+        {
+            speaker: "アムロ・レイ",
+            quote: "ガンダム、大地に立つ！！",
+            inMovie: false, // これはサブタイトル
+            isMovieOnly: false,
+            tvOnly: false,
+            desc: "それ第一話のサブタイトルですよ部長！"
+        },
+        {
+            speaker: "シャア・アズナブル",
+            quote: "坊やだからさ……",
+            inMovie: true,
+            isMovieOnly: false,
+            tvOnly: false,
+            desc: "「坊やだからさ……」はガルマの死に際に対するシャアの名台詞。TV版・劇場版IIの両方に登場します。"
+        },
+        {
+            speaker: "アムロ・レイ",
+            quote: "ニュータイプはエスパーじゃない！",
+            inMovie: false,
+            isMovieOnly: false,
+            tvOnly: true, // TV版第41話などのセリフ
+            tvOnlyFlag: true,
+            desc: "「ニュータイプはエスパーじゃない！」は主にTV版でアムロが苦悩する中で叫ぶTV版限定の印象的なセリフです！"
+        },
+        {
+            speaker: "シャア・アズナブル",
+            quote: "ララァ・スンは私の母になってくれるかもしれない女性だったのだ！",
+            inMovie: true,
+            isMovieOnly: true, // 劇場版IIIのあまりにも有名なラストの叫び
+            tvOnly: false,
+            desc: "「ララァ・スンは私の母になってくれるかもしれない女性だったのだ！」は劇場版III『めぐりあい宇宙』のラストを飾る最強の劇場版固有セリフです！"
+        },
+        {
+            speaker: "アムロ・レイ",
+            quote: "エルメスめ、プレッシャーが……！",
+            inMovie: true,
+            isMovieOnly: false,
+            tvOnly: false,
+            desc: "「エルメスめ、プレッシャーが……！」はソロモン攻略戦やア・バオア・クー戦（TV・劇場両方）でのアムロのセリフです。"
+        }
+    ];
+
+    let currentTurn = 1;
+    let maxTurns = 10;
+    let affection = 50;
+    let currentQuestion = null;
+    let gameActive = true;
+    let usedQuestions = [];
+
+    const startScreen = document.getElementById('startScreen');
+    const gameUi = document.getElementById('gameUi');
+    const affectionNum = document.getElementById('affectionNum');
+    const affectionBar = document.getElementById('affectionBar');
+    const affectionStatusText = document.getElementById('affectionStatusText');
+    const currentTurnSpan = document.getElementById('currentTurn');
+    const remainingTurnSpan = document.getElementById('remainingTurn');
+    const speakerLabel = document.getElementById('speakerLabel');
+    const dialogueText = document.getElementById('dialogueText');
+    const feedbackModal = document.getElementById('feedbackModal');
+    const modalTitle = document.getElementById('modalTitle');
+    const modalText = document.getElementById('modalText');
+    const bossAvatar = document.getElementById('bossAvatar');
+    const bossBox = document.getElementById('bossBox');
+
+    const avatars = ['🧔', '👓', '🧢', '💼'];
+
+    function startGame() {
+        startScreen.style.display = 'none';
+        gameUi.style.display = 'flex';
+        currentTurn = 1;
+        affection = 50;
+        usedQuestions = [];
+        loadNextQuestion();
+    }
+
+    function loadNextQuestion() {
+        if (currentTurn > maxTurns) {
+            endGame();
+            return;
+        }
+
+        currentTurnSpan.innerText = currentTurn;
+        remainingTurnSpan.innerText = (maxTurns - currentTurn + 1);
+
+        // 未使用の質問からランダムに選択
+        let available = questionsData.filter((_, idx) => !usedQuestions.includes(idx));
+        if (available.length === 0) {
+            usedQuestions = [];
+            available = questionsData;
+        }
+        let randomIndex = Math.floor(Math.random() * available.length);
+        // 元の配列のインデックスを取得
+        let originalIndex = questionsData.indexOf(available[randomIndex]);
+        usedQuestions.push(originalIndex);
+        currentQuestion = available[randomIndex];
+
+        speakerLabel.innerText = `ガンヲタ部長（キャラクター：${currentQuestion.speaker}のつもり）`;
+        dialogueText.innerHTML = `「<span style="color:#ffa000;">${currentQuestion.quote}</span>」`;
+
+        // 部長の表情やアバターをランダムに変化させて臨場感を出す
+        bossAvatar.innerText = avatars[Math.floor(Math.random() * avatars.length)];
+
+        updateAffectionUI();
+    }
+
+    function updateAffectionUI() {
+        affectionNum.innerText = affection;
+        affectionBar.style.width = Math.max(0, Math.min(100, affection)) + '%';
+
+        let status = "普通";
+        if (affection >= 80) status = "大親友（絶好調！）";
+        else if (affection >= 60) status = "良好";
+        else if (affection >= 40) status = "普通";
+        else if (affection >= 20) status = "険悪…";
+        else status = "絶縁寸前！";
+
+        affectionStatusText.innerText = status;
+    }
+
+    function selectChoice(choiceIndex) {
+        // 0: 「出た！名台詞」
+        // 1: 「それTV版ですよね」
+        // 2: 「やっぱ劇場版っすよね」
+
+        let title = "";
+        let text = "";
+        let diff = 0;
+
+        // 判定ロジック
+        // 正確な分類:
+        // - 劇場版にあるか: q.inMovie (true/false)
+        // - 劇場版固有か: q.isMovieOnly (true/false)
+        // - TV版のみか: q.tvOnly または q.tvOnlyFlag (true/false)
+        // ※「架空の間違いセリフ」は inMovie=false, tvOnly=false, isMovieOnly=false
+
+        const q = currentQuestion;
+
+        if (choiceIndex === 0) {
+            // 「出た！名台詞」
+            // → 劇場版にあるセリフなら好感度アップ。無ければ下がる。
+            if (q.inMovie || q.isMovieOnly) {
+                diff = 10;
+                title = "【正解！好感度アップ】";
+                text = `部長「おおっ、よく分かってるじゃないか！そう、このセリフこそ『めぐりあい宇宙』の真髄よ！」<br><br><small>${q.desc}</small>`;
+                affection += diff;
+            } else {
+                diff = -15;
+                title = "【不正解…好感度ダウン】";
+                text = `部長「は？何を言ってるんだ君は。そんなセリフ劇場版にあったか？勉強不足だな……」<br><br><small>${q.desc}</small>`;
+                affection += diff;
+            }
+        } else if (choiceIndex === 1) {
+            // 「それTV版ですよね」
+            // → 劇場版になくてTV版のみのセリフならこれ。ただし確率で怒られる。
+            if (q.tvOnly || q.tvOnlyFlag) {
+                diff = 15;
+                title = "【大正解！TV版マニア認定】";
+                text = `部長「ぬおおっ……！よくぞ見抜いた！そうだな、あのシーンはTV版ならではの味わい深い演出だった……君、やるな！」<br><br><small>${q.desc}</small>`;
+                affection += diff;
+            } else {
+                // TV版限定ではないのにこれを選んだ場合、または確率で部長がキレる
+                let isAngry = Math.random() < 0.4; // 40%の確率で怒られる
+                if (isAngry) {
+                    diff = -20;
+                    title = "【部長のお叱り…大幅ダウン】";
+                    text = `部長「バカもん！何を言うか！これはちゃんと劇場版（あるいは私のオリジナル妄想）の重要なシーンだ！テレビと一緒にしてもらっては困るっ！」<br><br><small>${q.desc}</small>`;
+                } else {
+                    diff = -5;
+                    title = "【ハズレ…】";
+                    text = `部長「いやいや、違う違う。それは違うぞ君。」<br><br><small>${q.desc}</small>`;
+                }
+                affection += diff;
+            }
+        } else if (choiceIndex === 2) {
+            // 「やっぱ劇場版っすよね」
+            // → 劇場版固有のセリフなら好感度大幅アップ。TV版にもあれば下がる。
+            if (q.isMovieOnly) {
+                diff = 25;
+                title = "【完璧！特大好感度アップ！】";
+                text = `部長「キタキタキタァーーッ！！それだ！！あの新規カットの重み、富野監督のこだわりが分からないとは言わせない！君とは美味い酒が飲めそうだ！」<br><br><small>${q.desc}</small>`;
+                affection += diff;
+            } else {
+                diff = -15;
+                title = "【的外れ…好感度ダウン】";
+                text = `部長「ん？いや、これは別に劇場版限定というわけじゃないが……君、本当にガンダム観てるのか？」<br><br><small>${q.desc}</small>`;
+                affection += diff;
+            }
+        }
+
+        // 範囲制限
+        if (affection < 0) affection = 0;
+        if (affection > 100) affection = 100;
+
+        updateAffectionUI();
+
+        modalTitle.innerText = title;
+        modalText.innerHTML = text;
+        feedbackModal.style.display = 'flex';
+    }
+
+    function nextTurn() {
+        feedbackModal.style.display = 'none';
+        currentTurn++;
+        loadNextQuestion();
+    }
+
+    function endGame() {
+        gameUi.style.display = 'none';
+        startScreen.style.display = 'block';
+
+        let rankTitle = "";
+        let rankDesc = "";
+
+        if (affection >= 80) {
+            rankTitle = "🏆 【宇宙(そら)を駆けるソウルメイト】";
+            rankDesc = `最終好感度: ${affection} / 100<br>部長「いやぁ君、最高だ！今度の休日はお台場の実物大ガンダムを見に行くぞ！」<br>あなたは部長と最高のガンダム仲間になりました！大成功です！`;
+        } else if (affection >= 50) {
+            rankTitle = "🥈 【一般的なオフィスの戦友】";
+            rankDesc = `最終好感度: ${affection} / 100<br>部長「まぁ、そこそこガンダムが分かってるようだな。今度飲みに行ったらニュータイプ論を語り明かそうか。」<br>無事に穏便に映画鑑賞を終えることができました。`;
+        } else {
+            rankTitle = "💥 【ニュータイプの絶望（左遷コース）】";
+            rankDesc = `最終好感度: ${affection} / 100<br>部長「君とは劇場版のなんたるかが全く分かり合えん……明日から窓際部署行きだな……」<br>部長の逆鱗に触れまくり、社内での立場が危うくなりました……。`;
+        }
+
+        startScreen.innerHTML = `
+            <h1 style="color: var(--accent);">映画鑑賞終了</h1>
+            <h2 style="color: white; margin: 15px 0;">${rankTitle}</h2>
+            <p style="font-size: 1.1rem; line-height: 1.6;">${rankDesc}</p>
+            <button class="start-btn" onclick="location.reload()">もう一度部長と映画を観る</button>
+        `;
+    }
+</script>
+
+</body>
+</html>
