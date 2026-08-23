@@ -356,17 +356,17 @@
 <script>
     // ゲームデータ・定食メニューリスト
     const baseMenus = [
-        { name: "特製ロースカツ定食", type: "tonkatsu", price: 1000, fat: 5, carb: 3, desc: "王道！サクサクジューシーな最高峰。" },
-        { name: "ヒレカツ定食", type: "tonkatsu", price: 1100, fat: 3, carb: 3, desc: "柔らかく上品なヒレ肉の揚げ物。" },
-        { name: "Wジャンボカツ丼", type: "tonkatsu", price: 1200, fat: 7, carb: 6, desc: "圧倒的ボリューム！脂も炭水化物も爆発。" },
-        { name: "カツカレー", type: "tonkatsu", price: 950, fat: 6, carb: 7, desc: "揚げ物とカレーの背徳の組み合わせ。" },
-        { name: "みそカツ定食", type: "tonkatsu", price: 1050, fat: 5, carb: 4, desc: "甘濃い味噌ダレが食欲をそそる。" },
-        { name: "生姜焼き定食", type: "other", price: 750, fat: 2, carb: 3, desc: "定番の豚生姜焼き。胃に優しい。" },
-        { name: "焼き魚定食（サバ）", type: "other", price: 800, fat: 1, carb: 2, desc: "健康的で脂も控えめ。サラリーマンの味方。" },
-        { name: "納豆・生卵朝定食風", type: "other", price: 500, fat: 1, carb: 3, desc: "財布に優しいが午後お腹が空く。" },
-        { name: "ラーメン＆半チャーハン", type: "other", price: 850, fat: 4, carb: 8, desc: "炭水化物の暴力！午後確実に眠くなる。" },
-        { name: "ざる蕎麦とミニ親子丼", type: "other", price: 700, fat: 1, carb: 6, desc: "さっぱりしつつもしっかり炭水化物。" },
-        { name: "日替わり野菜炒め定食", type: "other", price: 700, fat: 2, carb: 3, desc: "バランス抜群。胃もたれゼロ。" }
+        { name: "特製ロースカツ定食", type: "tonkatsu", price: 1000, fat: 6, carb: 4, desc: "王道！サクサクジューシーな最高峰。" },
+        { name: "ヒレカツ定食", type: "tonkatsu", price: 1100, fat: 4, carb: 4, desc: "柔らかく上品なヒレ肉の揚げ物。" },
+        { name: "Wジャンボカツ丼", type: "tonkatsu", price: 1200, fat: 8, carb: 7, desc: "圧倒的ボリューム！脂も炭水化物も爆発。" },
+        { name: "カツカレー", type: "tonkatsu", price: 950, fat: 7, carb: 8, desc: "揚げ物とカレーの背徳の組み合わせ。" },
+        { name: "みそカツ定食", type: "tonkatsu", price: 1050, fat: 6, carb: 5, desc: "甘濃い味噌ダレが食欲をそそる。" },
+        { name: "生姜焼き定食", type: "other", price: 750, fat: 3, carb: 4, desc: "定番の豚生姜焼き。胃に優しい。" },
+        { name: "焼き魚定食（サバ）", type: "other", price: 800, fat: 2, carb: 3, desc: "健康的で脂も控えめ。サラリーマンの味方。" },
+        { name: "納豆・生卵朝定食風", type: "other", price: 500, fat: 2, carb: 4, desc: "財布に優しいが午後お腹が空く。" },
+        { name: "ラーメン＆半チャーハン", type: "other", price: 850, fat: 5, carb: 9, desc: "炭水化物の暴力！午後確実に眠くなる。" },
+        { name: "ざる蕎麦とミニ親子丼", type: "other", price: 700, fat: 2, carb: 7, desc: "さっぱりしつつもしっかり炭水化物。" },
+        { name: "日替わり野菜炒め定食", type: "other", price: 700, fat: 3, carb: 4, desc: "バランス抜群。胃もたれゼロ。" }
     ];
 
     const days = ["月曜日", "火曜日", "水曜日", "木曜日", "金曜日"];
@@ -524,12 +524,8 @@
                 if (state.stomach > 0) {
                     state.stomach = Math.max(0, state.stomach - 3);
                 }
-                // 眠気率も少しリフレッシュ
-                if (state.sleepyRate > 15) {
-                    state.sleepyRate -= 15;
-                } else {
-                    state.sleepyRate = 0;
-                }
+                // 眠気率は日を跨いだらリセット
+                state.sleepyRate = 0;
 
                 if (state.dayIndex >= days.length || state.money <= 0) {
                     if (state.money <= 0 && state.dayIndex < days.length) {
