@@ -17,15 +17,16 @@
             background-color: #1e1e1e;
             color: var(--light);
             margin: 0;
-            padding: 0;
+            padding: 10px;
             display: flex;
             justify-content: center;
             align-items: center;
             min-height: 100vh;
+            box-sizing: border-box;
         }
         .container {
             width: 100%;
-            max-width: 800px;
+            max-width: 750px;
             background: #2b2b2b;
             border-radius: 12px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.5);
@@ -33,26 +34,27 @@
             display: flex;
             flex-direction: column;
             border: 2px solid #444;
+            max-height: 98vh;
         }
         header {
             background: var(--primary);
             color: white;
-            padding: 15px 20px;
+            padding: 10px 15px;
             text-align: center;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: bold;
             letter-spacing: 1px;
-            border-bottom: 4px solid #b71c1c;
+            border-bottom: 3px solid #b71c1c;
         }
         .screen {
             position: relative;
-            height: 300px;
+            height: 220px;
             background: #000;
             display: flex;
             justify-content: center;
             align-items: center;
             overflow: hidden;
-            border-bottom: 3px solid #444;
+            border-bottom: 2px solid #444;
         }
         .movie-bg {
             position: absolute;
@@ -165,39 +167,39 @@
             text-shadow: 1px 1px 1px #000;
         }
         .dialogue-area {
-            padding: 20px;
+            padding: 12px 20px;
             background: #333;
-            min-height: 110px;
+            min-height: 80px;
             display: flex;
             flex-direction: column;
             justify-content: center;
             border-bottom: 2px solid #222;
         }
         .speaker {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             color: var(--accent);
-            margin-bottom: 5px;
+            margin-bottom: 3px;
             font-weight: bold;
         }
         .dialogue-text {
-            font-size: 1.1rem;
-            line-height: 1.5;
+            font-size: 1.05rem;
+            line-height: 1.4;
             color: #fff;
         }
         .choices-area {
-            padding: 20px;
+            padding: 15px 20px;
             background: #2b2b2b;
             display: grid;
             grid-template-columns: 1fr;
-            gap: 12px;
+            gap: 8px;
         }
         button.choice-btn {
             background: #3a3a3a;
             color: white;
             border: 2px solid #555;
-            padding: 14px 20px;
+            padding: 10px 16px;
             border-radius: 8px;
-            font-size: 1rem;
+            font-size: 0.95rem;
             cursor: pointer;
             text-align: left;
             transition: all 0.2s;
@@ -355,11 +357,15 @@
             </button>
             <button class="choice-btn" onclick="selectChoice(1)">
                 <span>「それTV版ですよね」</span>
-                <span class="tag">TV版限定ならUP / ただし確率で怒られる</span>
+                <span class="tag">TV版限定ならUP / 確率で怒られる</span>
             </button>
             <button class="choice-btn" onclick="selectChoice(2)">
                 <span>「やっぱ劇場版っすよね」</span>
-                <span class="tag">劇場版固有なら大幅UP / TV版にもあればDOWN</span>
+                <span class="tag">劇場版固有なら大幅UP / TV版ならDOWN</span>
+            </button>
+            <button class="choice-btn" onclick="selectChoice(3)">
+                <span>「そんなセリフありましたっけ？よく覚えてなかったっす」</span>
+                <span class="tag">架空の間違いならUP / あればDOWN</span>
             </button>
         </div>
     </div>
@@ -584,19 +590,14 @@
         // 0: 「出た！名台詞」
         // 1: 「それTV版ですよね」
         // 2: 「やっぱ劇場版っすよね」
+        // 3: 「そんなセリフありましたっけ？よく覚えてなかったっす」
 
         let title = "";
         let text = "";
         let diff = 0;
 
-        // 判定ロジック
-        // 正確な分類:
-        // - 劇場版にあるか: q.inMovie (true/false)
-        // - 劇場版固有か: q.isMovieOnly (true/false)
-        // - TV版のみか: q.tvOnly または q.tvOnlyFlag (true/false)
-        // ※「架空の間違いセリフ」は inMovie=false, tvOnly=false, isMovieOnly=false
-
         const q = currentQuestion;
+        const isFictional = (!q.inMovie && !q.isMovieOnly && !q.tvOnly && !q.tvOnlyFlag);
 
         if (choiceIndex === 0) {
             // 「出た！名台詞」
@@ -618,11 +619,10 @@
             if (q.tvOnly || q.tvOnlyFlag) {
                 diff = 15;
                 title = "【大正解！TV版マニア認定】";
-                text = `部長「ぬおおっ……！よくぞ見抜いた！そうだな、あのシーンはTV版ならではの味わい深い演出だった……君、やるな！」<br><br><small>${q.desc}</small>`;
+                text = `部長「ぬおおっ……！よくぞ見抜いた！そうだな、あのシーンはTV版ならではの味わい深い演出だった……君,やるな！」<br><br><small>${q.desc}</small>`;
                 affection += diff;
             } else {
-                // TV版限定ではないのにこれを選んだ場合、または確率で部長がキレる
-                let isAngry = Math.random() < 0.4; // 40%の確率で怒られる
+                let isAngry = Math.random() < 0.4;
                 if (isAngry) {
                     diff = -20;
                     title = "【部長のお叱り…大幅ダウン】";
@@ -646,6 +646,20 @@
                 diff = -15;
                 title = "【的外れ…好感度ダウン】";
                 text = `部長「ん？いや、これは別に劇場版限定というわけじゃないが……君、本当にガンダム観てるのか？」<br><br><small>${q.desc}</small>`;
+                affection += diff;
+            }
+        } else if (choiceIndex === 3) {
+            // 「そんなセリフありましたっけ？よく覚えてなかったっす」
+            // → 部長のセリフが本当に架空の間違いなら大正解（好感度アップ）。実際に劇中にあれば不興を買う（好感度ダウン）。
+            if (isFictional) {
+                diff = 15;
+                title = "【大正解！冷静なツッコミ】";
+                text = `部長「む……？あれ、そんなセリフなかったか？そうか、私の記憶違いだったか……ははは、よく聞いてるな君は！」<br><br><small>${q.desc}</small>`;
+                affection += diff;
+            } else {
+                diff = -15;
+                title = "【不覚…好感度ダウン】";
+                text = `部長「何を言ってるんだ君は！あんなに有名な名台詞を忘れたのか！？映画をちゃんと観たまえ！」<br><br><small>${q.desc}</small>`;
                 affection += diff;
             }
         }
