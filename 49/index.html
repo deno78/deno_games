@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>RETRO KUNG-FU BATTLE (イーアルカンフー風格闘)</title>
+    <style>
+        body {
+            background-color: #111;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            overflow: hidden;
+        }
+        h1 {
+            margin: 5px 0;
+            font-size: 22px;
+            color: #ffcc00;
+            text-shadow: 2px 2px #ff0000;
+            letter-spacing: 2px;
+        }
+        #game-container {
+            position: relative;
+            width: 800px;
+            height: 450px;
+            background: linear-gradient(to bottom, #222 0%, #444 60%, #1a1a1a 60%, #333 100%);
+            border: 4px solid #fff;
+            box-shadow: 0 0 20px rgba(255,255,255,0.3);
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+        }
+        #ui {
+            width: 800px;
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .fighter-hud {
+            display: flex;
+            flex-direction: column;
+            width: 350px;
+        }
+        .hp-bar-container {
+            width: 100%;
+            height: 20px;
+            background: #444;
+            border: 2px solid #fff;
+            margin-top: 5px;
+            position: relative;
+        }
+        .hp-bar {
+            height: 100%;
+            background: #00ff00;
+            width: 100%;
+            transition: width 0.1s ease;
+        }
+        #controls-hint {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #aaa;
+            text-align: center;
+            line-height: 1.4;
+        }
+        .key {
+            display: inline-block;
+            background: #333;
+            border: 1px solid #777;
+            padding: 2px 6px;
+            border-radius: 4px;
+            color: #fff;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>RETRO KUNG-FU BATTLE</h1>
+    <div id="ui">
+        <div class="fighter-hud">
+            <div>PLAYER (YOU) <span id="p-score" style="float: right;">WINS: 0</span></div>
+            <div class="hp-bar-container"><div id="p-hp" class="hp-bar"></div></div>
+        </div>
+        <div style="font-size: 24px; color: #ff0000; align-self: center;" id="round-timer">VS</div>
+        <div class="fighter-hud" style="align-items: flex-end;">
+            <div><span id="cpu-score" style="float: left;">WINS: 0</span> CPU</div>
+            <div class="hp-bar-container"><div id="cpu-hp" class="hp-bar" style="background: #ff3333;"></div></div>
+        </div>
+    </div>
+
+    <div id="game-container">
+        <canvas id="gameCanvas" width="800" height="450"></canvas>
+    </div>
+
+    <div id="controls-hint">
+        操作: <span class="key">A</span>/<span class="key">D</span> (または <span class="key">←</span>/<span class="key">→</span>) で前進・後退 | 
+        <span class="key">J</span> パンチ (射程短・至近距離OK) | 
+        <span class="key">K</span> キック (射程長・至近距離NG) | 
+        <span class="key">R</span> リスタート
+    </div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+// Game constants & rules
+const WORLD_WIDTH = 800;
+const FLOOR_Y = 370;
+
+// Fighter properties
+class Fighter {
+    constructor(x, isCpu = false) {
+        this.x = x;
+        this.y = FLOOR_Y;
+        this.vx = 0;
+        this.width = 40;
+        this.height = 110;
+        this.hp = 100;
+        this.maxHp = 100;
+        this.isCpu = isCpu;
+        
+        // States: 'idle', 'walk', 'punch', 'kick', 'hit', 'win', 'lose'
+        this.state = 'idle';
+        this.animTimer = 0;
+        this.facing = isCpu ? -1 : 1; // 1: right, -1: left
+        
+        // Attack frame data
+        // punch: short range (e.g. distance <= 65)
+        // kick: long range (e.g. 50 <= distance <= 120), blind spot for distance < 50
+        this.actionCooldown = 0;
+        this.wins = 0;
+    }
+
+    update(opponent) {
+        if (this.actionCooldown > 0) {
+            this.actionCooldown--;
+        }
+
+        // Face opponent
+        if (this.state !== 'punch' && this.state !== 'kick' && this.state !== 'hit') {
+            this.facing = this.x < opponent.x ? 1 : -1;
+        }
+
+        if (this.state === 'punch' || this.state === 'kick' || this.state === 'hit') {
+            this.animTimer--;
+            if (this.animTimer <= 0) {
+                this.state = 'idle';
+            }
+            return;
+        }
+
+        if (this.isCpu) {
+            this.updateCpu(opponent);
+        } else {
+            this.updatePlayer();
+        }
+
+        // Move
+        this.x += this.vx;
+        
+        // Boundaries
+        if (this.x < 50) this.x = 50;
+        if (this.x > WORLD_WIDTH - 50) this.x = WORLD_WIDTH - 50;
+
+        // Keep distance between fighters so they don't overlap completely
+        let dist = Math.abs(this.x - opponent.x);
+        if (dist < 35) {
+            if (this.x < opponent.x) {
+                this.x = opponent.x - 35;
+            } else {
+                this.x = opponent.x + 35;
+            }
+        }
+    }
+
+    updatePlayer() {
+        // Player input is handled via keys
+        this.vx = 0;
+        if (keys['KeyA'] || keys['ArrowLeft']) {
+            this.vx = -3.5 * this.facing; // backward or forward relative to facing? Let's make A = backward, D = forward relative to screen or relative to opponent.
+            // Traditional arcade: holding towards opponent is walk forward, holding away is walk back.
+        }
+        if (keys['KeyD'] || keys['ArrowRight']) {
+            this.vx = 3.5 * this.facing;
+        }
+
+        // Simpler control: A = Left, D = Right
+        if (keys['KeyA'] || keys['ArrowLeft']) {
+            this.vx = -4;
+            this.state = 'walk';
+        } else if (keys['KeyD'] || keys['ArrowRight']) {
+            this.vx = 4;
+            this.state = 'walk';
+        } else {
+            this.state = 'idle';
+        }
+    }
+
+    updateCpu(opponent) {
+        this.vx = 0;
+        let dist = Math.abs(this.x - opponent.x);
+        
+        // Simple AI logic based on ranges
+        // Punch range: ~55, Kick range: 60 to 110
+        if (this.actionCooldown === 0) {
+            if (dist <= 55) {
+                // Close range: Punch is effective, Kick misses
+                if (Math.random() < 0.6) {
+                    this.punch(opponent);
+                    this.actionCooldown = 35;
+                    return;
+                } else if (Math.random() < 0.3) {
+                    // Back away to use kick
+                    this.vx = -3 * this.facing;
+                    this.state = 'walk';
+                }
+            } else if (dist > 55 && dist <= 110) {
+                // Medium range: Kick is effective
+                if (Math.random() < 0.55) {
+                    this.kick(opponent);
+                    this.actionCooldown = 45;
+                    return;
+                } else {
+                    // Advance or retreat randomly
+                    this.vx = (Math.random() < 0.6 ? 2.5 : -2.5);
+                    this.state = 'walk';
+                }
+            } else {
+                // Far range: move closer
+                this.vx = (this.x < opponent.x ? 3 : -3);
+                this.state = 'walk';
+            }
+        }
+    }
+
+    punch(opponent) {
+        if (this.state === 'punch' || this.state === 'kick' || this.state === 'hit') return;
+        this.state = 'punch';
+        this.animTimer = 18; // frames
+        
+        // Check hit rule: Punch hits if distance <= 60
+        let dist = Math.abs(this.x - opponent.x);
+        if (dist <= 65) {
+            // Check if facing correct direction
+            if ((this.facing === 1 && opponent.x > this.x) || (this.facing === -1 && opponent.x < this.x)) {
+                opponent.takeHit(10, 'punch');
+            }
+        }
+    }
+
+    kick(opponent) {
+        if (this.state === 'punch' || this.state === 'kick' || this.state === 'hit') return;
+        this.state = 'kick';
+        this.animTimer = 25; // frames
+        
+        // Check hit rule: Kick hits ONLY if distance is between 50 and 115 (Blind spot for distance < 50)
+        let dist = Math.abs(this.x - opponent.x);
+        if (dist >= 50 && dist <= 115) {
+            if ((this.facing === 1 && opponent.x > this.x) || (this.facing === -1 && opponent.x < this.x)) {
+                opponent.takeHit(18, 'kick');
+            }
+        }
+    }
+
+    takeHit(damage, type) {
+        this.hp -= damage;
+        if (this.hp < 0) this.hp = 0;
+        this.state = 'hit';
+        this.animTimer = 20;
+        this.vx = -this.facing * 5; // knockback
+    }
+
+    draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        // Draw shadow
+        ctx.fillStyle = 'rgba(0,0,0,0.5)';
+        ctx.beginPath();
+        ctx.ellipse(0, 5, 25, 8, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Colors based on player/cpu
+        let bodyColor = this.isCpu ? '#cc2222' : '#2266cc';
+        let skinColor = '#ffccaa';
+        let pantsColor = '#eeeeee';
+
+        // Hit flash effect
+        if (this.state === 'hit' && Math.floor(this.animTimer / 3) % 2 === 0) {
+            bodyColor = '#ffffff';
+        }
+
+        // Draw character parts based on state
+        // Legs
+        ctx.fillStyle = pantsColor;
+        ctx.fillRect(-12, -45, 10, 45);
+        ctx.fillRect(2, -45, 10, 45);
+
+        // Body / Torso
+        ctx.fillStyle = bodyColor;
+        ctx.fillRect(-16, -85, 32, 40);
+
+        // Head
+        ctx.fillStyle = skinColor;
+        ctx.beginPath();
+        ctx.arc(0, -100, 15, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Headband / Hair
+        ctx.fillStyle = this.isCpu ? '#000' : '#ffcc00';
+        ctx.fillRect(-15, -112, 30, 5);
+
+        // Arms & Attacks
+        ctx.fillStyle = bodyColor;
+        if (this.state === 'punch') {
+            // Punch arm extended forward
+            ctx.fillRect(this.facing === 1 ? 16 : -36, -80, 30, 10);
+        } else if (this.state === 'kick') {
+            // Kick leg extended forward
+            ctx.fillStyle = skinColor;
+            ctx.fillRect(this.facing === 1 ? 10 : -30, -30, 35, 10);
+        } else {
+            // Normal arms
+            ctx.fillRect(-22, -80, 8, 30);
+            ctx.fillRect(14, -80, 8, 30);
+        }
+
+        ctx.restore();
+    }
+}
+
+// Input listeners
+const keys = {};
+window.addEventListener('keydown', e => {
+    if (e.code === 'KeyJ' && player.state === 'idle' && player.actionCooldown === 0) {
+        player.punch(cpu);
+        player.actionCooldown = 25;
+    }
+    if (e.code === 'KeyK' && player.state === 'idle' && player.actionCooldown === 0) {
+        player.kick(cpu);
+        player.actionCooldown = 35;
+    }
+    if (e.code === 'KeyR' && gameOver) {
+        resetMatch();
+    }
+    keys[e.code] = true;
+});
+
+window.addEventListener('keyup', e => {
+    keys[e.code] = false;
+});
+
+let player = new Fighter(250, false);
+let cpu = new Fighter(550, true);
+let gameOver = false;
+let winnerText = '';
+
+function resetMatch() {
+    player.hp = player.maxHp;
+    cpu.hp = cpu.maxHp;
+    player.x = 250;
+    cpu.x = 550;
+    player.state = 'idle';
+    cpu.state = 'idle';
+    gameOver = false;
+    winnerText = '';
+}
+
+function update() {
+    if (!gameOver) {
+        player.update(cpu);
+        cpu.update(player);
+
+        if (player.hp <= 0) {
+            gameOver = true;
+            cpu.wins++;
+            winnerText = 'CPU WINS!';
+            document.getElementById('cpu-score').innerText = `WINS: ${cpu.wins}`;
+        } else if (cpu.hp <= 0) {
+            gameOver = true;
+            player.wins++;
+            winnerText = 'PLAYER WINS!';
+            document.getElementById('p-score').innerText = `WINS: ${player.wins}`;
+        }
+    }
+
+    // Update UI bars
+    document.getElementById('p-hp').style.width = `${(player.hp / player.maxHp) * 100}%`;
+    document.getElementById('cpu-hp').style.width = `${(cpu.hp / cpu.maxHp) * 100}%`;
+}
+
+function draw() {
+    // Clear background (dojo style background)
+    ctx.fillStyle = '#1e1e1e';
+    ctx.fillRect(0, 0, WORLD_WIDTH, canvas.height);
+
+    // Dojo background elements (walls, windows, floor)
+    ctx.fillStyle = '#2b1d0c';
+    ctx.fillRect(0, 0, WORLD_WIDTH, FLOOR_Y);
+    
+    // Windows
+    ctx.fillStyle = '#111';
+    ctx.fillRect(150, 80, 120, 160);
+    ctx.fillRect(530, 80, 120, 160);
+    ctx.fillStyle = '#443322';
+    // Window frames
+    ctx.fillRect(205, 80, 10, 160);
+    ctx.fillRect(585, 80, 10, 160);
+
+    // Floor
+    ctx.fillStyle = '#8b5a2b';
+    ctx.fillRect(0, FLOOR_Y, WORLD_WIDTH, canvas.height - FLOOR_Y);
+    ctx.fillStyle = '#5c3a21';
+    ctx.fillRect(0, FLOOR_Y, WORLD_WIDTH, 8); // floor border line
+
+    // Draw fighters
+    player.draw();
+    cpu.draw();
+
+    // Distance/Range indicator HUD text
+    let dist = Math.abs(player.x - cpu.x);
+    ctx.fillStyle = '#fff';
+    ctx.font = '12px Courier New';
+    ctx.textAlign = 'center';
+    ctx.fillText(`DISTANCE: ${Math.floor(dist)}`, WORLD_WIDTH / 2, 35);
+    
+    if (dist <= 65) {
+        ctx.fillStyle = '#00ffcc';
+        ctx.fillText('【パンチレンジ】', WORLD_WIDTH / 2, 55);
+    } else if (dist >= 50 && dist <= 115) {
+        ctx.fillStyle = '#ffcc00';
+        ctx.fillText('【キックレンジ】', WORLD_WIDTH / 2, 55);
+    } else {
+        ctx.fillStyle = '#ff4444';
+        ctx.fillText('【レンジ外 (至近距離キックNG)】', WORLD_WIDTH / 2, 55);
+    }
+
+    // Game Over / Win message
+    if (gameOver) {
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.7)';
+        ctx.fillRect(0, 0, WORLD_WIDTH, canvas.height);
+
+        ctx.fillStyle = '#ffcc00';
+        ctx.font = 'bold 36px Courier New';
+        ctx.fillText(winnerText, WORLD_WIDTH / 2, canvas.height / 2 - 20);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.font = '18px Courier New';
+        ctx.fillText("Press [R] to Restart", WORLD_WIDTH / 2, canvas.height / 2 + 30);
+    }
+}
+
+function loop() {
+    update();
+    draw();
+    requestAnimationFrame(loop);
+}
+
+// Start game loop
+loop();
+</script>
+
+</body>
+</html>
