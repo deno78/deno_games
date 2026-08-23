@@ -3,18 +3,18 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>とんかつ定食生活 - いつでも食えるか！ -</title>
+    <title>とんかつをいつでも食えるか試すゲーム</title>
     <style>
         * {
             box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: 'Courier New', Courier, monospace, sans-serif;
             user-select: none;
             -webkit-user-select: none;
         }
         body {
+            margin: 0;
+            padding: 0;
             background-color: #1a1a1a;
+            font-family: 'Courier New', Courier, monospace, sans-serif;
             color: #f0f0f0;
             display: flex;
             justify-content: center;
@@ -31,15 +31,15 @@
             display: flex;
             flex-direction: column;
             border: 4px solid #444;
-            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            box-shadow: 0 0 20px rgba(0,0,0,0.8);
             position: relative;
             overflow: hidden;
         }
-        /* ヘッダー・ステータス */
-        .status-bar {
-            background: #1f1f1f;
+        /* ヘッダー情報 */
+        .status-header {
+            background: #333;
             padding: 8px 12px;
-            border-bottom: 2px solid #444;
+            border-bottom: 2px solid #555;
             font-size: 13px;
         }
         .status-row {
@@ -50,153 +50,112 @@
         .status-row:last-child {
             margin-bottom: 0;
         }
-        .gauge-container {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-            font-size: 11px;
-        }
-        .gauge-bar-bg {
-            width: 100px;
-            height: 10px;
+        .gauge-bar-container {
+            flex-grow: 1;
             background: #444;
+            height: 10px;
+            margin-left: 8px;
             border-radius: 5px;
             overflow: hidden;
+            position: relative;
             border: 1px solid #666;
         }
-        .gauge-bar-fill {
+        .gauge-fill {
             height: 100%;
             width: 0%;
             transition: width 0.3s ease;
         }
-        #money-fill { background: #4caf50; }
-        #fat-fill { background: #ff9800; }
-        #carb-fill { background: #2196f3; }
+        .fill-money { background: #4caf50; }
+        .fill-stomach { background: #ff9800; }
+        .fill-sleepy { background: #03a9f4; }
 
-        /* カウンターシーン（オヤジとサラリーマン） */
+        /* カウンターシーン（イラスト・会話エリア） */
         .counter-scene {
             flex: 1;
-            background: linear-gradient(180deg, #38291c 0%, #1e150e 100%);
+            background: linear-gradient(to bottom, #111 0%, #3a2e2b 70%, #5a3e2b 100%);
+            display: flex;
+            flex-direction: column;
             position: relative;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            padding: 10px;
-            border-bottom: 4px solid #5a3d28;
             overflow: hidden;
+            border-bottom: 4px solid #222;
         }
-        .shop-bg {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 60%;
-            background: radial-gradient(circle, #523e2e 0%, #291e17 100%);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            padding-top: 5px;
-            border-bottom: 3px solid #7c533c;
-        }
-        .menu-board {
-            background: #111;
-            border: 2px solid #8b5a2b;
-            padding: 4px 10px;
-            color: #ffeb3b;
-            font-size: 11px;
-            font-weight: bold;
-            box-shadow: inset 0 0 5px #000;
-        }
-        .characters-area {
-            position: absolute;
-            bottom: 10px;
-            left: 0;
-            width: 100%;
+        .shop-interior {
+            flex: 1;
             display: flex;
             justify-content: space-between;
-            padding: 0 15px;
-            z-index: 2;
+            align-items: flex-end;
+            padding: 10px 20px;
+            position: relative;
         }
-        .character {
+        /* オヤジとサラリーマンのピクセルアート風表現 */
+        .character-box {
             display: flex;
             flex-direction: column;
             align-items: center;
+            width: 110px;
             text-align: center;
         }
-        .avatar-box {
-            width: 70px;
-            height: 70px;
-            background: #444;
-            border: 2px solid #777;
-            border-radius: 50%;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            font-size: 32px;
-            box-shadow: 0 4px 8px rgba(0,0,0,0.5);
-            background: radial-gradient(circle, #666 0%, #333 100%);
+        .avatar-img {
+            font-size: 50px;
+            margin-bottom: 2px;
+            filter: drop-shadow(0 4px 4px rgba(0,0,0,0.5));
         }
-        .char-name {
-            font-size: 10px;
-            margin-top: 3px;
-            background: rgba(0,0,0,0.6);
-            padding: 1px 6px;
-            border-radius: 3px;
-            color: #ccc;
+        .character-name {
+            font-size: 11px;
+            background: rgba(0,0,0,0.7);
+            padding: 2px 6px;
+            border-radius: 4px;
+            border: 1px solid #777;
+            white-space: nowrap;
         }
-        /* 吹き出し会話エリア */
-        .speech-bubble {
-            position: absolute;
-            top: 38%;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 92%;
-            background: #fff;
-            color: #222;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 12px;
-            line-height: 1.3;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
-            z-index: 5;
-            border: 2px solid #333;
-            min-height: 44px;
-            display: flex;
-            align-items: center;
-        }
-        .speech-bubble::after {
-            content: '';
-            position: absolute;
-            bottom: -8px;
-            left: 50%;
-            transform: translateX(-50%);
-            border-width: 8px 8px 0;
-            border-style: solid;
-            border-color: #fff transparent;
-            display: block;
-            width: 0;
-        }
-
-        /* カウンターテーブル */
         .counter-desk {
             position: absolute;
-            bottom: 0; left: 0; width: 100%; height: 35px;
-            background: linear-gradient(180deg, #8b5a2b 0%, #5a3d28 100%);
-            border-top: 3px solid #b57c42;
-            z-index: 3;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            height: 30px;
+            background: #8b5a2b;
+            border-top: 4px solid #a06a35;
+            box-shadow: inset 0 4px 6px rgba(0,0,0,0.4);
+        }
+        /* 吹き出し会話エリア */
+        .dialogue-box {
+            background: rgba(20, 20, 20, 0.9);
+            border-top: 2px solid #555;
+            padding: 10px 15px;
+            min-height: 75px;
+            max-height: 90px;
+            font-size: 13px;
+            line-height: 1.4;
+            overflow-y: auto;
+            position: relative;
+            z-index: 2;
+        }
+        .dialogue-speaker {
+            font-weight: bold;
+            color: #ffcc00;
+            margin-bottom: 2px;
+            font-size: 12px;
         }
 
         /* メニュー選択エリア */
-        .selection-area {
+        .menu-selection-area {
             background: #222;
             padding: 10px;
             display: flex;
             flex-direction: column;
             gap: 6px;
-            min-height: 250px;
+            min-height: 230px;
         }
-        .section-title {
-            font-size: 11px;
-            color: #aaa;
+        .menu-title-bar {
+            font-size: 12px;
+            color: #ff9800;
+            font-weight: bold;
             display: flex;
             justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px dashed #444;
+            padding-bottom: 4px;
         }
         .menu-card {
             background: #333;
@@ -210,7 +169,7 @@
             transition: all 0.1s;
         }
         .menu-card:hover:not(.disabled) {
-            background: #404040;
+            background: #444;
             border-color: #ff9800;
             transform: translateY(-1px);
         }
@@ -227,451 +186,445 @@
             flex-direction: column;
             gap: 2px;
         }
-        .menu-title {
-            font-size: 13px;
+        .menu-name {
             font-weight: bold;
+            font-size: 13px;
             color: #fff;
         }
-        .menu-tags {
+        .menu-specs {
             font-size: 10px;
-            color: #bbb;
+            color: #aaa;
             display: flex;
             gap: 8px;
         }
-        .tag-price { color: #81c784; }
-        .tag-fat { color: #ffb74d; }
-        .tag-carb { color: #64b5f6; }
+        .spec-item span {
+            color: #ffcc00;
+            font-weight: bold;
+        }
         .menu-action-btn {
-            background: #ff9800;
-            color: #111;
+            background: #ff5722;
+            color: white;
             border: none;
             padding: 6px 12px;
-            font-weight: bold;
             border-radius: 4px;
+            font-weight: bold;
             font-size: 11px;
             cursor: pointer;
         }
         .menu-card.disabled .menu-action-btn {
             background: #555;
-            color: #888;
         }
 
-        /* モーダル・オーバーレイ */
+        /* モーダル / オーバーレイ */
         .overlay {
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
+            top: 0; left: 0; right: 0; bottom: 0;
             background: rgba(0,0,0,0.85);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 10;
             padding: 20px;
             text-align: center;
+            z-index: 10;
         }
         .overlay h1 {
             font-size: 20px;
-            color: #ff9800;
+            color: #ff5722;
             margin-bottom: 10px;
         }
         .overlay p {
-            font-size: 12px;
-            color: #ccc;
+            font-size: 13px;
             line-height: 1.5;
-            margin-bottom: 15px;
+            margin-bottom: 20px;
+            color: #ccc;
         }
         .btn-primary {
-            background: #e53935;
+            background: #4caf50;
             color: white;
             border: none;
             padding: 10px 24px;
             font-size: 14px;
             font-weight: bold;
-            border-radius: 5px;
+            border-radius: 6px;
             cursor: pointer;
-            box-shadow: 0 4px 10px rgba(229, 57, 53, 0.4);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
         .btn-primary:hover {
-            background: #f44336;
+            background: #43a047;
         }
-
-        /* 昼寝イベント・演出 */
-        .nap-flash {
+        .hidden {
+            display: none !important;
+        }
+        .day-badge {
+            background: #ff9800;
+            color: #111;
+            padding: 1px 6px;
+            border-radius: 3px;
+            font-size: 11px;
+            font-weight: bold;
+        }
+        /* 午後のイベントポップアップ演出 */
+        .afternoon-popup {
             position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(33, 150, 243, 0.3);
-            z-index: 8;
-            pointer-events: none;
-            display: none;
-            animation: pulse 1s infinite;
+            top: 30%;
+            left: 5%;
+            right: 5%;
+            background: #222;
+            border: 3px solid #ff5722;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            z-index: 5;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.7);
+            animation: popIn 0.3s ease;
         }
-        @keyframes pulse {
-            0% { opacity: 0.2; }
-            50% { opacity: 0.7; }
-            100% { opacity: 0.2; }
+        @keyframes popIn {
+            0% { transform: scale(0.8); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
         }
     </style>
 </head>
 <body>
 
 <div id="game-container">
-    <!-- ステータスバー -->
-    <div class="status-bar">
+    <!-- ステータスヘッダー -->
+    <div class="status-header">
         <div class="status-row">
-            <span id="day-label" style="font-weight:bold; color:#ffeb3b;">1週目月曜日 (ランチ 1/7)</span>
-            <span id="tonkatsu-count-label" style="font-weight:bold; color:#ff5722;">とんかつ獲得: 0回</span>
+            <span><span class="day-badge" id="day-label">月曜日 (1日目)</span> 昼休み</span>
+            <span>とんかつ食べた回数: <strong id="tonkatsu-count" style="color:#ff9800;">0</strong>回</span>
         </div>
-        <div class="status-row">
-            <div class="gauge-container">
-                <span>小遣</span>
-                <div class="gauge-bar-bg"><div id="money-fill" class="gauge-bar-fill" style="width:100%;"></div></div>
-                <span id="money-text">5000/5000円</span>
-            </div>
-            <div class="gauge-container">
-                <span>胃もたれ</span>
-                <div class="gauge-bar-bg"><div id="fat-fill" class="gauge-bar-fill" style="width:0%;"></div></div>
-                <span id="fat-text">0/10</span>
-            </div>
+        <div class="status-row" style="align-items: center;">
+            <span style="font-size:11px; width:80px;">小遣い(<span id="money-val">5000</span>/5000円)</span>
+            <div class="gauge-bar-container"><div id="money-gauge" class="gauge-fill fill-money" style="width: 100%;"></div></div>
         </div>
-        <div class="status-row" style="margin-top: 4px;">
-            <div class="gauge-container">
-                <span>眠気率</span>
-                <div class="gauge-bar-bg"><div id="carb-fill" class="gauge-bar-fill" style="width:0%;"></div></div>
-                <span id="carb-text">0%</span>
-            </div>
+        <div class="status-row" style="align-items: center;">
+            <span style="font-size:11px; width:80px;">胃もたれ(<span id="stomach-val">0</span>/10)</span>
+            <div class="gauge-bar-container"><div id="stomach-gauge" class="gauge-fill fill-stomach" style="width: 0%;"></div></div>
+        </div>
+        <div class="status-row" style="align-items: center;">
+            <span style="font-size:11px; width:80px;">眠気率(<span id="sleepy-val">0</span>%)</span>
+            <div class="gauge-bar-container"><div id="sleepy-gauge" class="gauge-fill fill-sleepy" style="width: 0%;"></div></div>
         </div>
     </div>
 
     <!-- カウンターシーン -->
     <div class="counter-scene">
-        <div class="shop-bg">
-            <div class="menu-board">【 本日のランチメニュー 】</div>
-        </div>
-
-        <div id="speech-bubble" class="speech-bubble">
-            「いらっしゃい！さあ、今日の定食を決めてくれよ。」
-        </div>
-
-        <div class="characters-area">
-            <div class="character">
-                <div class="avatar-box" id="salaryman-avatar">👔</div>
-                <div class="char-name">サラリーマン (自分)</div>
+        <div class="shop-interior">
+            <div class="character-box">
+                <div class="avatar-img" id="salaryman-avatar">👨‍💼</div>
+                <div class="character-name">サラリーマン</div>
             </div>
-            <div class="character">
-                <div class="avatar-box">👨‍🍳</div>
-                <div class="char-name">定食屋のオヤジ</div>
+            <div class="character-box">
+                <div class="avatar-img" id="master-avatar">🧑‍🍳</div>
+                <div class="character-name">定食屋オヤジ</div>
             </div>
         </div>
         <div class="counter-desk"></div>
+        <div class="dialogue-box">
+            <div class="dialogue-speaker" id="speaker-name">定食屋のオヤジ</div>
+            <div id="dialogue-text">「いらっしゃい！今日のランチはどうするね？もちろんとんかつかい？」</div>
+        </div>
     </div>
 
     <!-- メニュー選択エリア -->
-    <div class="selection-area">
-        <div class="section-title">
-            <span>メニューを選んで注文</span>
-            <span id="meal-slot-label">ランチ選び</span>
+    <div class="menu-selection-area">
+        <div class="menu-title-bar">
+            <span>本日の日替わりメニュー (3択)</span>
+            <span id="lunch-phase-label" style="font-size:10px; color:#aaa;">メニューを選んでください</span>
         </div>
-        <div id="menu-cards-container" style="display: flex; flex-direction: column; gap: 6px;">
-            <!-- 動的生成 -->
+        <div id="menu-list" style="display: flex; flex-direction: column; gap: 6px;">
+            <!-- メニューカードがここに動的生成される -->
         </div>
     </div>
 
-    <!-- 昼寝エフェクト -->
-    <div id="nap-flash" class="nap-flash"></div>
-
-    <!-- スタート・結果画面オーバーレイ -->
+    <!-- スタート / 結果オーバーレイ -->
     <div id="overlay" class="overlay">
-        <h1 id="overlay-title">とんかつをいつでも食えるか！</h1>
-        <p id="overlay-desc">
-            サラリーマンのあなたは、1週間（計7回のランチ）で<br>
-            できるだけ多く「とんかつ定食」を食べたい！<br><br>
-            <b>【ルール】</b><br>
-            ・小遣い：5000円（超過でゲームオーバー）<br>
-            ・胃もたれ値：10を超えると消化不良で食べられない<br>
-            ・炭水化物（眠気）：高いと午後に居眠りし上司に怒られるリスク増！
+        <h1>とんかつをいつでも食えるか試すゲーム</h1>
+        <p>
+            あなたはくたびれたサラリーマン。<br>
+            1週間（月〜金）のランチで「とんかつ定食」を限界まで食べて自分のロマンを貫け！<br><br>
+            ⚠️<b>注意</b>⚠️<br>
+            ・小遣いは1週間で<strong>5000円</strong>！<br>
+            ・脂分（胃もたれゲージ）が<strong>10</strong>を超えると、胃もたれでとんかつが食べられなくなるぞ！<br>
+            ・炭水化物で午後の<strong>眠気率</strong>が上がり、昼寝して上司に怒られると即ゲームオーバー！
         </p>
-        <button id="overlay-btn" class="btn-primary" onclick="startGame()">ランチへ行く！</button>
+        <button class="btn-primary" onclick="startGame()">社畜のランチに出発する</button>
     </div>
 </div>
 
 <script>
-    // ゲームデータ定義
-    const ALL_MENUS = [
-        { name: "とんかつ定食", price: 900, fat: 4, carb: 3, isTonkatsu: true, desc: "サクサクジューシー！生きがいの極み。" },
-        { name: "特盛とんかつ定食", price: 1300, fat: 6, carb: 4, isTonkatsu: true, desc: "デカい！重い！満足感もカロリーもMAX！" },
-        { name: "チーズ巻きカツ定食", price: 1100, fat: 5, carb: 3, isTonkatsu: true, desc: "とろけるチーズが衣と肉の隙間で暴れ回る。" },
-        { name: "生姜焼き定食", price: 800, fat: 2, carb: 3, isTonkatsu: false, desc: "甘辛ダレでご飯が進む庶民の味方。" },
-        { name: "唐揚げ定食", price: 850, fat: 3, carb: 3, isTonkatsu: false, desc: "カリッとした衣から肉汁があふれる。" },
-        { name: "焼き魚定食（鯖）", price: 750, fat: 1, carb: 2, isTonkatsu: false, desc: "健康に配慮したオヤジの優しさ（？）。" },
-        { name: "冷やし中華（大盛）", price: 800, fat: 1, carb: 5, isTonkatsu: false, desc: "炭水化物の暴力！午後急激に眠くなる。" },
-        { name: "納豆・卵かけご飯定食", price: 500, fat: 0, carb: 4, isTonkatsu: false, desc: "財布に優しくヘルシーだが、腹持ちは…？" },
-        { name: "ラーメン・半チャーハンセット", price: 950, fat: 3, carb: 6, isTonkatsu: false, desc: "炭水化物と脂質の絶妙コンボ。" }
+    // ゲームデータ・定食メニューリスト
+    const baseMenus = [
+        { name: "特製ロースカツ定食", type: "tonkatsu", price: 1000, fat: 5, carb: 3, desc: "王道！サクサクジューシーな最高峰。" },
+        { name: "ヒレカツ定食", type: "tonkatsu", price: 1100, fat: 3, carb: 3, desc: "柔らかく上品なヒレ肉の揚げ物。" },
+        { name: "Wジャンボカツ丼", type: "tonkatsu", price: 1200, fat: 7, carb: 6, desc: "圧倒的ボリューム！脂も炭水化物も爆発。" },
+        { name: "カツカレー", type: "tonkatsu", price: 950, fat: 6, carb: 7, desc: "揚げ物とカレーの背徳の組み合わせ。" },
+        { name: "みそカツ定食", type: "tonkatsu", price: 1050, fat: 5, carb: 4, desc: "甘濃い味噌ダレが食欲をそそる。" },
+        { name: "生姜焼き定食", type: "other", price: 750, fat: 2, carb: 3, desc: "定番の豚生姜焼き。胃に優しい。" },
+        { name: "焼き魚定食（サバ）", type: "other", price: 800, fat: 1, carb: 2, desc: "健康的で脂も控えめ。サラリーマンの味方。" },
+        { name: "納豆・生卵朝定食風", type: "other", price: 500, fat: 1, carb: 3, desc: "財布に優しいが午後お腹が空く。" },
+        { name: "ラーメン＆半チャーハン", type: "other", price: 850, fat: 4, carb: 8, desc: "炭水化物の暴力！午後確実に眠くなる。" },
+        { name: "ざる蕎麦とミニ親子丼", type: "other", price: 700, fat: 1, carb: 6, desc: "さっぱりしつつもしっかり炭水化物。" },
+        { name: "日替わり野菜炒め定食", type: "other", price: 700, fat: 2, carb: 3, desc: "バランス抜群。胃もたれゼロ。" }
     ];
 
-    const DAYS = [
-        "月曜日", "火曜日", "水曜日", "木曜日", "金曜日", "土曜日", "日曜日"
-    ];
+    const days = ["月曜日", "火曜日", "水曜日", "木曜日", "金曜日"];
 
-    // ゲーム状態
     let state = {
-        dayIndex: 0, // 0~6 (計7回)
+        dayIndex: 0,
         money: 5000,
-        maxMoney: 5000,
-        fat: 0,
-        maxFat: 10,
-        carb: 0, // 眠気率(0-100)
+        stomach: 0,
+        sleepyRate: 0,
         tonkatsuCount: 0,
-        currentOptions: [],
+        currentMenus: [],
         gameOver: false,
-        gameCleared: false
+        gameClear: false
     };
-
-    // 音声・演出用のメッセージ集
-    const oyajiDialogues = {
-        start: [
-          "「いらっしゃい！さあ、今日の定食を決めてくれよ。」",
-          "「おっ、今日も腹ペコか？いらっしゃい！」"
-        ],
-        orderTonkatsu: [
-          "「毎度！とんかつ一丁！揚げたてサクサクだぜ！」",
-          "「やっぱり男は黙ってとんかつだよな！」"
-        ],
-        orderOther: [
-          "「おや、今日はそっちにするのかい？ヘルシーだな。」",
-          "「毎度！しっかり食べて午後の仕事も頑張りな！」"
-        ],
-        warningFat: [
-          "「おいおい、最近胃もたれヤバいんじゃないか？気をつけなよ！」"
-        ],
-        nap: [
-          "「おい！しっかりしろ！後ろで営業部長が見てるぞ！！」"
-        ]
-    };
-
-    function getRandomItem(arr) {
-        return arr[Math.floor(Math.random() * arr.length)];
-    }
 
     function startGame() {
         state = {
             dayIndex: 0,
             money: 5000,
-            maxMoney: 5000,
-            fat: 0,
-            maxFat: 10,
-            carb: 0,
+            stomach: 0,
+            sleepyRate: 0,
             tonkatsuCount: 0,
-            currentOptions: [],
+            currentMenus: [],
             gameOver: false,
-            gameCleared: false
+            gameClear: false
         };
-
-        document.getElementById('overlay').style.display = 'none';
+        document.getElementById('overlay').classList.add('hidden');
         updateUI();
         nextDay();
     }
 
     function nextDay() {
-        if (state.dayIndex >= 7) {
-            endGame(true);
+        if (state.dayIndex >= days.length) {
+            triggerGameClear();
             return;
         }
 
-        // 胃もたれの自然回復（毎朝少しリセットされる or 維持）
-        // ランダムに3つのメニューを抽選（とんかつが必ず1つ以上入るように配慮すると面白い）
-        let tonkatsuList = ALL_MENUS.filter(m => m.isTonkatsu);
-        let otherList = ALL_MENUS.filter(m => !m.isTonkatsu);
-
-        let selected = [];
-        // 必ずとんかつを1〜2個混ぜる
-        let t1 = getRandomItem(tonkatsuList);
-        let o1 = getRandomItem(otherList);
-        let o2 = getRandomItem(ALL_MENUS);
-        
-        selected = [t1, o1, o2];
-        // 重複除去
-        selected = Array.from(new Set(selected));
-        while(selected.length < 3) {
-            let item = getRandomItem(ALL_MENUS);
-            if(!selected.includes(item)) selected.push(item);
+        // 本日のメニューを3つランダム選出
+        // 胃もたれ10以上の場合はとんかつ系を選べなくする（あるいは強制除外）
+        let availableMenus = [...baseMenus];
+        if (state.stomach >= 10) {
+            // とんかつは食べられない
+            setDialogue("定食屋オヤジ", `「おいおい、顔色が真っ青だぞ…！胃もたれMAXの時はとんかつは無理だ！他のヘルシーなやつにしとけ！」`);
+        } else {
+            setDialogue("定食屋オヤジ", `「さあ${days[state.dayIndex]}のランチだ！今日のオススメは何にする？」`);
         }
-        // シャッフル
-        selected.sort(() => Math.random() - 0.5);
 
-        state.currentOptions = selected;
+        // ランダムに3つピックアップ
+        shuffleArray(availableMenus);
+        state.currentMenus = availableMenus.slice(0, 3);
 
-        // セリフ更新
-        setDialogue(getRandomItem(oyajiDialogues.start));
+        renderMenus();
         updateUI();
     }
 
-    function setDialogue(text) {
-        document.getElementById('speech-bubble').innerText = text;
+    function shuffleArray(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
     }
 
-    function updateUI() {
-        // ステータス表示更新
-        let dayName = DAYS[state.dayIndex];
-        document.getElementById('day-label').innerText = `${dayName} (ランチ ${state.dayIndex + 1}/7)`;
-        document.getElementById('tonkatsu-count-label').innerText = `とんかつ獲得: ${state.tonkatsuCount}回`;
+    function renderMenus() {
+        const listEl = document.getElementById('menu-list');
+        listEl.innerHTML = '';
 
-        document.getElementById('money-text').innerText = `${state.money}/${state.maxMoney}円`;
-        let moneyPercent = Math.max(0, (state.money / state.maxMoney) * 100);
-        document.getElementById('money-fill').style.width = `${moneyPercent}%`;
+        state.currentMenus.forEach((menu, index) => {
+            let isDisabled = false;
+            let disableReason = "";
 
-        document.getElementById('fat-text').innerText = `${state.fat}/${state.maxFat}`;
-        let fatPercent = Math.min(100, (state.fat / state.maxFat) * 100);
-        document.getElementById('fat-fill').style.width = `${fatPercent}%`;
-        document.getElementById('fat-fill').style.background = state.fat > 8 ? '#f44336' : (state.fat > 5 ? '#ff9800' : '#4caf50');
+            if (state.money < menu.price) {
+                isDisabled = true;
+                disableReason = "（小遣い不足）";
+            } else if (state.stomach >= 10 && menu.type === 'tonkatsu') {
+                isDisabled = true;
+                disableReason = "（胃もたれで無理！）";
+            }
 
-        document.getElementById('carb-text').innerText = `${state.carb}%`;
-        document.getElementById('carb-fill').style.width = `${Math.min(100, state.carb)}%`;
-
-        // メニューカード描画
-        let container = document.getElementById('menu-cards-container');
-        container.innerHTML = '';
-
-        state.currentOptions.forEach((menu, index) => {
-            let isTooFat = (state.fat + menu.fat > state.maxFat);
-            let isTooPoor = (state.money < menu.price);
-            let isDisabled = isTooFat || isTooPoor;
-
-            let card = document.createElement('div');
+            const card = document.createElement('div');
             card.className = `menu-card ${isDisabled ? 'disabled' : ''}`;
-            
-            let reasonText = "";
-            if (isTooFat) reasonText = " [胃もたれ限界]";
-            else if (isTooPoor) reasonText = " [金欠]";
-
             card.innerHTML = `
                 <div class="menu-info">
-                    <div class="menu-title">${menu.name}${reasonText}</div>
-                    <div class="menu-tags">
-                        <span class="tag-price">💰${menu.price}円</span>
-                        <span class="tag-fat">🍖脂+${menu.fat}</span>
-                        <span class="tag-carb">🍚糖+${menu.carb * 10}%</span>
+                    <div class="menu-name">${menu.name} ${disableReason}</div>
+                    <div class="menu-specs">
+                        <span class="spec-item">💰 <span>${menu.price}円</span></span>
+                        <span class="spec-item">🥩 脂分+<span>${menu.fat}</span></span>
+                        <span class="spec-item">🍚 炭水化物+<span>${menu.carb}</span></span>
                     </div>
-                    <div style="font-size:10px; color:#888; margin-top:2px;">${menu.desc}</div>
                 </div>
-                <button class="menu-action-btn" ${isDisabled ? 'disabled' : ''} onclick="chooseMenu(${index})">注文</button>
+                <button class="menu-action-btn" ${isDisabled ? 'disabled' : ''} onclick="selectMenu(${index})">注文</button>
             `;
-            container.appendChild(card);
+            listEl.appendChild(card);
         });
     }
 
-    function chooseMenu(index) {
-        let menu = state.currentOptions[index];
-        
-        // コスト適用
+    function selectMenu(index) {
+        if (state.gameOver || state.gameClear) return;
+        const menu = state.currentMenus[index];
+
+        // 資金チェック
+        if (state.money < menu.price) return;
+        if (state.stomach >= 10 && menu.type === 'tonkatsu') return;
+
+        // ステータス変動
         state.money -= menu.price;
-        state.fat += menu.fat;
-        state.carb = Math.min(100, state.carb + menu.carb * 15);
-
-        if (menu.isTonkatsu) {
+        state.stomach += menu.fat;
+        state.sleepyRate += menu.carb * 4; // 炭水化物量に応じて眠気が増す（最大100%付近へ）
+        if (menu.type === 'tonkatsu') {
             state.tonkatsuCount++;
-            setDialogue(getRandomItem(oyajiDialogues.orderTonkatsu));
-            document.getElementById('salaryman-avatar').innerText = '🤩';
+        }
+
+        updateUI();
+
+        // 食事後のオヤジのコメント
+        let msg = `「まいどあり！${menu.name}ね！」`;
+        if (menu.type === 'tonkatsu') {
+            msg = `「おっ、男は黙ってとんかつ定食だな！サクサクで美味そうだ！」`;
         } else {
-            setDialogue(getRandomItem(oyajiDialogues.orderOther));
-            document.getElementById('salaryman-avatar').innerText = '👔';
+            msg = `「たまにはこういうのもさっぱりして良しだな。」`;
         }
+        setDialogue("定食屋オヤジ", msg);
+        document.getElementById('salaryman-avatar.textContent') = '😋';
 
-        // 胃もたれ警告
-        if (state.fat >= 8 && state.fat <= state.maxFat) {
-            setTimeout(() => {
-                setDialogue(getRandomItem(oyajiDialogues.warningFat));
-            }, 1000);
-        }
-
-        // 昼寝判定 (眠気率に応じた確率でイベント)
-        let napChance = state.carb; // 例: 50%なら0.5の確率で昼寝
-        let willNap = Math.random() * 100 < napChance;
-
+        // メニュー一覧を一旦クリアして午後イベントへ
+        document.getElementById('menu-list.innerHTML') = '<div style="text-align:center; padding:15px; color:#888;">午後出社中... 💻</div>';
+        
         setTimeout(() => {
-            if (willNap) {
-                triggerNapEvent();
-            } else {
-                proceedAfterMeal();
-            }
+            checkAfternoonEvent(menu);
         }, 1200);
     }
 
-    function triggerNapEvent() {
-        let flash = document.getElementById('nap-flash');
-        flash.style.display = 'block';
-        setDialogue("（うっ…ものすごい睡魔が…スーーッ…）");
-        document.getElementById('salaryman-avatar').innerText = '💤';
+    function checkAfternoonEvent(menu) {
+        // 午後の眠気・怒られ判定
+        // 眠気率が高いほど高確率で居眠りして怒られる
+        let sleepRoll = Math.random() * 100;
+        let willFallAsleep = sleepRoll < state.sleepyRate;
+
+        if (willFallAsleep && state.sleepyRate > 25) {
+            // 昼寝して怒られるゲームオーバー
+            triggerGameOver(menu);
+        } else {
+            // 無事に午後を乗り切った
+            let afternoonMsg = `午後、デスクワークを頑張った。（眠気率: ${state.sleepyRate}%）`;
+            if (state.sleepyRate > 50) {
+                afternoonMsg = `午後は強烈な睡魔に襲われたが、気合で乗り切った！`;
+            } else {
+                afternoonMsg = `午後の仕事もすっきりとこなせた！`;
+            }
+            setDialogue("サラリーマン（心の声）", afternoonMsg);
+
+            setTimeout(() => {
+                state.dayIndex++;
+                if (state.dayIndex >= days.length || state.money <= 0) {
+                    if (state.money <= 0 && state.dayIndex < days.length) {
+                        // 小遣い枯渇ゲームオーバー or 最終日判定
+                        triggerGameOverMoney();
+                    } else {
+                        nextDay();
+                    }
+                } else {
+                    nextDay();
+                }
+            }, 1800);
+        }
+    }
+
+    function triggerGameOver(menu) {
+        state.gameOver = true;
+        document.getElementById('salaryman-avatar').textContent = '💤💢';
+        setDialogue("上司", `「こらーっ！勤務中に大いびきかいて寝てるとはなんだ！！クビだぁ！！」`);
+        
+        setTimeout(() => {
+            const overlay = document.getElementById('overlay');
+            overlay.querySelector('h1').textContent = "💥 昼寝がバレてクビ！(GAME OVER) 💥";
+            overlay.querySelector('h1').style.color = "#f44336";
+            overlay.querySelector('p').innerHTML = `
+                炭水化物（${menu.name}など）を摂りすぎたせいで、午後の会議中に激しい睡魔に襲われ爆睡。<br>
+                鬼の上司に見つかり、即クビ宣告されてしまいました…。<br><br>
+                <strong>【今回の成績】</strong><br>
+                とんかつ食べた回数: <strong>${state.tonkatsuCount}回</strong><br>
+                残金: ${state.money}円 / 胃もたれ度: ${state.stomach}
+            `;
+            overlay.querySelector('button').textContent = "もう一度サラリーマンをやり直す";
+            overlay.classList.remove('hidden');
+        }, 1500);
+    }
+
+    function triggerGameOverMoney() {
+        state.gameOver = true;
+        const overlay = document.getElementById('overlay');
+        overlay.querySelector('h1').textContent = "💸 小遣い破産！(GAME OVER) 💸";
+        overlay.querySelector('h1').style.color = "#f44336";
+        overlay.querySelector('p').innerHTML = `
+            木曜日の時点で小遣いが底をついてしまった！<br>
+            これ以上は一銭も外食できない…社内ニート生活に突入。<br><br>
+            <strong>【今回の成績】</strong><br>
+            とんかつ食べた回数: <strong>${state.tonkatsuCount}回</strong>
+        `;
+        overlay.querySelector('button').textContent = "もう一度サラリーマンをやり直す";
+        overlay.classList.remove('hidden');
+    }
+
+    function triggerGameClear() {
+        state.gameClear = true;
+        document.getElementById('salaryman-avatar').textContent = '🏆👔';
+        setDialogue("定食屋オヤジ", `「1週間お疲れさん！見事にとんかつライフを駆け抜けたな！」`);
 
         setTimeout(() => {
-            flash.style.display = 'none';
-            // 怒られる判定 (眠気が高いほど怒られやすい。または運悪く部長に見つかる)
-            let scoldChance = state.carb; 
-            if (Math.random() * 100 < scoldChance) {
-                // ゲームオーバー（上司に激怒）
-                endGame(false, "午後のデスクで爆睡してしまい、背後に立っていた鬼部長に見つかった！「きみねぇ、仕事中に何を寝ているんだ！」クビを言い渡されゲームオーバー。");
-            } else {
-                // 奇跡的にセーフ、ただし眠気が少し冷める
-                setDialogue("「ふっ！危うく寝過ごすところだった…！冷や汗がやばい。」");
-                state.carb = Math.max(0, state.carb - 30);
-                setTimeout(() => {
-                    proceedAfterMeal();
-                }, 1500);
-            }
-        }, 2000);
+            const overlay = document.getElementById('overlay');
+            overlay.querySelector('h1').textContent = "✨ 1週間完走・大勝利！(GAME CLEAR) ✨";
+            overlay.querySelector('h1').style.color = "#4caf50";
+            
+            let rankTitle = "見習いとんかつサラリーマン";
+            if (state.tonkatsuCount >= 5) rankTitle = "伝説のとんかつマイスター・サラリーマン";
+            else if (state.tonkatsuCount >= 3) rankTitle = "やり手のとんかつ愛好家";
+
+            overlay.querySelector('p').innerHTML = `
+                無事に1週間（月〜金）のランチを生き残り、クビも回避しました！<br><br>
+                称号：<strong>【${rankTitle}】</strong><br>
+                とんかつ食べた回数: <strong style="color:#ff9800; font-size:16px;">${state.tonkatsuCount} / 5回</strong><br>
+                残金: ${state.money}円 / 最終胃もたれ度: ${state.stomach}/10<br><br>
+                いつでもとんかつを食える強い胃袋と財政管理を証明しました！
+            `;
+            overlay.querySelector('button').textContent = "もう一度挑戦する";
+            overlay.classList.remove('hidden');
+        }, 1500);
     }
 
-    function proceedAfterMeal() {
-        // 昼寝でゲームオーバーになっていなければ
-        if (state.gameOver || state.gameCleared) return;
+    function setDialogue(speaker, text) {
+        document.getElementById('speaker-name').textContent = speaker;
+        document.getElementById('dialogue-text').textContent = text;
+    }
 
-        // 小遣い枯渇チェック
-        if (state.money < 0) {
-            endGame(false, "お小遣いがマイナスになってしまい、定食屋のオヤジに出禁を言い渡された…！");
-            return;
+    function updateUI() {
+        document.getElementById('day-label').textContent = days[state.dayIndex] || "金曜日";
+        document.getElementById('tonkatsu-count').textContent = state.tonkatsuCount;
+        
+        document.getElementById('money-val').textContent = state.money;
+        let moneyPct = (state.money / 5000) * 100;
+        document.getElementById('money-gauge').style.width = Math.max(0, Math.min(100, moneyPct)) + '%';
+
+        document.getElementById('stomach-val').textContent = state.stomach;
+        let stomachPct = (state.stomach / 10) * 100;
+        let stomachGauge = document.getElementById('stomach-gauge');
+        stomachGauge.style.width = Math.max(0, Math.min(100, stomachPct)) + '%';
+        if (state.stomach >= 10) {
+            stomachGauge.style.background = '#f44336';
+        } else {
+            stomachGauge.style.background = '#ff9800';
         }
 
-        state.dayIndex++;
-        // 炭水化物による眠気は少し自然回復するか蓄積するか。今回は少し減る
-        state.carb = Math.max(0, state.carb - 10);
-        // 胃もたれも少し回復
-        state.fat = Math.max(0, state.fat - 1);
-
-        nextDay();
-    }
-
-    function endGame(isClear, customMsg = "") {
-        state.gameOver = !isClear;
-        state.gameCleared = isClear;
-
-        let overlay = document.getElementById('overlay');
-        let titleEl = document.getElementById('overlay-title');
-        let descEl = document.getElementById('overlay-desc');
-        let btnEl = document.getElementById('overlay-btn');
-
-        overlay.style.display = 'flex';
-
-        if (isClear) {
-            titleEl.style.color = '#4caf50';
-            titleEl.innerText = "1週間終了！結果発表";
-            
-            let rank = "";
-            if (state.tonkatsuCount >= 6) rank = "🏆【とんかつ神マスター】（毎日とんかつを極めた真の強者）";
-            else if (state.tonkatsuCount >= 4) rank = "🥈【とんかつ愛好家】（大満足のランチライフ！）";
-            else if (state.tonkatsuCount >= 2) rank = "🥉【一般サラリーマン】（バランスを考えた大人な選択）";
-            else rank = "📉【草食系サラリーマン】（とんかつほとんど食ってない件）";
-
-            descEl.innerHTML = `
-                1週間で食べた<b>とんかつ定食</b>の数： <span style="font-size:18px; color:#ff9800;">${state.tonkatsuCount} 回</span><br><br>
-                残金: <b>${state.money}円</b><br>
-                称号: <br><b style="color:#ffeb3b;">${rank}</b><br><br>
-                サラリーマンの限られたお小遣いと胃もたれを乗り越え、よく頑張りました！
-            `;
-            btnEl.innerText = "もう一度挑戦する";
+        document.getElementById('sleepy-val').textContent = state.sleepyRate;
+        let sleepyGauge = document.getElementById('sleepy-gauge');
+        sleepyGauge.style.width = Math.max(0, Math.min(100, state.sleepyRate)) + '%';
+        if (state.sleepyRate > 50) {
+            sleepyGauge.style.background = '#f44336';
         } else {
-            titleEl.style.color = '#f44336';
-            titleEl.innerText = "GAMEOVER";
-            descEl.innerHTML = customMsg || "限界を超えてしまいました…";
-            btnEl.innerText = "リトライ";
+            sleepyGauge.style.background = '#03a9f4';
         }
     }
 </script>
