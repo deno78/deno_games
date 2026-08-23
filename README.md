@@ -60,3 +60,4 @@ Deno/Web games collection.
 - [47. つき合っていい男チェッカー (Date Worthy Man Checker) - 16bit婚活バトル](./47/index.html)
 - [48. とんかつをいつでも食えるか試すゲーム (Tonkatsu Lunch Week)](./48/index.html)
 - [49. レトロカンフーバトル (Retro Kung-Fu Battle)](./49/index.html)
+- [50. ゼビウス風縦スクロールシューティング (Xevious Style Retro Shmup)](./50/index.html)

@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ゼビウス風レトロ縦スクロールシューティング - XEVIOUS STYLE SHMUP</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #0b0b16;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 480px;
+            height: 100vh;
+            max-height: 720px;
+            background: #000;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            display: flex;
+            flex-direction: column;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: #111;
+        }
+        .hud {
+            position: absolute;
+            top: 10px;
+            left: 15px;
+            right: 15px;
+            display: flex;
+            justify-content: space-between;
+            font-size: 16px;
+            font-weight: bold;
+            text-shadow: 0 0 5px #00ffcc;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(10, 10, 20, 0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 20;
+            padding: 20px;
+            text-align: center;
+        }
+        h1 {
+            font-size: 28px;
+            color: #00ffcc;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px #00ffcc, 0 0 20px #0000ff;
+            letter-spacing: 2px;
+        }
+        p {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #ccc;
+            margin-bottom: 20px;
+        }
+        .btn {
+            background: linear-gradient(135deg, #00ffcc, #0088ff);
+            color: #000;
+            border: none;
+            padding: 12px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            border-radius: 4px;
+            box-shadow: 0 0 10px rgba(0, 255, 204, 0.5);
+            transition: 0.2s;
+            margin-top: 10px;
+        }
+        .btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.8);
+        }
+        /* バーチャルパッド (スマホ・マウス用) */
+        #virtual-pad {
+            position: absolute;
+            bottom: 20px;
+            left: 20px;
+            width: 120px;
+            height: 120px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            z-index: 15;
+            touch-action: none;
+            display: none; /* スマホやタッチデバイス、または常に表示したい場合はblockに */
+        }
+        #virtual-stick {
+            position: absolute;
+            top: 40px;
+            left: 40px;
+            width: 40px;
+            height: 40px;
+            background: rgba(0, 255, 204, 0.6);
+            border-radius: 50%;
+            pointer-events: none;
+            box-shadow: 0 0 10px #00ffcc;
+        }
+        .controls-hint {
+            font-size: 11px;
+            color: #888;
+            margin-top: 15px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div class="hud">
+        <div>SCORE: <span id="score-val">000000</span></div>
+        <div>HIGH: <span id="highscore-val">000000</span></div>
+        <div>LIFE: <span id="life-val">❤️❤️❤️</span></div>
+    </div>
+
+    <canvas id="gameCanvas" width="480" height="720"></canvas>
+
+    <!-- スタート画面 -->
+    <div id="start-screen" class="screen">
+        <h1>XEVIOUS STYLE<br>SHMUP</h1>
+        <p>ゼビウス風 縦スクロールシューティング<br><br>
+        • 自機は8方向移動 (矢印キー / WASD)<br>
+        • 弾はオート連射されます<br>
+        • 敵機が上空から次々と襲来！<br>
+        • 地上・空中を制して高得点を目指せ！</p>
+        <button class="btn" id="start-btn">GAME START</button>
+        <div class="controls-hint">※スマホでは画面上のバーチャルパッドでも操作可能</div>
+    </div>
+
+    <!-- ゲームオーバー画面 -->
+    <div id="gameover-screen" class="screen" style="display: none;">
+        <h1 style="color: #ff3333; text-shadow: 0 0 10px #ff0000;">GAME OVER</h1>
+        <p>FINAL SCORE: <span id="final-score">0</span></p>
+        <button class="btn" id="restart-btn">PLAY AGAIN</button>
+    </div>
+
+    <!-- バーチャルパッド -->
+    <div id="virtual-pad">
+        <div id="virtual-stick"></div>
+    </div>
+</div>
+
+<script>
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+
+const W = canvas.width;
+const H = canvas.height;
+
+// ゲーム状態
+let gameState = 'START'; // START, PLAYING, GAMEOVER
+let score = 0;
+let highscore = localStorage.getItem('xevious_hs') || 0;
+let lives = 3;
+let frameCount = 0;
+
+document.getElementById('highscore-val').textContent = String(highscore).padStart(6, '0');
+
+// 入力状態
+const keys = {
+    ArrowUp: false,
+    ArrowDown: false,
+    ArrowLeft: false,
+    ArrowRight: false,
+    KeyW: false,
+    KeyS: false,
+    KeyA: false,
+    KeyD: false
+};
+
+// バーチャルパッド用
+let touchActive = false;
+let touchStartX = 0;
+let touchStartY = 0;
+let stickX = 0;
+let stickY = 0;
+
+const virtualPad = document.getElementById('virtual-pad');
+const virtualStick = document.getElementById('virtual-stick');
+
+// タッチデバイス判定でバーチャルパッド表示
+if ('ontouchstart' in window || navigator.maxTouchPoints > 0) {
+    virtualPad.style.display = 'block';
+}
+
+// キーボードリスナー
+window.addEventListener('keydown', e => {
+    if (keys.hasOwnProperty(e.code)) {
+        keys[e.code] = true;
+        if(['ArrowUp','ArrowDown','ArrowLeft','ArrowRight','Space'].includes(e.code)) {
+            e.preventDefault();
+        }
+    }
+});
+
+window.addEventListener('keyup', e => {
+    if (keys.hasOwnProperty(e.code)) {
+        keys[e.code] = false;
+    }
+});
+
+// タッチ操作リスナー
+virtualPad.addEventListener('touchstart', e => {
+    e.preventDefault();
+    touchActive = true;
+    const touch = e.touches[0];
+    const rect = virtualPad.getBoundingClientRect();
+    touchStartX = rect.left + rect.width / 2;
+    touchStartY = rect.top + rect.height / 2;
+    updateStick(touch.clientX, touch.clientY);
+}, { passive: false });
+
+virtualPad.addEventListener('touchmove', e => {
+    e.preventDefault();
+    if (!touchActive) return;
+    const touch = e.touches[0];
+    updateStick(touch.clientX, touch.clientY);
+}, { passive: false });
+
+virtualPad.addEventListener('touchend', e => {
+    e.preventDefault();
+    touchActive = false;
+    stickX = 0;
+    stickY = 0;
+    virtualStick.style.transform = `translate(0px, 0px)`;
+});
+
+function updateStick(clientX, clientY) {
+    let dx = clientX - touchStartX;
+    let dy = clientY - touchStartY;
+    const dist = Math.hypot(dx, dy);
+    const maxDist = 40;
+    if (dist > maxDist) {
+        dx = (dx / dist) * maxDist;
+        dy = (dy / dist) * maxDist;
+    }
+    virtualStick.style.transform = `translate(${dx}px, ${dy}px)`;
+    stickX = dx / maxDist;
+    stickY = dy / maxDist;
+}
+
+// 自機クラス
+class Player {
+    constructor() {
+        this.x = W / 2;
+        this.y = H - 100;
+        this.speed = 5;
+        this.radius = 12;
+        this.invincibleTimer = 0;
+        this.shootTimer = 0;
+    }
+
+    update() {
+        let dx = 0;
+        let dy = 0;
+
+        if (keys.ArrowLeft || keys.KeyA) dx -= 1;
+        if (keys.ArrowRight || keys.KeyD) dx += 1;
+        if (keys.ArrowUp || keys.KeyW) dy -= 1;
+        if (keys.ArrowDown || keys.KeyS) dy += 1;
+
+        if (touchActive) {
+            dx += stickX;
+            dy += stickY;
+        }
+
+        // 斜め移動時の正規化
+        if (dx !== 0 && dy !== 0) {
+            dx *= Math.SQRT1_2;
+            dy *= Math.SQRT1_2;
+        }
+
+        this.x += dx * this.speed;
+        this.y += dy * this.speed;
+
+        // 画面外制限
+        this.x = Math.max(20, Math.min(W - 20, this.x));
+        this.y = Math.max(30, Math.min(H - 30, this.y));
+
+        if (this.invincibleTimer > 0) {
+            this.invincibleTimer--;
+        }
+
+        // オート連射
+        this.shootTimer++;
+        if (this.shootTimer >= 10) { // 10フレームごとに発射
+            this.shoot();
+            this.shootTimer = 0;
+        }
+    }
+
+    shoot() {
+        // ゼビウス風 ダブルバレット
+        bullets.push(new Bullet(this.x - 8, this.y - 10, 0, -12));
+        bullets.push(new Bullet(this.x + 8, this.y - 10, 0, -12));
+    }
+
+    draw() {
+        if (this.invincibleTimer > 0 && Math.floor(frameCount / 4) % 2 === 0) {
+            return; // 点滅
+        }
+
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        // 自機デザイン (レトロジェット風)
+        ctx.fillStyle = '#00ffcc';
+        ctx.beginPath();
+        ctx.moveTo(0, -16);
+        ctx.lineTo(12, 12);
+        ctx.lineTo(4, 8);
+        ctx.lineTo(0, 14);
+        ctx.lineTo(-4, 8);
+        ctx.lineTo(-12, 12);
+        ctx.closePath();
+        ctx.fill();
+
+        // コクピット
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(0, -2, 3, 0, Math.PI * 2);
+        ctx.fill();
+
+        // エンジン噴射
+        ctx.fillStyle = '#ff3300';
+        ctx.fillRect(-3, 14, 6, 6 + Math.random() * 4);
+
+        ctx.restore();
+    }
+}
+
+// 弾クラス
+class Bullet {
+    constructor(x, y, vx, vy) {
+        this.x = x;
+        this.y = y;
+        this.vx = vx;
+        this.vy = vy;
+        this.radius = 4;
+        this.active = true;
+    }
+
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+        if (this.y < -20 || this.y > H + 20 || this.x < -20 || this.x > W + 20) {
+            this.active = false;
+        }
+    }
+
+    draw() {
+        ctx.fillStyle = '#ffff00';
+        ctx.shadowBlur = 8;
+        ctx.shadowColor = '#ffff00';
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+    }
+}
+
+// 敵クラス
+class Enemy {
+    constructor() {
+        this.reset();
+    }
+
+    reset() {
+        this.type = Math.random() < 0.7 ? 'TARGE' : 'ZACK'; // 雑魚 or 高耐久
+        this.x = Math.random() * (W - 60) + 30;
+        this.y = -40;
+        
+        // ランダムな角度と速度で襲来
+        const angle = Math.random() * Math.PI - Math.PI / 2 + Math.PI / 2; // 下方向中心にランダム
+        // プレイヤーに向かって少しホーミングする角度調整も混ぜる
+        const targetAngle = Math.atan2(player.y - this.y, player.x - this.x) + (Math.random() - 0.5) * 0.8;
+        const speed = Math.random() * 2 + 2.5;
+
+        this.vx = Math.cos(targetAngle) * speed;
+        this.vy = Math.sin(targetAngle) * speed;
+        if (this.vy < 1) this.vy = 1; // 必ず下へ向かう成分を確保
+
+        this.radius = 16;
+        this.hp = this.type === 'ZACK' ? 3 : 1;
+        this.maxHp = this.hp;
+        this.active = true;
+        this.color = this.type === 'ZACK' ? '#ff3366' : '#ff9900';
+    }
+
+    update() {
+        this.x += this.vx;
+        this.y += this.vy;
+
+        if (this.y > H + 50 || this.x < -50 || this.x > W + 50) {
+            this.active = false;
+        }
+    }
+
+    draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        ctx.fillStyle = this.color;
+        ctx.shadowBlur = 6;
+        ctx.shadowColor = this.color;
+
+        if (this.type === 'ZACK') {
+            // ゼビウスのアンドジェネシスやザコ敵風の多角形
+            ctx.beginPath();
+            ctx.moveTo(0, -18);
+            ctx.lineTo(16, 0);
+            ctx.lineTo(0, 18);
+            ctx.lineTo(-16, 0);
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.arc(0, 0, 5, 0, Math.PI * 2);
+            ctx.fill();
+        } else {
+            // 通常敵 (ガルデモア風円盤)
+            ctx.beginPath();
+            ctx.ellipse(0, 0, 16, 10, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.fillStyle = '#ffff33';
+            ctx.beginPath();
+            ctx.arc(0, 0, 4, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.shadowBlur = 0;
+        ctx.restore();
+    }
+}
+
+// 爆発エフェクト
+class Explosion {
+    constructor(x, y, color = '#ff9900') {
+        this.x = x;
+        this.y = y;
+        this.particles = [];
+        for (let i = 0; i < 16; i++) {
+            const angle = Math.random() * Math.PI * 2;
+            const speed = Math.random() * 4 + 1;
+            this.particles.push({
+                x: 0,
+                y: 0,
+                vx: Math.cos(angle) * speed,
+                vy: Math.sin(angle) * speed,
+                radius: Math.random() * 3 + 2,
+                alpha: 1
+            });
+        }
+        this.active = true;
+        this.color = color;
+    }
+
+    update() {
+        let alive = false;
+        for (let p of this.particles) {
+            p.x += p.vx;
+            p.y += p.vy;
+            p.alpha -= 0.03;
+            if (p.alpha > 0) alive = true;
+        }
+        if (!alive) this.active = false;
+    }
+
+    draw() {
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        for (let p of this.particles) {
+            if (p.alpha <= 0) continue;
+            ctx.fillStyle = this.color;
+            ctx.globalAlpha = p.alpha;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.restore();
+    }
+}
+
+// 背景の星・スクロールオブジェクト
+class Star {
+    constructor() {
+        this.reset();
+    }
+    reset() {
+        this.x = Math.random() * W;
+        this.y = Math.random() * H;
+        this.size = Math.random() * 2 + 1;
+        this.speed = Math.random() * 2 + 1;
+    }
+    update() {
+        this.y += this.speed;
+        if (this.y > H) {
+            this.y = 0;
+            this.x = Math.random() * W;
+        }
+    }
+    draw() {
+        ctx.fillStyle = '#ffffff';
+        ctx.globalAlpha = 0.5;
+        ctx.fillRect(this.x, this.y, this.size, this.size);
+        ctx.globalAlpha = 1.0;
+    }
+}
+
+// オブジェクト群
+let player;
+let bullets = [];
+let enemies = [];
+let explosions = [];
+let stars = [];
+
+function initGame() {
+    player = new Player();
+    bullets = [];
+    enemies = [];
+    explosions = [];
+    stars = [];
+    for (let i = 0; i < 50; i++) {
+        stars.push(new Star());
+    }
+    score = 0;
+    lives = 3;
+    frameCount = 0;
+    updateHUD();
+}
+
+function updateHUD() {
+    document.getElementById('score-val').textContent = String(score).padStart(6, '0');
+    let hearts = '';
+    for (let i = 0; i < lives; i++) hearts += '❤️';
+    document.getElementById('life-val').textContent = hearts;
+}
+
+// メインゲームループ
+function loop() {
+    // 画面クリア
+    ctx.fillStyle = '#050510';
+    ctx.fillRect(0, 0, W, H);
+
+    // 背景更新・描画
+    for (let star of stars) {
+        star.update();
+        star.draw();
+    }
+
+    if (gameState === 'PLAYING') {
+        frameCount++;
+
+        // 敵のスポーン
+        let spawnInterval = Math.max(20, 60 - Math.floor(score / 500));
+        if (frameCount % spawnInterval === 0) {
+            enemies.push(new Enemy());
+        }
+
+        // プレイヤー更新・描画
+        player.update();
+        player.draw();
+
+        // 弾更新・描画
+        for (let i = bullets.length - 1; i >= 0; i--) {
+            let b = bullets[i];
+            b.update();
+            b.draw();
+            if (!b.active) {
+                bullets.splice(i, 1);
+            }
+        }
+
+        // 敵更新・描画
+        for (let i = enemies.length - 1; i >= 0; i--) {
+            let e = enemies[i];
+            e.update();
+            e.draw();
+
+            // プレイヤーとの当たり判定
+            if (player.invincibleTimer === 0) {
+                let dist = Math.hypot(player.x - e.x, player.y - e.y);
+                if (dist < player.radius + e.radius - 4) {
+                    // 被弾
+                    lives--;
+                    updateHUD();
+                    explosions.push(new Explosion(player.x, player.y, '#00ffff'));
+                    player.invincibleTimer = 90; // 1.5秒無敵
+
+                    if (lives <= 0) {
+                        gameOver();
+                    }
+                }
+            }
+
+            // 弾との当たり判定
+            for (let j = bullets.length - 1; j >= 0; j--) {
+                let b = bullets[j];
+                let dist = Math.hypot(b.x - e.x, b.y - e.y);
+                if (dist < b.radius + e.radius) {
+                    // 弾消滅
+                    bullets.splice(j, 1);
+                    e.hp--;
+
+                    if (e.hp <= 0) {
+                        explosions.push(new Explosion(e.x, e.y, e.color));
+                        score += e.maxHp * 100;
+                        updateHUD();
+                        enemies.splice(i, 1);
+                        break;
+                    }
+                }
+            }
+
+            if (e && !e.active) {
+                enemies.splice(i, 1);
+            }
+        }
+
+        // 爆発エフェクト更新・描画
+        for (let i = explosions.length - 1; i >= 0; i--) {
+            let ex = explosions[i];
+            ex.update();
+            ex.draw();
+            if (!ex.active) {
+                explosions.splice(i, 1);
+            }
+        }
+    }
+
+    requestAnimationFrame(loop);
+}
+
+function gameOver() {
+    gameState = 'GAMEOVER';
+    if (score > highscore) {
+        highscore = score;
+        localStorage.setItem('xevious_hs', highscore);
+        document.getElementById('highscore-val').textContent = String(highscore).padStart(6, '0');
+    }
+    document.getElementById('final-score').textContent = score;
+    document.getElementById('gameover-screen').style.display = 'flex';
+}
+
+// ボタンイベント
+document.getElementById('start-btn').addEventListener('click', () => {
+    document.getElementById('start-screen').style.display = 'none';
+    initGame();
+    gameState = 'PLAYING';
+});
+
+document.getElementById('restart-btn').addEventListener('click', () => {
+    document.getElementById('gameover-screen').style.display = 'none';
+    initGame();
+    gameState = 'PLAYING';
+});
+
+// 初期描画用にループ開始
+loop();
+</script>
+
+</body>
+</html>
