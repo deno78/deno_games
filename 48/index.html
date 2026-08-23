@@ -341,15 +341,17 @@
     <!-- スタート / 結果オーバーレイ -->
     <div id="overlay" class="overlay">
         <h1>とんかつをいつでも食えるか試すゲーム</h1>
-        <p>
-            あなたはくたびれたサラリーマン。<br>
-            1週間（月〜金）のランチで「とんかつ定食」を限界まで食べて自分のロマンを貫け！<br><br>
-            ⚠️<b>注意</b>⚠️<br>
-            ・小遣いは1週間で<strong>5000円</strong>！<br>
-            ・脂分（胃もたれゲージ）が<strong>10</strong>を超えると、胃もたれでとんかつが食べられなくなるぞ！<br>
-            ・炭水化物で午後の<strong>眠気率</strong>が上がり、昼寝して上司に怒られると即ゲームオーバー！
+        <p id="overlay-desc">
+            職業を選択して1週間（月〜金）のランチを過ごし、<br>
+            できるだけ多く<b>「とんかつ定食」</b>を食べよう！<br><br>
+            ジョブによって所持金と胃もたれ限界、昼寝の結末が変わります。
         </p>
-        <button class="btn-primary" onclick="startGame()">社畜のランチに出発する</button>
+        <div id="job-select-box" style="display: flex; flex-direction: column; gap: 8px; width: 100%; margin-bottom: 15px;">
+            <button class="btn-primary" style="background:#2196f3;" onclick="selectJob('student')">🎒 学生 (所持金: 3500円 / 胃もたれ限界: 14)<br><span style="font-size:10px; font-weight:normal;">※眠気管理失敗時のペナルティ：講義単位を落として留年！</span></button>
+            <button class="btn-primary" style="background:#ff9800;" onclick="selectJob('junior')">👔 若手社会人 (所持金: 5000円 / 胃もたれ限界: 10)<br><span style="font-size:10px; font-weight:normal;">※眠気管理失敗時のペナルティ：上司に怒られてクビ！</span></button>
+            <button class="btn-primary" style="background:#e91e63;" onclick="selectJob('middle')">💼 中年社会人 (所持金: 7500円 / 胃もたれ限界: 7)<br><span style="font-size:10px; font-weight:normal;">※眠気管理失敗時のペナルティ：上司に怒られてクビ！(胃が弱い)</span></button>
+        </div>
+        <button id="start-btn" class="btn-primary hidden" onclick="startGame()">ランチへ行く！</button>
     </div>
 </div>
 
@@ -372,6 +374,10 @@
     const days = ["月曜日", "火曜日", "水曜日", "木曜日", "金曜日"];
 
     let state = {
+        job: 'junior', // student, junior, middle
+        jobTitle: '若手社会人',
+        maxMoney: 5000,
+        maxStomach: 10,
         dayIndex: 0,
         money: 5000,
         stomach: 0,
@@ -382,17 +388,50 @@
         gameClear: false
     };
 
+    function selectJob(jobKey) {
+        if (jobKey === 'student') {
+            state.job = 'student';
+            state.jobTitle = '学生';
+            state.maxMoney = 3500;
+            state.maxStomach = 13;
+            document.getElementById('salaryman-avatar').textContent = '🎒';
+            document.getElementById('speaker-name').textContent = '学生';
+        } else if (jobKey === 'junior') {
+            state.job = 'junior';
+            state.jobTitle = '若手社会人';
+            state.maxMoney = 5000;
+            state.maxStomach = 10;
+            document.getElementById('salaryman-avatar').textContent = '👔';
+            document.getElementById('speaker-name').textContent = '若手社会人';
+        } else if (jobKey === 'middle') {
+            state.job = 'middle';
+            state.jobTitle = '中年社会人';
+            state.maxMoney = 7500;
+            state.maxStomach = 7;
+            document.getElementById('salaryman-avatar').textContent = '💼';
+            document.getElementById('speaker-name').textContent = '中年社会人';
+        }
+
+        state.money = state.maxMoney;
+        
+        // ジョブ選択画面を隠してスタートボタンを表示
+        document.getElementById('job-select-box').style.display = 'none';
+        document.getElementById('overlay-desc').innerHTML = `
+            あなたは<b>${state.jobTitle}</b>です！<br>
+            所持金: <b>${state.maxMoney}円</b> / 胃もたれ限界: <b>${state.maxStomach}</b><br><br>
+            準備ができたらランチに出発しましょう！
+        `;
+        document.getElementById('start-btn').classList.remove('hidden');
+    }
+
     function startGame() {
-        state = {
-            dayIndex: 0,
-            money: 5000,
-            stomach: 0,
-            sleepyRate: 0,
-            tonkatsuCount: 0,
-            currentMenus: [],
-            gameOver: false,
-            gameClear: false
-        };
+        state.dayIndex = 0;
+        state.stomach = 0;
+        state.sleepyRate = 0;
+        state.tonkatsuCount = 0;
+        state.gameOver = false;
+        state.gameClear = false;
+
         document.getElementById('overlay').classList.add('hidden');
         updateUI();
         nextDay();
@@ -543,21 +582,30 @@
 
     function triggerGameOver(menu) {
         state.gameOver = true;
-        document.getElementById('salaryman-avatar').textContent = '💤💢';
-        setDialogue("上司", `「こらーっ！勤務中に大いびきかいて寝てるとはなんだ！！クビだぁ！！」`);
+        document.getElementById('salaryman-avatar').textContent = state.job === 'student' ? '💤📉' : '💤💢';
         
+        let titleText = "💥 昼寝がバレてクビ！(GAME OVER) 💥";
+        let reasonText = `炭水化物（${menu.name}など）を摂りすぎたせいで、午後の会議中に激しい睡魔に襲われ爆睡。<br>鬼の上司に見つかり、即クビ宣告されてしまいました…。`;
+        
+        if (state.job === 'student') {
+            titleText = "📚 講義中に爆睡して留年！(GAME OVER) 📚";
+            reasonText = `午後の講義中に爆睡してしまい、教授の逆鱗に触れて単位を剥奪！<br>出席日数不足と単位不足で、無念の<b>留年</b>が決定してしまいました…。`;
+            setDialogue("大学教授", `「君ねぇ、私の授業でそんなにいびきをかいて寝るとは…単位は不可、来年もう一度来なさい！」`);
+        } else {
+            setDialogue("上司", `「こらーっ！勤務中に大いびきかいて寝てるとはなんだ！！クビだぁ！！」`);
+        }
+
         setTimeout(() => {
             const overlay = document.getElementById('overlay');
-            overlay.querySelector('h1').textContent = "💥 昼寝がバレてクビ！(GAME OVER) 💥";
+            overlay.querySelector('h1').textContent = titleText;
             overlay.querySelector('h1').style.color = "#f44336";
             overlay.querySelector('p').innerHTML = `
-                炭水化物（${menu.name}など）を摂りすぎたせいで、午後の会議中に激しい睡魔に襲われ爆睡。<br>
-                鬼の上司に見つかり、即クビ宣告されてしまいました…。<br><br>
+                ${reasonText}<br><br>
                 <strong>【今回の成績】</strong><br>
                 とんかつ食べた回数: <strong>${state.tonkatsuCount}回</strong><br>
                 残金: ${state.money}円 / 胃もたれ度: ${state.stomach}
             `;
-            overlay.querySelector('button').textContent = "もう一度サラリーマンをやり直す";
+            overlay.querySelector('button').textContent = "もう一度やり直す";
             overlay.classList.remove('hidden');
         }, 1500);
     }
@@ -565,38 +613,39 @@
     function triggerGameOverMoney() {
         state.gameOver = true;
         const overlay = document.getElementById('overlay');
-        overlay.querySelector('h1').textContent = "💸 小遣い破産！(GAME OVER) 💸";
+        overlay.querySelector('h1').textContent = "💸 資金破産！(GAME OVER) 💸";
         overlay.querySelector('h1').style.color = "#f44336";
         overlay.querySelector('p').innerHTML = `
-            木曜日の時点で小遣いが底をついてしまった！<br>
-            これ以上は一銭も外食できない…社内ニート生活に突入。<br><br>
+            ランチ代が底をついてしまった！<br>
+            これ以上は一銭も外食できない…。<br><br>
             <strong>【今回の成績】</strong><br>
             とんかつ食べた回数: <strong>${state.tonkatsuCount}回</strong>
         `;
-        overlay.querySelector('button').textContent = "もう一度サラリーマンをやり直す";
+        overlay.querySelector('button').textContent = "もう一度やり直す";
         overlay.classList.remove('hidden');
     }
 
     function triggerGameClear() {
         state.gameClear = true;
-        document.getElementById('salaryman-avatar').textContent = '🏆👔';
-        setDialogue("定食屋オヤジ", `「1週間お疲れさん！見事にとんかつライフを駆け抜けたな！」`);
+        document.getElementById('salaryman-avatar').textContent = '🏆';
+        setDialogue("定食屋オヤジ", `<div>「1週間お疲れさん！見事にとんかつライフを駆け抜けたな！」</div>`);
 
         setTimeout(() => {
             const overlay = document.getElementById('overlay');
             overlay.querySelector('h1').textContent = "✨ 1週間完走・大勝利！(GAME CLEAR) ✨";
             overlay.querySelector('h1').style.color = "#4caf50";
             
-            let rankTitle = "見習いとんかつサラリーマン";
-            if (state.tonkatsuCount >= 5) rankTitle = "伝説のとんかつマイスター・サラリーマン";
-            else if (state.tonkatsuCount >= 3) rankTitle = "やり手のとんかつ愛好家";
+            let rankTitle = `見習い${state.jobTitle}とんかつマスター`;
+            if (state.tonkatsuCount >= 5) rankTitle = `伝説の${state.jobTitle}とんかつマイスター`;
+            else if (state.tonkatsuCount >= 3) rankTitle = `やり手の${state.jobTitle}とんかつ愛好家`;
 
             overlay.querySelector('p').innerHTML = `
-                無事に1週間（月〜金）のランチを生き残り、クビも回避しました！<br><br>
+                無事に1週間（月〜金）のランチを生き残り、ペナルティも回避しました！<br><br>
+                職業：<strong>${state.jobTitle}</strong><br>
                 称号：<strong>【${rankTitle}】</strong><br>
                 とんかつ食べた回数: <strong style="color:#ff9800; font-size:16px;">${state.tonkatsuCount} / 5回</strong><br>
-                残金: ${state.money}円 / 最終胃もたれ度: ${state.stomach}/10<br><br>
-                いつでもとんかつを食える強い胃袋と財政管理を証明しました！
+                残金: ${state.money}円 / 最終胃もたれ度: ${state.stomach}/${state.maxStomach}<br><br>
+                いつでもとんかつを食える強い胃袋とライフ管理を証明しました！
             `;
             overlay.querySelector('button').textContent = "もう一度挑戦する";
             overlay.classList.remove('hidden');
@@ -605,7 +654,7 @@
 
     function setDialogue(speaker, text) {
         document.getElementById('speaker-name').textContent = speaker;
-        document.getElementById('dialogue-text').textContent = text;
+        document.getElementById('dialogue-text').innerHTML = text;
     }
 
     function updateUI() {
@@ -613,11 +662,11 @@
         document.getElementById('tonkatsu-count').textContent = state.tonkatsuCount;
         
         document.getElementById('money-val').textContent = state.money;
-        let moneyPct = (state.money / 5000) * 100;
+        let moneyPct = (state.money / state.maxMoney) * 100;
         document.getElementById('money-gauge').style.width = Math.max(0, Math.min(100, moneyPct)) + '%';
 
-        document.getElementById('stomach-val').textContent = state.stomach;
-        let stomachPct = (state.stomach / 10) * 100;
+        document.getElementById('stomach-val').textContent = `${state.stomach}/${state.maxStomach}`;
+        let stomachPct = (state.stomach / state.maxStomach) * 100;
         let stomachGauge = document.getElementById('stomach-gauge');
         stomachGauge.style.width = Math.max(0, Math.min(100, stomachPct)) + '%';
         if (state.stomach >= 10) {
