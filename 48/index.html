@@ -520,6 +520,17 @@
 
             setTimeout(() => {
                 state.dayIndex++;
+                // 日が変わるごとに胃もたれが少し回復する（例: -3、最低0）
+                if (state.stomach > 0) {
+                    state.stomach = Math.max(0, state.stomach - 3);
+                }
+                // 眠気率も少しリフレッシュ
+                if (state.sleepyRate > 15) {
+                    state.sleepyRate -= 15;
+                } else {
+                    state.sleepyRate = 0;
+                }
+
                 if (state.dayIndex >= days.length || state.money <= 0) {
                     if (state.money <= 0 && state.dayIndex < days.length) {
                         // 小遣い枯渇ゲームオーバー or 最終日判定
