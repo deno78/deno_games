@@ -71,20 +71,21 @@
 
         /* カウンターシーン（イラスト・会話エリア） */
         .counter-scene {
-            flex: 1;
+            height: 140px;
             background: linear-gradient(to bottom, #111 0%, #3a2e2b 70%, #5a3e2b 100%);
             display: flex;
             flex-direction: column;
             position: relative;
             overflow: hidden;
             border-bottom: 4px solid #222;
+            flex-shrink: 0;
         }
         .shop-interior {
-            flex: 1;
+            height: 70px;
             display: flex;
             justify-content: space-between;
             align-items: flex-end;
-            padding: 10px 20px;
+            padding: 4px 20px;
             position: relative;
         }
         /* オヤジとサラリーマンのピクセルアート風表現 */
@@ -92,19 +93,19 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            width: 110px;
+            width: 100px;
             text-align: center;
         }
         .avatar-img {
-            font-size: 50px;
-            margin-bottom: 2px;
-            filter: drop-shadow(0 4px 4px rgba(0,0,0,0.5));
+            font-size: 38px;
+            margin-bottom: 0px;
+            filter: drop-shadow(0 2px 2px rgba(0,0,0,0.5));
         }
         .character-name {
-            font-size: 11px;
+            font-size: 10px;
             background: rgba(0,0,0,0.7);
-            padding: 2px 6px;
-            border-radius: 4px;
+            padding: 1px 4px;
+            border-radius: 3px;
             border: 1px solid #777;
             white-space: nowrap;
         }
@@ -113,20 +114,19 @@
             bottom: 0;
             left: 0;
             right: 0;
-            height: 30px;
+            height: 20px;
             background: #8b5a2b;
-            border-top: 4px solid #a06a35;
-            box-shadow: inset 0 4px 6px rgba(0,0,0,0.4);
+            border-top: 3px solid #a06a35;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.4);
         }
         /* 吹き出し会話エリア */
         .dialogue-box {
             background: rgba(20, 20, 20, 0.9);
             border-top: 2px solid #555;
-            padding: 10px 15px;
-            min-height: 75px;
-            max-height: 90px;
-            font-size: 13px;
-            line-height: 1.4;
+            padding: 6px 12px;
+            height: 50px;
+            font-size: 12px;
+            line-height: 1.3;
             overflow-y: auto;
             position: relative;
             z-index: 2;
@@ -134,34 +134,34 @@
         .dialogue-speaker {
             font-weight: bold;
             color: #ffcc00;
-            margin-bottom: 2px;
-            font-size: 12px;
+            margin-bottom: 1px;
+            font-size: 11px;
         }
 
         /* メニュー選択エリア */
         .menu-selection-area {
             background: #222;
-            padding: 10px;
+            padding: 8px 10px;
             display: flex;
             flex-direction: column;
-            gap: 6px;
-            min-height: 230px;
+            gap: 5px;
+            flex-grow: 1;
         }
         .menu-title-bar {
-            font-size: 12px;
+            font-size: 11px;
             color: #ff9800;
             font-weight: bold;
             display: flex;
             justify-content: space-between;
             align-items: center;
             border-bottom: 1px dashed #444;
-            padding-bottom: 4px;
+            padding-bottom: 2px;
         }
         .menu-card {
             background: #333;
             border: 2px solid #555;
             border-radius: 6px;
-            padding: 8px 10px;
+            padding: 6px 10px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -488,14 +488,15 @@
             msg = `「たまにはこういうのもさっぱりして良しだな。」`;
         }
         setDialogue("定食屋オヤジ", msg);
-        document.getElementById('salaryman-avatar.textContent') = '😋';
+        document.getElementById('salaryman-avatar').textContent = '😋';
 
-        // メニュー一覧を一旦クリアして午後イベントへ
-        document.getElementById('menu-list.innerHTML') = '<div style="text-align:center; padding:15px; color:#888;">午後出社中... 💻</div>';
+        // メニュー一覧を一時表示してすぐに次の日に進むためクリック無効化
+        const menuListEl = document.getElementById('menu-list');
+        menuListEl.innerHTML = `<div style="text-align:center; padding:15px; color:#ff9800; font-weight:bold;">美味しかった！ごちそうさま！<br><span style="font-size:11px; color:#aaa;">（${days[state.dayIndex]}のランチ終了 → 翌日へ）</span></div>`;
         
         setTimeout(() => {
             checkAfternoonEvent(menu);
-        }, 1200);
+        }, 1500);
     }
 
     function checkAfternoonEvent(menu) {
