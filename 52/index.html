@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ラーメン判定ゲーム - ご当地ラーメン早押しバトル</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            background-color: #111;
+            color: #fff;
+            font-family: 'Courier New', Courier, monospace, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .game-container {
+            width: 100%;
+            max-width: 420px;
+            height: 100%;
+            max-height: 850px;
+            background: #1e1e1e;
+            border: 4px solid #444;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            position: relative;
+            box-shadow: 0 0 20px rgba(255, 140, 0, 0.3);
+        }
+        /* ヘッダー */
+        header {
+            background: #2a2a2a;
+            padding: 8px 12px;
+            border-bottom: 3px solid #ff8c00;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .title {
+            font-size: 14px;
+            font-weight: bold;
+            color: #ff8c00;
+        }
+        .stats {
+            font-size: 13px;
+            color: #ffdf00;
+        }
+
+        /* メインエリア */
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 10px;
+            justify-content: space-between;
+            overflow-y: auto;
+        }
+
+        /* 店主エリア */
+        .master-section {
+            display: flex;
+            align-items: center;
+            background: #282828;
+            border: 2px solid #555;
+            border-radius: 8px;
+            padding: 8px;
+            gap: 10px;
+        }
+        .master-avatar {
+            width: 50px;
+            height: 50px;
+            background: #333;
+            border: 2px solid #ff8c00;
+            border-radius: 4px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 24px;
+            flex-shrink: 0;
+        }
+        .speech-bubble {
+            flex: 1;
+            background: #383838;
+            border: 2px solid #666;
+            border-radius: 6px;
+            padding: 6px 10px;
+            font-size: 12px;
+            line-height: 1.4;
+            min-height: 50px;
+            max-height: 70px;
+            overflow-y: auto;
+            color: #f0f0f0;
+        }
+
+        /* ラーメン丼ビジュアルエリア */
+        .ramen-view {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 5px 0;
+            position: relative;
+        }
+        canvas {
+            background: #111;
+            border: 3px solid #444;
+            border-radius: 50%;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+        }
+        .ramen-info-tag {
+            margin-top: 4px;
+            font-size: 11px;
+            color: #aaa;
+            text-align: center;
+        }
+
+        /* 特長ログエリア */
+        .features-box {
+            background: #252525;
+            border: 2px dashed #555;
+            border-radius: 6px;
+            padding: 6px 10px;
+            min-height: 60px;
+            max-height: 80px;
+            overflow-y: auto;
+            font-size: 11px;
+            color: #00ffcc;
+        }
+        .features-box ul {
+            padding-left: 15px;
+        }
+        .features-box li {
+            margin-bottom: 2px;
+        }
+
+        /* 操作・ボタンエリア */
+        .control-section {
+            padding: 10px;
+            background: #252525;
+            border-top: 3px solid #444;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .btn {
+            background: #ff8c00;
+            color: #111;
+            border: none;
+            padding: 12px;
+            font-size: 15px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            box-shadow: 0 4px #b36200;
+            transition: all 0.1s ease;
+        }
+        .btn:active {
+            transform: translateY(3px);
+            box-shadow: 0 1px #b36200;
+        }
+        .btn:disabled {
+            background: #555;
+            color: #888;
+            box-shadow: 0 4px #333;
+            cursor: not-allowed;
+        }
+
+        /* 4択選択肢グリッド */
+        .choices-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 6px;
+        }
+        .choice-btn {
+            background: #333;
+            color: #fff;
+            border: 2px solid #666;
+            padding: 10px 6px;
+            font-size: 12px;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            word-break: break-all;
+            transition: background 0.2s;
+        }
+        .choice-btn:hover:not(:disabled) {
+            background: #444;
+            border-color: #ff8c00;
+        }
+        .choice-btn.incorrect {
+            background: #552222;
+            border-color: #ff4444;
+            color: #aaa;
+            cursor: not-allowed;
+        }
+
+        /* スクリーン共通 */
+        .screen {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            justify-content: space-between;
+        }
+        .screen.active {
+            display: flex;
+        }
+
+        /* タイトル・リザルト画面 */
+        .center-box {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+            padding: 20px;
+            gap: 15px;
+        }
+        .game-title {
+            font-size: 24px;
+            color: #ff8c00;
+            text-shadow: 2px 2px #333;
+            line-height: 1.3;
+        }
+        .game-desc {
+            font-size: 13px;
+            color: #ccc;
+            line-height: 1.5;
+            max-width: 320px;
+        }
+        .result-score {
+            font-size: 28px;
+            color: #ffdf00;
+            margin: 10px 0;
+        }
+        .badge {
+            background: #ff8c00;
+            color: #000;
+            padding: 4px 10px;
+            font-weight: bold;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        
+        .mistake-warning {
+            font-size: 11px;
+            color: #ff4444;
+            text-align: center;
+            font-weight: bold;
+            height: 16px;
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <!-- タイトル画面 -->
+    <div id="title-screen" class="screen active">
+        <header>
+            <div class="title">🍜 ラーメン判定道場</div>
+            <div class="stats">全40種対応</div>
+        </header>
+        <div class="center-box">
+            <div style="font-size: 48px;">🍥</div>
+            <h1 class="game-title">ご当地ラーメン<br>早押し判定バトル</h1>
+            <p class="game-desc">
+                店主が作り上げるラーメンの特長（スープ、麺、具材）を聞き、全国40種類のご当地ラーメンから見抜け！<br>
+                <b>全3杯勝負！誤答は1杯につき1回まで！</b>
+            </p>
+            <button class="btn" onclick="startGame()" style="width: 80%;">修業を始める</button>
+        </div>
+        <div style="padding: 10px; text-align: center; font-size: 10px; color: #777;">
+            © 2026 ラーメン判定道場
+        </div>
+    </div>
+
+    <!-- ゲームプレイ画面 -->
+    <div id="game-screen" class="screen">
+        <header>
+            <div class="title" id="stage-indicator">第 1 杯目 / 全 3 杯</div>
+            <div class="stats">正解数: <span id="score-val">0</span></div>
+        </header>
+
+        <div class="main-content">
+            <!-- 店主セリフ -->
+            <div class="master-section">
+                <div class="master-avatar">👨‍🍳</div>
+                <div class="speech-bubble" id="master-speech">
+                    「ほう…今日の最初の一杯は何にしようかのう。よく見ておくがいい！」
+                </div>
+            </div>
+
+            <!-- ラーメン描画 -->
+            <div class="ramen-view">
+                <canvas id="ramenCanvas" width="160" height="160"></canvas>
+                <div class="ramen-info-tag" id="ramen-visual-tag">調理中…</div>
+            </div>
+
+            <!-- 特長ログ -->
+            <div class="features-box" id="features-log">
+                <b>【店主の語り】</b>
+                <ul id="features-list">
+                    <li>ラーメンを調理中じゃ…</li>
+                </ul>
+            </div>
+            
+            <div class="mistake-warning" id="mistake-warning"></div>
+        </div>
+
+        <!-- コントロール・回答エリア -->
+        <div class="control-section">
+            <button id="buzz-btn" class="btn" onclick="onBuzz()" disabled>⏱️ 早押し！回答する！</button>
+            <div id="choices-container" class="choices-grid" style="display: none;">
+                <!-- 4択ボタンがここに動的生成される -->
+            </div>
+        </div>
+    </div>
+
+    <!-- リザルト画面 -->
+    <div id="result-screen" class="screen">
+        <header>
+            <div class="title">🏆 修業結果</div>
+            <div class="stats">判定終了</div>
+        </header>
+        <div class="center-box">
+            <div style="font-size: 40px;" id="result-emoji">🍜</div>
+            <h2 style="font-size: 20px; color: #ff8c00;">判定結果発表</h2>
+            <div class="result-score" id="final-score">3問中 3問正解</div>
+            <div class="badge" id="result-rank">ラーメン王</div>
+            <p class="game-desc" id="result-comment" style="margin-top: 10px;">
+                見事な舌だ！全国のご当地ラーメンの味と特長を完全にマスターしておる！
+            </p>
+            <button class="btn" onclick="startGame()" style="width: 80%; margin-top: 10px;">もう一度挑戦する</button>
+        </div>
+        <div style="padding: 10px; text-align: center; font-size: 10px; color: #777;">
+            お疲れ様でした！
+        </div>
+    </div>
+</div>
+
+<script>
+    // 全40種類のご当地ラーメンデータ
+    const RAMEN_DATA = [
+        { name: "札幌味噌ラーメン", region: "北海道", soupColor: "#d97706", soupName: "濃厚味噌", noodleType: "中太縮れ麺", toppings: ["チャーシュー", "メンマ", "コーン", "バター"], features: ["ラードで炒めた野菜と濃厚な味噌スープ", "北国の体を温める定番の味わい", "黄色みがかった縮れ麺がスープに絡む"], desc: "北海道札幌発祥。ラードの油膜でアツアツの濃厚味噌スープが特徴。" },
+        { name: "旭川ラーメン", region: "北海道", soupColor: "#92400e", soupName: "魚介豚骨醤油", noodleType: "低加水中細縮れ麺", toppings: ["チャーシュー", "メンマ", "ネギ"], features: ["豚骨と魚介のダブルスープ", "表面を覆うラードで冷めにくい", "水分少なめの独特なシコシコ麺"], desc: "北海道旭川。厳しい寒さに耐えるためラードで蓋をしたダブルスープ。" },
+        { name: "函館塩ラーメン", region: "北海道", soupColor: "#fef08a", soupName: "透明な塩", noodleType: "ストレート細麺", toppings: ["チャーシュー", "メンマ", "ネギ", "お麩"], features: ["透き通る黄金色の塩スープ", "さっぱりしながらも深い旨味", "トッピングにお麩が入ることがある"], desc: "北海道函館。クリアで上品なスープが胃に染みる伝統の塩。" },
+        { name: "喜多方ラーメン", region: "福島", soupColor: "#b45309", soupName: "豚骨煮干し醤油", noodleType: "平打ち熟成多加水麺", toppings: ["チャーシュー", "メンマ", "ナルト"], features: ["日本三大ラーメンの一つ", "モチモチのピロピロ平打ち縮れ麺", "朝からラーメンを食べる文化がある"], desc: "福島県喜多方市。手打ちの平打ち熟成麺とあっさりコク醤油。" },
+        { name: "白河ラーメン", region: "福島", soupColor: "#9a3412", soupName: "鶏ガラ醤油", noodleType: "手打ち縮れ麺", toppings: ["炭火焼チャーシュー", "ワンタン", "ホウレン草"], features: ["職人の技が光る手打ちの強力縮れ麺", "香ばしい炭火焼チャーシュー", "鶏ガラの旨味が凝縮された醤油スープ"], desc: "福島県白河市。職人手打ちの麺と燻製香るチャーシューが絶品。" },
+        { name: "東京ラーメン", region: "東京", soupColor: "#78350f", soupName: "鶏ガラ魚介醤油", noodleType: "中細縮れ麺", toppings: ["チャーシュー", "メンマ", "海苔", "ナルト", "ネギ"], features: ["昔ながらの懐かしい「支那そば」スタイル", "鶏ガラと煮干しのすっきり醤油", "日本のラーメンの原点ともいえる一杯"], desc: "東京都。屋台から始まった日本の醤油ラーメンのスタンダード。" },
+        { name: "横浜家系ラーメン", region: "神奈川", soupColor: "#713f12", soupName: "濃厚豚骨醤油", noodleType: "もっちり中太ストレート麺", toppings: ["チャーシュー", "ほうれん草", "海苔3枚"], features: ["濃厚な豚骨醤油に鶏油（チーユ）の香り", "麺の硬さ・味の濃さ・油の量が選べる", "ほうれん草と大きな海苔がトレードマーク"], desc: "神奈川県横浜市。濃厚スープに短い太麺、家系と呼ばれる独自のスタイル。" },
+        { name: "横浜サンマー麺", region: "神奈川", soupColor: "#ca8a04", soupName: "とろみ醤油", noodleType: "細麺", toppings: ["もやし", "豚肉", "キャベツのあんかけ"], features: ["シャキシャキ野菜の熱々とろみあんかけ", "最後まで冷めずにアツアツで食べられる", "神奈川のご当地ソウルフード"], desc: "神奈川県。細麺の上に炒め野菜のあんかけがたっぷりのった名物麺。" },
+        { name: "富山ブラック", region: "富山", soupColor: "#18181b", soupName: "真っ黒な濃厚魚介醤油", noodleType: "太めのストレート麺", toppings: ["チャーシュー", "大量の黒コショウ", "メンマ", "ネギ"], features: ["塩分強めでスープが真っ黒", "ガツンとかかった大量の黒コショウ", "白ご飯と一緒に食べるのがお約束"], desc: "富山県富山市。塩辛い黒醤油スープと強烈な黒コショウのインパクト。" },
+        { name: "新潟濃厚味噌ラーメン", region: "新潟", soupColor: "#c2410c", soupName: "濃厚赤味噌", noodleType: "極太麺", toppings: ["チャーシュー", "メンマ", "野菜", "割りスープ"], features: ["あまりの濃厚さに「割りスープ」が付く", "赤味噌ベースのパンチあるスープ", "生姜やニンニクが効いたコク深さ"], desc: "新潟県。スープが濃いため、スープ割りで調整しながら食べる。" },
+        { name: "三条カレーラーメン", region: "新潟", soupColor: "#eab308", soupName: "和風ダシカレースープ", noodleType: "極太麺", toppings: ["チャーシュー", "タマネギ", "ジャガイモ"], features: ["スパイシーなカレーと和風出汁の融合", "カレーがよく絡む極太麺", "新潟県三条市のソウルフード"], desc: "新潟県三条市。出汁の効いた本格カレースープが極太麺に絡む。" },
+        { name: "燕三条系背脂ラーメン", region: "新潟", soupColor: "#451a03", soupName: "煮干し醤油＋大量背脂", noodleType: "超極太麺", toppings: ["チャーシュー", "大量のタマネギ", "岩のり"], features: ["銀世界のように降り積もる大量の背脂", "ガツンと効いた煮干しの強烈なダシ", "うどん級の超極太麺"], desc: "新潟県燕市。背脂でスープが冷めず、出前文化から生まれた豪快な一杯。" },
+        { name: "名古屋台湾ラーメン", region: "愛知", soupColor: "#991b1b", soupName: "鶏ガラ激辛醤油", noodleType: "中細ストレート麺", toppings: ["台湾ミンチ（挽き肉・ニラ・ニンニク・唐辛子）"], features: ["台湾には存在しない名古屋発祥の激辛麺", "唐辛子とニンニクが爆発する台湾ミンチ", "一口食べれば汗が噴き出す刺激"], desc: "愛知県名古屋市。台湾ミンチの強烈な辛さと旨味がクセになる。" },
+        { name: "高山ラーメン", region: "岐阜", soupColor: "#7c2d12", soupName: "あっさり和風醤油", noodleType: "極細縮れ麺", toppings: ["チャーシュー", "メンマ", "ネギ"], features: ["スープとタレを一緒に煮込まず器で合わせる", "お湯で薄めない独特の製法", "スープがよく絡む極細縮れ麺"], desc: "岐阜県飛騨高山。スープの作り方が独特で、素朴で優しい味わい。" },
+        { name: "京都背脂醤油ラーメン", region: "京都", soupColor: "#581c87", soupName: "鶏ガラ豚骨醤油＋背脂", noodleType: "細麺", toppings: ["薄切りチャーシュー", "九条ネギ", "メンマ"], features: ["コクのある醤油にたっぷりの背脂チャッチャ", "シャキシャキで香り高い九条ネギが山盛り", "京都のんなりとした隠れたコク"], desc: "京都府。背脂の甘みとキリッとした醤油、九条ネギの絶妙な調和。" },
+        { name: "尾道ラーメン", region: "広島", soupColor: "#78350f", soupName: "鶏ガラ瀬戸内イリコ醤油", noodleType: "平打ち麺", toppings: ["豚の背脂ミンチ", "チャーシュー", "ネギ"], features: ["瀬戸内の小魚（イリコ）の芳醇なダシ", "ミンチ状の豚の背脂がプカプカ浮く", "平打ち麺との相性が抜群"], desc: "広島県尾道市。瀬戸内の海の幸ダシとミンチ状の背脂が特徴。" },
+        { name: "徳島ラーメン", region: "徳島", soupColor: "#431407", soupName: "甘辛豚骨醤油", noodleType: "中細ストレート麺", toppings: ["甘辛い豚バラ肉", "メンマ", "生卵"], features: ["すき焼き風の甘辛い豚バラ肉が乗る", "生卵を割り入れてマイルドに味変", "ご飯が進む濃厚な茶色系スープ"], desc: "徳島県。生卵無料の店も多く、ご飯のおかずにもなる濃厚ラーメン。" },
+        { name: "博多ラーメン", region: "福岡", soupColor: "#fef9c3", soupName: "乳白色の濃厚豚骨", noodleType: "極細低加水ストレート麺", toppings: ["チャーシュー", "キクラゲ", "ネギ", "紅生姜"], features: ["豚骨の旨味を極限まで抽出した白濁スープ", "茹で加減が選べる極細ストレート麺", "麺のおかわり「替え玉」文化"], desc: "福岡県福岡市。日本を代表する豚骨ラーメンの金字塔。" },
+        { name: "久留米ラーメン", region: "福岡", soupColor: "#fde047", soupName: "伝統の呼び戻し豚骨", noodleType: "中細ストレート麺", toppings: ["チャーシュー", "海苔", "ネギ"], features: ["豚骨ラーメン発祥の地", "スープを釜から減らさず継ぎ足す「呼び戻し」", "濃厚でワイルドな豚骨の香り"], desc: "福岡県久留米市。豚骨ラーメンのルーツであり、濃密なスープが自慢。" },
+        { name: "熊本ラーメン", region: "熊本", soupColor: "#ca8a04", soupName: "豚骨＋焦がしニンニク油", noodleType: "中太ストレート麺", toppings: ["チャーシュー", "キクラゲ", "海苔", "万能ネギ", "フライドガーリック"], features: ["食欲をそそる黒い「マー油（焦がしニンニク油）」", "博多よりやや太めのストレート麺", "香ばしいニンニクの風味がガツンと効く"], desc: "熊本県。マー油が生み出す独特の香ばしさと深いコク。" },
+        { name: "鹿児島ラーメン", region: "鹿児島", soupColor: "#fef08a", soupName: "豚骨鶏ガラ＋焦がしネギ", noodleType: "やや太めの自家製麺", toppings: ["チャーシュー", "キャベツ", "ネギ", "もやし"], features: ["ラーメンが出る前に大根の漬物が出てくる", "豚骨に鶏ガラ、野菜、焦がしネギの優しい味", "柔らかめの自家製麺"], desc: "鹿児島県。おもてなしの漬物文化と、あっさり優しい白濁スープ。" },
+        { name: "沖縄そば", region: "沖縄", soupColor: "#fef08a", soupName: "豚骨鰹節の合わせ塩", noodleType: "平打ち中太麺", toppings: ["三枚肉", "かまぼこ", "紅生姜", "島とうがらし"], features: ["厳密にはそば粉不使用だが県民のソウルフード", "豚骨とカツオのダブル出汁が効いた塩味", "トロトロに煮込まれた三枚肉"], desc: "沖縄県。小麦粉100%の麺と上品な和風出汁が特徴の島の名物。" },
+        { name: "和歌山ラーメン", region: "和歌山", soupColor: "#78350f", soupName: "濃厚豚骨醤油（車庫前系）", noodleType: "細ストレート麺", toppings: ["チャーシュー", "メンマ", "ナルト", "早寿司"], features: ["テーブルに「早寿司（鯖寿司）」が置いてある", "豚骨のコクと醤油のキレが絶妙な「茶濁系」", "濃厚ながら後味スッキリ"], desc: "和歌山県。豚骨醤油のスープと、卓上の早寿司を一緒に食べるのが定番。" },
+        { name: "天理ラーメン", region: "奈良", soupColor: "#991b1b", soupName: "ピリ辛鶏ガラ醤油", noodleType: "中細縮れ麺", toppings: ["大量の白菜", "豚肉", "ニンニク", "ニラ"], features: ["通称「天スタ」。白菜とニンニクが山盛り", "豆板醤のピリ辛とスタミナ満点のスープ", "奈良県民が誇る最強のスタミナ麺"], desc: "奈良県天理市。白菜の甘みとニンニク・豆板醤のパンチが効いたスタミナ食。" },
+        { name: "盛岡ラーメン", region: "岩手", soupColor: "#78350f", soupName: "あっさり鶏ガラ醤油", noodleType: "中細縮れ麺", toppings: ["チャーシュー", "メンマ", "ネギ", "ワカメ"], features: ["冷麺で有名だが地元の醤油ラーメンも絶品", "鶏ガラと煮干しのスッキリ澄んだスープ", "毎日食べても飽きない素朴な味"], desc: "岩手県盛岡市。冷麺の陰に隠れつつも愛され続ける王道の醤油ラーメン。" },
+        { name: "秋田比内地鶏ラーメン", region: "秋田", soupColor: "#fef08a", soupName: "比内地鶏の黄金塩スープ", noodleType: "中細ストレート麺", toppings: ["比内地鶏チャーシュー", "メンマ", "三つ葉"], features: ["日本三大地鶏「比内地鶏」の極上スープ", "黄金色に輝く透明感と芳醇な鶏の香り", "シンプルだからこそ鶏の旨味が際立つ"], desc: "秋田県。比内地鶏の贅沢な出汁が黄金色のスープに凝縮された高級感ある一杯。" },
+        { name: "山形辛味噌ラーメン", region: "山形", soupColor: "#c2410c", soupName: "煮干し味噌＋辛味噌玉", noodleType: "青竹手打ち風中太縮れ麺", toppings: ["チャーシュー", "メンマ", "青海苔", "辛味噌"], features: ["スープ中央に乗った赤い「辛味噌」を溶かして食べる", "煮干しダシが効いたコクのある味噌スープ", "元祖・味変スタイルの味噌ラーメン"], desc: "山形県南陽市。辛味噌を少しずつ溶かすことで幾重にも味が変わる。" },
+        { name: "佐野ラーメン", region: "栃木", soupColor: "#fef08a", soupName: "クリア鶏ガラ醤油", noodleType: "青竹手打ちピロピロ麺", toppings: ["チャーシュー", "メンマ", "ナルト", "ネギ"], features: ["竹の棒を使って生地を延ばす「青竹手打ち」", "不揃いながらモチモチのピロピロ麺", "どこまでも透き通る極上の醤油スープ"], desc: "栃木県佐野市。青竹打ちならではの独特な麺の食感とクリアなスープ。" },
+        { name: "水戸スタミナラーメン", region: "茨城", soupColor: "#9a3412", soupName: "甘辛醤油ホットあんかけ", noodleType: "太麺", toppings: ["カボチャ", "キャベツ", "ニンジン", "レバー"], features: ["甘辛い醤油ベースの熱々あんかけがたっぷり", "トッピングにホクホクのカボチャやレバーが入る", "茨城が誇るユニークなご当地麺"], desc: "茨城県水戸市。レバーとカボチャが入った甘辛ホットあんかけが特徴。" },
+        { name: "勝浦タンタン麺", region: "千葉", soupColor: "#991b1b", soupName: "ラー油醤油スープ", noodleType: "細麺", toppings: ["炒めたタマネギ", "豚挽き肉", "ネギ"], features: ["ゴマペーストではなく「ラー油」と醤油のベース", "大量のタマネギの甘みと唐辛子の辛さ", "漁師や海女の体を温めるために生まれた"], desc: "千葉県勝浦市。ゴマを使わない、ラー油とタマネギの真っ赤なタンタン麺。" },
+        { name: "甲州鳥もつラーメン", region: "山梨", soupColor: "#78350f", soupName: "甲州地鶏醤油", noodleType: "中細縮れ麺", toppings: ["鶏もつ煮（レバー・ハツ・砂肝）", "ネギ"], features: ["ご当地グルメ「甲州鳥もつ煮」がそのまま乗る", "甘辛いもつ煮のタレがスープに溶け込む", "鶏の旨味が凝縮された贅沢なコラボ"], desc: "山梨県。B-1グランプリで有名になった鳥もつ煮をトッピングした名物。" },
+        { name: "信州味噌ラーメン", region: "長野", soupColor: "#d97706", soupName: "芳醇信州味噌", noodleType: "中太ちぢれ麺", toppings: ["キャベツ", "もやし", "豚肉", "山菜"], features: ["信州味噌ならではの爽やかな酸味とコク", "隠し味にリンゴや野菜の果汁を使用", "シャキシャキ野菜が山盛りのヘルシー系"], desc: "長野県。全国に誇る信州味噌の芳醇な香りと豊かなコクを堪能できる。" },
+        { name: "静岡焼津の鰹節ラーメン", region: "静岡", soupColor: "#b45309", soupName: "本枯節の魚介醤油", noodleType: "中細ストレート麺", toppings: ["チャーシュー", "メンマ", "削り節", "海苔"], features: ["日本屈指の鰹節の街・焼津ならではの圧倒的魚介感", "本枯節の芳醇な香りが鼻腔を抜ける", "スッキリしながらも深い余韻のスープ"], desc: "静岡県焼津市。最高級の鰹節・本枯節をふんだんに使った極上の魚介ダシ。" },
+        { name: "三重伊勢うどん風ラーメン", region: "三重", soupColor: "#451a03", soupName: "たまり醤油の黒ダシ", noodleType: "もっちり極太麺", toppings: ["ネギ", "天かす", "生卵"], features: ["三重の濃厚な「たまり醤油」を使用", "モチモチの極太麺に真っ黒なタレが絡む", "うどん文化とラーメンが融合したご当地麺"], desc: "三重県。たまり醤油の芳ばしい香りと極太麺のインパクトが強烈。" },
+        { name: "播州ラーメン", region: "兵庫", soupColor: "#b45309", soupName: "リンゴ玉ねぎ甘口醤油", noodleType: "細め縮れ麺", toppings: ["チャーシュー", "もやし", "ネギ", "焼きのり"], features: ["リンゴや玉ねぎ、氷砂糖を使った驚きの甘口スープ", "繊維の街・播州で働く織女たちを癒やしてきた", "ひとくち食べるとホッとする優しい甘さ"], desc: "兵庫県西脇市周辺。一口飲んで驚く、甘くて優しい唯一無二の醤油スープ。" },
+        { name: "鳥取牛骨ラーメン", region: "鳥取", soupColor: "#ca8a04", soupName: "牛骨コク甘スープ", noodleType: "中細縮れ麺", toppings: ["牛チャーシュー", "メンマ", "もやし", "ネギ"], features: ["豚骨でも鶏ガラでもなく珍しい「牛骨」ベース", "牛脂特有の香ばしさと甘みが口いっぱいに広がる", "知る人ぞ知る隠れたご当地ラーメンの代表格"], desc: "鳥取県中西部。牛骨の圧倒的な旨味と香ばしさがクセになるマニア垂涎の一杯。" },
+        { name: "出雲ラーメン", region: "島根", soupColor: "#78350f", soupName: "アゴだし香る醤油", noodleType: "コショウ香る細麺", toppings: ["チャーシュー", "メンマ", "かまぼこ", "ネギ"], features: ["神話の国・出雲の上質な「アゴ（トビウオ）だし」", "スッキリ澄んでいながら奥深い魚介の風味", "清らかな水で作られた上品な味わい"], desc: "島根県出雲市。トビウオ（アゴ）の上品なダシが香る神話の郷のラーメン。" },
+        { name: "岡山デミカツ丼の相棒ラーメン", region: "岡山", soupColor: "#78350f", soupName: "屋台育ちの正統派醤油", noodleType: "細麺", toppings: ["チャーシュー", "メンマ", "ネギ"], features: ["名物デミカツ丼の濃厚さをスッキリ洗い流す", "屋台から受け継がれる鶏ガラ魚介のシンプル醤油", "岡山で愛され続ける昭和の味"], desc: "岡山県。デミカツ丼と一緒に食べることを前提に洗練されたスッキリ醤油。" },
+        { name: "山口宇部ラーメン", region: "山口", soupColor: "#581c87", soupName: "骨粉残る超濃厚豚骨", noodleType: "中細やわらか麺", toppings: ["チャーシュー", "メンマ", "ネギ"], features: ["豚骨の臭みと髄の旨味がガツンと来る超濃厚系", "あえて柔らかめに茹でるのが宇部流の定番", "丼の底に骨粉が残るほどのワイルドさ"], desc: "山口県宇部市。強烈な豚骨の香りと濃厚さを誇るワイルドな一杯。" },
+        { name: "讃岐コーチンラーメン", region: "香川", soupColor: "#fef08a", soupName: "讃岐コーチン＆イリコ塩", noodleType: "うどん粉ブレンドモチモチ麺", toppings: ["鶏チャーシュー", "ネギ", "ワカメ"], features: ["うどん県が本気で作った鶏と煮干しのWスープ", "讃岐コーチンの上品な脂とイリコの旨味", "うどん用小麦粉をブレンドした特製モチモチ麺"], desc: "香川県。うどんの本場が地鶏とイリコで挑んだ至高の黄金塩ラーメン。" }
+    ];
+
+    let currentStage = 0;
+    let score = 0;
+    let currentRamen = null;
+    let distractors = [];
+    let mistakes = 0;
+    let featureInterval = null;
+    let activeFeatureIndex = 0;
+    let answered = false;
+
+    // 画面切り替え
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+    }
+
+    // ゲーム開始
+    function startGame() {
+        currentStage = 0;
+        score = 0;
+        nextStage();
+    }
+
+    // 次の杯へ
+    function nextStage() {
+        if (currentStage >= 3) {
+            showResult();
+            return;
+        }
+
+        document.getElementById('stage-indicator').innerText = `第 ${currentStage + 1} 杯目 / 全 3 杯`;
+        document.getElementById('score-val').innerText = score;
+        document.getElementById('mistake-warning').innerText = "";
+        
+        // ラーメンをランダムに選ぶ
+        const randomIndex = Math.floor(Math.random() * RAMEN_DATA.length);
+        currentRamen = RAMEN_DATA[randomIndex];
+
+        // 4択を作成（正解1つ ＋ 不正解3つ）
+        let pool = RAMEN_DATA.filter(r => r.name !== currentRamen.name);
+        pool.sort(() => Math.random() - 0.5);
+        distractors = pool.slice(0, 3);
+        let choices = [currentRamen, ...distractors];
+        choices.sort(() => Math.random() - 0.5);
+
+        // UI初期化
+        document.getElementById('buzz-btn').disabled = false;
+        document.getElementById('buzz-btn').style.display = 'block';
+        document.getElementById('choices-container').style.display = 'none';
+        document.getElementById('ramen-visual-tag').innerText = "調理中…";
+        
+        mistakes = 0;
+        answered = false;
+
+        // 丼の描画（最初はぼんやり or 調理中、特徴が出るにつれて完成）
+        drawRamen(currentRamen, 0);
+
+        // 店主のセリフと特徴の順次読み上げ開始
+        startMasterTalking(choices);
+    }
+
+    // 店主のトーク・特徴進行
+    function startMasterTalking(choices) {
+        const speechEl = document.getElementById('master-speech');
+        const listEl = document.getElementById('features-list');
+        listEl.innerHTML = '';
+        
+        speechEl.innerHTML = `「ほう…第${currentStage + 1}杯目のご注文だな。よく見て、特徴を聞くがいい！」`;
+        
+        activeFeatureIndex = 0;
+        const features = currentRamen.features;
+
+        if (featureInterval) clearInterval(featureInterval);
+
+        let step = 0;
+        featureInterval = setInterval(() => {
+            if (answered) {
+                clearInterval(featureInterval);
+                return;
+            }
+
+            if (step === 0) {
+                speechEl.innerHTML = `「このラーメンのスープは『${currentSourcingSoup(currentRamen)}』じゃな。」`;
+                listEl.innerHTML += `<li>スープ: ${currentRamen.soupName} (${currentRamen.region})</li>`;
+                drawRamen(currentRamen, 1);
+            } else if (step === 1) {
+                speechEl.innerHTML = `「麺は『${currentRamen.noodleType}』を使用しておるぞ。」`;
+                listEl.innerHTML += `<li>麺: ${currentRamen.noodleType}</li>`;
+                drawRamen(currentRamen, 2);
+            } else if (step === 2) {
+                speechEl.innerHTML = `「具材には『${currentRamen.toppings.join('、')}』が乗っとる！」`;
+                listEl.innerHTML += `<li>具材: ${currentRamen.toppings.join(', ')}</li>`;
+                drawRamen(currentRamen, 3);
+            } else if (step === 3) {
+                speechEl.innerHTML = `「ふむ…『${features[0]}』という特長もあるぞ。さあ、何かわかったか？」`;
+                listEl.innerHTML += `<li>特徴: ${features[0]}</li>`;
+                clearInterval(featureInterval);
+            }
+            step++;
+        }, 2000);
+    }
+
+    function currentSourcingSoup(r) {
+        return r.soupName;
+    }
+
+    // 早押しボタンが押されたとき
+    function onBuzz() {
+        if (answered) return;
+        if (featureInterval) clearInterval(featureInterval);
+
+        document.getElementById('master-speech').innerHTML = `「おお、早かったな！さあ、このご当地ラーメンは何じゃ？」`;
+        document.getElementById('buzz-btn').style.display = 'none';
+
+        // 選択肢を描画
+        let choicesContainer = document.getElementById('choices-container');
+        choicesContainer.innerHTML = '';
+        choicesContainer.style.display = 'grid';
+
+        // 再度現在のラーメンとダミーをシャッフルしてボタン生成
+        let pool = RAMEN_DATA.filter(r => r.name !== currentRamen.name);
+        pool.sort(() => Math.random() - 0.5);
+        let choices = [currentRamen, pool[0], pool[1], pool[2]];
+        choices.sort(() => Math.random() - 0.5);
+
+        choices.forEach(c => {
+            let btn = document.createElement('button');
+            btn.className = 'choice-btn';
+            btn.innerText = c.name;
+            btn.onclick = () => checkAnswer(c.name, btn);
+            choicesContainer.appendChild(btn);
+        });
+    }
+
+    // 解答チェック
+    function checkAnswer(selectedName, btnElement) {
+        if (answered) return;
+
+        if (selectedName === currentRamen.name) {
+            // 正解
+            answered = true;
+            score++;
+            document.getElementById('master-speech').innerHTML = `「正解じゃ！！見事な舌だ！これは『${currentRamen.name}』（${currentRamen.region}）に間違いない！」`;
+            btnElement.style.background = '#15803d';
+            btnElement.style.borderColor = '#4ade80';
+
+            disableAllChoices();
+            setTimeout(proceedNext, 2500);
+        } else {
+            // 不正解
+            mistakes++;
+            if (mistakes >= 1) {
+                // 1杯につき1回だけ誤答が許される → 1回間違えたのでこれが最後のチャンス。2回目間違いでゲームオーバー扱いまたは次へ。
+                // ユーザー要件：「1杯のラーメンにつき1回だけ誤答が許されます。」
+                // つまり、1回不正解してももう一回選べる（2回目の不正解でその杯は失敗）。
+                if (mistakes === 1) {
+                    document.getElementById('master-speech').innerHTML = `「ぬぬっ、違うわい！もう一度よく考えるんじゃ！（残り誤答チャンス: あと0回）」`;
+                    document.getElementById('mistake-warning').innerText = "⚠️ 誤答はあと1回までです！";
+                    btnElement.classList.add('incorrect');
+                    btnElement.disabled = true;
+                } else {
+                    // 2回目の間違い → 失敗
+                    answered = true;
+                    document.getElementById('master-speech').innerHTML = `「そこまでじゃ！不正解じゃ…。正解は『${currentRamen.name}』（${currentRamen.region}）じゃった！」`;
+                    highlightCorrectChoice();
+                    disableAllChoices();
+                    setTimeout(proceedNext, 3000);
+                }
+            }
+        }
+    }
+
+    function disableAllChoices() {
+        document.querySelectorAll('.choice-btn').forEach(b => b.disabled = true);
+    }
+
+    function highlightCorrectChoice() {
+        document.querySelectorAll('.choice-btn').forEach(b => {
+            if (b.innerText === currentRamen.name) {
+                b.style.background = '#15803d';
+                b.style.borderColor = '#4ade80';
+            }
+        });
+    }
+
+    function proceedNext() {
+        currentStage++;
+        nextStage();
+    }
+
+    // ラーメン丼のCanvasドット風描画
+    function drawRamen(ramen, phase) {
+        const canvas = document.getElementById('ramenCanvas');
+        const ctx = canvas.getContext('2d');
+        const w = canvas.width;
+        const h = canvas.height;
+
+        ctx.clearRect(0, 0, w, h);
+
+        // 丼の外側（縁）
+        ctx.fillStyle = '#f3f4f6';
+        ctx.beginPath();
+        ctx.arc(w/2, h/2, 72, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = 4;
+        ctx.strokeStyle = '#d1d5db';
+        ctx.stroke();
+
+        // 丼の内側（スープ面）
+        ctx.fillStyle = ramen.soupColor;
+        ctx.beginPath();
+        ctx.arc(w/2, h/2, 62, 0, Math.PI * 2);
+        ctx.fill();
+
+        // スープの油膜・グラデーション風ハイライト
+        ctx.fillStyle = 'rgba(255,255,255,0.15)';
+        ctx.beginPath();
+        ctx.arc(w/2 - 15, h/2 - 15, 30, 0, Math.PI * 2);
+        ctx.fill();
+
+        if (phase >= 1) {
+            // 麺の描画（うねうねした線）
+            ctx.strokeStyle = '#fef08a';
+            ctx.lineWidth = 5;
+            ctx.lineCap = 'round';
+            ctx.beginPath();
+            ctx.moveTo(w/2 - 30, h/2 - 20);
+            ctx.quadraticCurveTo(w/2, h/2 - 40, w/2 + 30, h/2 - 20);
+            ctx.quadraticCurveTo(w/2 + 40, h/2, w/2 + 20, h/2 + 20);
+            ctx.quadraticCurveTo(w/2, h/2 + 40, w/2 - 20, h/2 + 20);
+            ctx.stroke();
+        }
+
+        if (phase >= 2) {
+            // 具材の描画
+            // チャーシュー（茶色の丸）
+            ctx.fillStyle = '#78350f';
+            ctx.beginPath();
+            ctx.arc(w/2 - 25, h/2 - 10, 16, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#451a03';
+            ctx.lineWidth = 2;
+            ctx.stroke();
+
+            // メンマ（茶色の長方形）
+            ctx.fillStyle = '#b45309';
+            ctx.fillRect(w/2 + 10, h/2 - 25, 10, 22);
+
+            // ナルト（白とピンクの渦巻き風）
+            ctx.fillStyle = '#fff';
+            ctx.beginPath();
+            ctx.arc(w/2 + 20, h/2 + 15, 10, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.strokeStyle = '#f43f5e';
+            ctx.lineWidth = 3;
+            ctx.stroke();
+        }
+
+        if (phase >= 3) {
+            // ネギや追加具材（緑のドット）
+            ctx.fillStyle = '#22c55e';
+            for (let i = 0; i < 6; i++) {
+                let angle = (i * Math.PI / 3);
+                let cx = w/2 + Math.cos(angle) * 25;
+                let cy = h/2 + Math.sin(angle) * 25;
+                ctx.fillRect(cx, cy, 4, 4);
+            }
+
+            // 海苔またはコーン
+            if (ramen.toppings.includes('コーン')) {
+                ctx.fillStyle = '#facc15';
+                ctx.fillRect(w/2 - 5, h/2 - 35, 6, 6);
+                ctx.fillRect(w/2 + 2, h/2 - 38, 6, 6);
+            } else if (ramen.toppings.includes('海苔')) {
+                ctx.fillStyle = '#172554';
+                ctx.fillRect(w/2 - 35, h/2 + 15, 14, 18);
+            }
+        }
+    }
+
+    // リザルト画面表示
+    function showResult() {
+        showScreen('result-screen');
+        document.getElementById('final-score').innerText = `3問中 ${score}問正解`;
+        
+        let rank = "ラーメン見習い";
+        let comment = "まだまだ全国の味を知る必要があるな！もう一度修業してこい！";
+        let emoji = "🍜";
+
+        if (score === 3) {
+            rank = "特級ラーメン王 🏆";
+            comment = "見事全問正解！君の舌はもはや人間国宝レベルだ！どんなご当地ラーメンも一発で見抜く素晴らしい才能じゃ！";
+            emoji = "👑";
+        } else if (score === 2) {
+            rank = "ご当地ラーメンハンター 🥈";
+            comment = "お見事！なかなかの名推理だったな。あともう一歩で完璧なラーメン王じゃ！";
+            emoji = "🥢";
+        } else if (score === 1) {
+            rank = "ラーメン好きの一般人 🥉";
+            comment = "ふむ、まだ各地の個性がごちゃ混ぜになっているようだな。次は全問正解を目指せ！";
+            emoji = "🍥";
+        } else {
+            rank = "スープを飲む資格なし！？ 💦";
+            comment = "なんと全滅とは…！店主泣かせの珍回答じゃ。出直してくるが良い！";
+            emoji = "🔥";
+        }
+
+        document.getElementById('result-rank').innerText = rank;
+        document.getElementById('result-comment').innerText = comment;
+        document.getElementById('result-emoji').innerText = emoji;
+    }
+</script>
+
+</body>
+</html>
