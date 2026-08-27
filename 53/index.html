@@ -70,6 +70,23 @@
 </head>
 <body class="min-h-screen flex flex-col justify-between p-2 max-w-md mx-auto overflow-y-auto">
 
+    <!-- 上部コントロールバー -->
+    <div class="w-full bg-[#112225] border border-[#264653] rounded-lg p-2 flex items-center justify-between shadow mb-2">
+        <div class="flex space-x-1">
+            <button onclick="setSpeed(1200)" id="spd-slow" class="px-2 py-1 rounded bg-gray-700 text-[10px]">遅い</button>
+            <button onclick="setSpeed(600)" id="spd-normal" class="px-2 py-1 rounded bg-emerald-700 text-white text-[10px]">標準</button>
+            <button onclick="setSpeed(200)" id="spd-fast" class="px-2 py-1 rounded bg-gray-700 text-[10px]">高速</button>
+        </div>
+        <div class="flex space-x-2">
+            <button id="btn-start" onclick="toggleAutoPlay()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-4 rounded text-xs shadow transition">
+                <span id="start-btn-text">再生開始</span>
+            </button>
+            <button onclick="resetGame()" class="bg-rose-700 hover:bg-rose-600 text-white font-bold py-1.5 px-3 rounded text-xs shadow transition">
+                リセット
+            </button>
+        </div>
+    </div>
+
     <!-- ヘッダー -->
     <header class="w-full flex justify-between items-center bg-[#112225] px-3 py-2 rounded-lg border border-[#264653] shadow">
         <div class="flex items-center space-x-2">
@@ -146,21 +163,9 @@
 
     </div>
 
-    <!-- フッターコントロールバー -->
-    <footer class="w-full bg-[#112225] border border-[#264653] rounded-lg p-2 flex items-center justify-between shadow">
-        <div class="flex space-x-1">
-            <button onclick="setSpeed(1200)" id="spd-slow" class="px-2 py-1 rounded bg-gray-700 text-[10px]">遅い</button>
-            <button onclick="setSpeed(600)" id="spd-normal" class="px-2 py-1 rounded bg-emerald-700 text-white text-[10px]">標準</button>
-            <button onclick="setSpeed(200)" id="spd-fast" class="px-2 py-1 rounded bg-gray-700 text-[10px]">高速</button>
-        </div>
-        <div class="flex space-x-2">
-            <button id="btn-start" onclick="toggleAutoPlay()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-4 rounded text-xs shadow transition">
-                <span id="start-btn-text">再生開始</span>
-            </button>
-            <button onclick="resetGame()" class="bg-rose-700 hover:bg-rose-600 text-white font-bold py-1.5 px-3 rounded text-xs shadow transition">
-                リセット
-            </button>
-        </div>
+    <!-- フッター -->
+    <footer class="text-[10px] text-gray-500 text-center mt-2">
+        &copy; 2026 オート麻雀観戦シミュレーター
     </footer>
 
     <!-- 麻雀ロジック・シミュレーションスクリプト -->
