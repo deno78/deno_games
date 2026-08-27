@@ -374,7 +374,7 @@
                 }
             }
 
-            let discardIndex = chooseDiscard(p.hand);
+            let discardIndex = chooseDiscard(p.hand, p.isRiichi);
             let discarded = p.hand.splice(discardIndex, 1)[0];
             p.river.push(discarded);
             
@@ -408,7 +408,11 @@
             }
         }
 
-        function chooseDiscard(hand) {
+        function chooseDiscard(hand, isRiichi) {
+            if (isRiichi) {
+                // リーチ後はツモ切りのみ（目当ての役・待ち牌を固定してツモアガリを待つ）
+                return hand.length - 1;
+            }
             for (let i = 0; i < hand.length; i++) {
                 if (hand[i] >= 27) return i;
             }
