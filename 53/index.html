@@ -355,6 +355,7 @@
             sortHand(p.hand);
             updateUI();
 
+            // ツモ和了判定
             if (checkWinning(p.hand)) {
                 logMessage(`${p.name} が ツモ和了！ 🎊`);
                 document.getElementById('center-message').textContent = `${p.name} の ツモ和了！`;
@@ -365,8 +366,9 @@
                 return;
             }
 
+            // リーチ判定（テンパイしていて、まだリーチしておらず、手牌が14枚のとき）
             if (!p.isRiichi && p.score >= 1000 && Math.random() < 0.4) {
-                if (isTenpai(p.hand)) {
+                if (isTenpaiForRiichi(p.hand)) {
                     p.isRiichi = true;
                     p.score -= 1000;
                     gameState.pot += 1000;
@@ -428,15 +430,27 @@
             return null;
         }
 
-        function isTenpai(hand) {
+        // リーチ可能なテンパイ判定（14枚の手牌から1枚切ったときにテンパイになるか）
+        function isTenpaiForRiichi(hand) {
             for (let i = 0; i < hand.length; i++) {
                 let temp = [...hand];
-                temp.splice(i, 1);
-                for (let t = 0; t < 34; t++) {
-                    if (checkWinning([...temp, t])) return true;
-                }
+                temp.splice(i, 1); // 1枚外す
+                // 外した残りの13枚がテンパイ（何らかの牌を足せば和了形になる）しているか
+                if (checkIfTenpai13(temp)) return true;
             }
             return false;
+        }
+
+        // 13枚の手牌がテンパイしているか（任意の牌を足して和了形になるか）
+        function checkIfTenpai13(hand13) {
+            for (let t = 0; t < 34; t++) {
+                if (checkWinning([...hand13, t])) return true;
+            }
+            return false;
+        }
+
+        function isTenpai(hand) {
+            return checkIfTenpai13(hand);
         }
 
         function checkWinning(tiles) {
