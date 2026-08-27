@@ -65,3 +65,4 @@ Deno/Web games collection.
 - [52. ラーメン判定ゲーム (Ramen Judge Game)](./52/index.html)
 - [53. オート麻雀観戦シミュレーター (Auto Mahjong Watcher vs AI)](./53/index.html)
 - [54. エロ画像判定ゲーム (Ero-Image Judge Game)](./54/index.html)
+- [55. ハシビロコウを撮れ！ (Shoebill Photo Challenge)](./55/index.html)
