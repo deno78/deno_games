@@ -2,8 +2,8 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>オート麻雀観戦シミュレーター (Auto Mahjong Watcher)</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>オート麻雀観戦シミュレーター</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@500;700;900&display=swap');
@@ -12,206 +12,159 @@
             background-color: #0d1b1e;
             color: #e0f2f1;
             user-select: none;
+            touch-action: manipulation;
         }
         /* 麻雀牌のデザイン */
         .tile {
-            width: 36px;
-            height: 48px;
+            width: 28px;
+            height: 38px;
             background: linear-gradient(135deg, #ffffff 0%, #f0f0f0 100%);
             border: 1px solid #b0bec5;
-            border-radius: 4px;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.8);
+            border-radius: 3px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.3), inset 0 1px 0 rgba(255,255,255,0.8);
             display: inline-flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             font-weight: 700;
-            font-size: 15px;
+            font-size: 13px;
             color: #263238;
             position: relative;
-            margin: 1px;
-            transition: transform 0.2s, background-color 0.2s;
+            margin: 0.5px;
         }
         .tile.small {
-            width: 26px;
-            height: 36px;
-            font-size: 12px;
-            border-radius: 3px;
+            width: 20px;
+            height: 28px;
+            font-size: 10px;
+            border-radius: 2px;
         }
-        .tile.large {
-            width: 44px;
-            height: 60px;
-            font-size: 20px;
-        }
-        .tile.tsumo {
-            margin-left: 8px;
+        .tile.back {
+            background: linear-gradient(135deg, #1b5e20 0%, #0d3812 100%);
+            border: 1px solid #09260c;
+            color: #81c784;
+            font-size: 10px;
         }
         .tile-man { color: #c62828; }
         .tile-pin { color: #1565c0; }
         .tile-sou { color: #2e7d32; }
         .tile-ji { color: #37474f; }
-        .tile-red { color: #d32f2f; }
 
         /* 卓のレイアウト */
         .mahjong-table {
             background: radial-gradient(circle, #1b5e20 0%, #0d3812 100%);
-            border: 8px solid #3e2723;
-            box-shadow: inset 0 0 30px rgba(0,0,0,0.6), 0 10px 25px rgba(0,0,0,0.5);
-            border-radius: 16px;
+            border: 4px solid #3e2723;
+            box-shadow: inset 0 0 20px rgba(0,0,0,0.6), 0 5px 15px rgba(0,0,0,0.5);
+            border-radius: 12px;
         }
-
-        /* 縦書き風や特殊表示用 */
         .glow-text {
-            text-shadow: 0 0 10px rgba(76, 175, 80, 0.6);
+            text-shadow: 0 0 8px rgba(76, 175, 80, 0.6);
         }
-
-        /* スクロールバーのカスタム */
         ::-webkit-scrollbar {
-            width: 6px;
-        }
-        ::-webkit-scrollbar-track {
-            background: #0d1b1e;
+            width: 4px;
         }
         ::-webkit-scrollbar-thumb {
             background: #264653;
-            border-radius: 3px;
+            border-radius: 2px;
         }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-between p-4">
+<body class="h-screen flex flex-col justify-between p-2 overflow-hidden max-w-md mx-auto">
 
     <!-- ヘッダー -->
-    <header class="w-full max-w-6xl flex justify-between items-center bg-[#112225] px-6 py-3 rounded-xl border border-[#264653] shadow-lg mb-3">
-        <div class="flex items-center space-x-3">
-            <span class="text-2xl">🀄</span>
-            <h1 class="text-xl font-black tracking-wider text-emerald-400 glow-text">オート麻雀観戦シミュレーター</h1>
+    <header class="w-full flex justify-between items-center bg-[#112225] px-3 py-2 rounded-lg border border-[#264653] shadow">
+        <div class="flex items-center space-x-2">
+            <span class="text-lg">🀄</span>
+            <h1 class="text-sm font-black tracking-wider text-emerald-400 glow-text">オート麻雀観戦</h1>
         </div>
-        <div class="flex items-center space-x-6 text-sm">
-            <div id="game-info" class="bg-[#1b3a4b] px-4 py-1.5 rounded-lg border border-[#3a6073] font-bold">
-                東1局 0本場 | 供託: 0
+        <div class="flex items-center space-x-3 text-xs">
+            <div id="game-info" class="bg-[#1b3a4b] px-2 py-1 rounded border border-[#3a6073] font-bold">
+                東1局 0本場
             </div>
             <div id="pot-info" class="text-amber-300 font-bold">
-                ドラ表示: <span id="dora-tile" class="inline-block align-middle"></span>
+                ドラ: <span id="dora-tile" class="inline-block align-middle"></span>
             </div>
         </div>
     </header>
 
-    <!-- メインコンテンツ (卓とログ) -->
-    <div class="w-full max-w-6xl grid grid-cols-1 lg:grid-cols-4 gap-4 flex-grow mb-3">
+    <!-- メインコンテンツ (1画面に収めるコンパクト設計) -->
+    <div class="w-full flex flex-col space-y-2 flex-grow justify-center my-1">
         
-        <!-- 麻雀卓 (左側 3カラム) -->
-        <div class="lg:col-span-3 mahjong-table relative p-4 flex flex-col justify-between items-center min-h-[580px] rounded-xl overflow-hidden">
-            
-            <!-- 北家 (上) -->
-            <div id="player-north" class="flex flex-col items-center bg-black/30 p-2 rounded-xl backdrop-blur-sm w-full max-w-md border border-white/10">
-                <div class="flex justify-between w-full px-2 text-xs text-emerald-300 font-bold mb-1">
-                    <span id="name-north">北家: CPU 4 (AI-Bot)</span>
-                    <span id="score-north">25,000点</span>
-                    <span id="status-north" class="text-amber-400"></span>
-                </div>
-                <div class="flex items-center space-x-1" id="hand-north"></div>
-                <div class="flex space-x-2 mt-1 min-h-[20px]" id="river-north-melds"></div>
+        <!-- 他家ステータス (北・西・東) - 手牌非公開 -->
+        <div class="grid grid-cols-3 gap-1 px-1">
+            <div id="player-north" class="bg-black/30 p-1.5 rounded border border-white/10 text-center">
+                <div class="text-[10px] text-emerald-300 font-bold truncate" id="name-north">北家: AI-4</div>
+                <div class="text-[11px] text-white font-bold" id="score-north">25,000</div>
+                <div class="text-[9px] text-amber-400 h-3" id="status-north"></div>
+                <div class="flex justify-center space-x-0.5 mt-1 overflow-hidden h-5" id="hand-north"></div>
             </div>
-
-            <!-- 中段 (西家、中央河、東家) -->
-            <div class="w-full flex justify-between items-center my-auto px-4">
-                
-                <!-- 西家 (左) -->
-                <div id="player-west" class="flex flex-col items-center bg-black/30 p-2 rounded-xl backdrop-blur-sm border border-white/10 max-w-[200px]">
-                    <div class="text-xs text-emerald-300 font-bold mb-1 text-center">
-                        <div id="name-west">西家: CPU 3</div>
-                        <div id="score-west" class="text-white">25,000点</div>
-                        <div id="status-west" class="text-amber-400 text-[10px]"></div>
-                    </div>
-                    <div class="flex flex-col space-y-0.5 items-center my-1" id="hand-west"></div>
-                </div>
-
-                <!-- 中央: 河 (捨て牌) & ステータス -->
-                <div class="flex flex-col items-center justify-center bg-black/40 p-4 rounded-2xl border border-emerald-500/30 w-72 h-64 relative shadow-inner">
-                    <div class="absolute top-2 text-[11px] text-emerald-400/80 font-bold tracking-widest">CENTER RIVER</div>
-                    
-                    <!-- 中央の捨て牌グリッド (各家共通または4方向河) -->
-                    <div class="grid grid-cols-6 gap-0.5 max-w-[200px] max-h-[140px] overflow-y-auto p-1 bg-black/20 rounded border border-white/5 my-auto" id="center-river">
-                        <!-- 各家の捨て牌がここに集約または綺麗に配置 -->
-                    </div>
-
-                    <div id="center-message" class="text-xs font-bold text-yellow-300 animate-pulse mt-1 text-center">
-                        対局開始待ち...
-                    </div>
-                </div>
-
-                <!-- 東家 (右) -->
-                <div id="player-east" class="flex flex-col items-center bg-black/30 p-2 rounded-xl backdrop-blur-sm border border-white/10 max-w-[200px]">
-                    <div class="text-xs text-emerald-300 font-bold mb-1 text-center">
-                        <div id="name-east">東家: CPU 1</div>
-                        <div id="score-east" class="text-white">25,000点</div>
-                        <div id="status-east" class="text-amber-400 text-[10px]"></div>
-                    </div>
-                    <div class="flex flex-col space-y-0.5 items-center my-1" id="hand-east"></div>
-                </div>
-
+            <div id="player-west" class="bg-black/30 p-1.5 rounded border border-white/10 text-center">
+                <div class="text-[10px] text-emerald-300 font-bold truncate" id="name-west">西家: AI-3</div>
+                <div class="text-[11px] text-white font-bold" id="score-west">25,000</div>
+                <div class="text-[9px] text-amber-400 h-3" id="status-west"></div>
+                <div class="flex justify-center space-x-0.5 mt-1 overflow-hidden h-5" id="hand-west"></div>
             </div>
-
-            <!-- 南家 (下 - プレイヤー視点として大きく表示も可能) -->
-            <div id="player-south" class="flex flex-col items-center bg-black/40 p-3 rounded-xl backdrop-blur-sm w-full max-w-lg border border-emerald-500/30 shadow-lg">
-                <div class="flex justify-between w-full px-2 text-xs text-emerald-300 font-bold mb-1">
-                    <span id="name-south">南家: CPU 2 (主役AI)</span>
-                    <span id="score-south" class="text-lg text-white font-black">25,000点</span>
-                    <span id="status-south" class="text-amber-400 font-bold text-sm"></span>
-                </div>
-                <div class="flex items-center space-x-1" id="hand-south"></div>
-                <div class="flex space-x-2 mt-1 min-h-[20px]" id="river-south-melds"></div>
+            <div id="player-east" class="bg-black/30 p-1.5 rounded border border-white/10 text-center">
+                <div class="text-[10px] text-emerald-300 font-bold truncate" id="name-east">東家: AI-1</div>
+                <div class="text-[11px] text-white font-bold" id="score-east">25,000</div>
+                <div class="text-[9px] text-amber-400 h-3" id="status-east"></div>
+                <div class="flex justify-center space-x-0.5 mt-1 overflow-hidden h-5" id="hand-east"></div>
             </div>
-
         </div>
 
-        <!-- 右側パネル (実況ログ & ランキング) -->
-        <div class="bg-[#112225] border border-[#264653] rounded-xl p-4 flex flex-col justify-between shadow-lg">
-            <div>
-                <h2 class="text-sm font-bold text-emerald-400 mb-2 flex items-center">
-                    <span class="mr-1.5">📡</span> 実況・試合ログ
-                </h2>
-                <div id="log-container" class="bg-black/40 border border-white/10 rounded-lg p-3 h-[420px] overflow-y-auto text-xs space-y-2 flex flex-col-reverse">
-                    <div class="text-gray-400">オート麻雀シミュレーターへようこそ。「スタート」ボタンを押すと自動対局が始まります。</div>
-                </div>
+        <!-- 卓の中央 (河 & メッセージ) -->
+        <div class="mahjong-table p-2 flex flex-col items-center justify-center relative h-36 shadow-inner">
+            <div class="absolute top-1 text-[9px] text-emerald-400/80 font-bold tracking-widest">河 (捨て牌)</div>
+            <div class="grid grid-cols-8 gap-0.5 max-w-full max-h-20 overflow-y-auto p-1 bg-black/20 rounded border border-white/5 my-auto" id="center-river">
+                <!-- 捨て牌 -->
             </div>
+            <div id="center-message" class="text-xs font-bold text-yellow-300 animate-pulse mt-1 text-center">
+                「オート再生開始」を押してください
+            </div>
+        </div>
 
-            <!-- コントロールボタン -->
-            <div class="mt-3 pt-3 border-t border-white/10 grid grid-cols-2 gap-2">
-                <button id="btn-start" onclick="toggleAutoPlay()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-3 rounded-lg text-xs shadow transition flex items-center justify-center space-x-1">
-                    <span>▶</span> <span id="start-btn-text">オート再生開始</span>
-                </button>
-                <button onclick="resetGame()" class="bg-rose-700 hover:bg-rose-600 text-white font-bold py-2 px-3 rounded-lg text-xs shadow transition flex items-center justify-center space-x-1">
-                    <span>🔄</span> <span>リセット</span>
-                </button>
-                <div class="col-span-2 flex items-center justify-between bg-black/30 px-3 py-1.5 rounded-lg border border-white/10 text-xs">
-                    <span class="text-gray-300">再生スピード:</span>
-                    <div class="space-x-1">
-                        <button onclick="setSpeed(1500)" id="spd-slow" class="px-2 py-0.5 rounded bg-gray-700 hover:bg-gray-600">遅い</button>
-                        <button onclick="setSpeed(700)" id="spd-normal" class="px-2 py-0.5 rounded bg-emerald-700 text-white">標準</button>
-                        <button onclick="setSpeed(200)" id="spd-fast" class="px-2 py-0.5 rounded bg-gray-700 hover:bg-gray-600">高速</button>
-                    </div>
-                </div>
+        <!-- プレイヤー視点 (南家 - 主役の手牌はオープン) -->
+        <div id="player-south" class="bg-black/40 p-2 rounded-lg border border-emerald-500/40 shadow-lg">
+            <div class="flex justify-between items-center px-1 mb-1">
+                <span class="text-xs text-emerald-300 font-bold" id="name-south">南家: 主役AI (あなた)</span>
+                <span class="text-sm text-white font-black" id="score-south">25,000点</span>
+                <span class="text-xs text-amber-400 font-bold" id="status-south"></span>
+            </div>
+            <div class="flex items-center justify-center space-x-0.5 overflow-x-auto py-1" id="hand-south">
+                <!-- 手牌 -->
+            </div>
+        </div>
+
+        <!-- 実況ログ (コンパクト) -->
+        <div class="bg-[#112225] border border-[#264653] rounded-lg p-2 flex flex-col shadow h-20">
+            <h2 class="text-[10px] font-bold text-emerald-400 mb-1 flex items-center">
+                <span class="mr-1">📡</span> 実況ログ
+            </h2>
+            <div id="log-container" class="bg-black/40 border border-white/10 rounded p-1 flex-grow overflow-y-auto text-[10px] space-y-1 flex flex-col-reverse">
+                <div class="text-gray-400">スタートボタンで対局開始。</div>
             </div>
         </div>
 
     </div>
 
-    <!-- フッター -->
-    <footer class="text-xs text-gray-400 text-center">
-        &copy; 2026 オート麻雀観戦シミュレーター - 全員の手牌がオープンな完全自動観戦モード
+    <!-- フッターコントロールバー -->
+    <footer class="w-full bg-[#112225] border border-[#264653] rounded-lg p-2 flex items-center justify-between shadow">
+        <div class="flex space-x-1">
+            <button onclick="setSpeed(1200)" id="spd-slow" class="px-2 py-1 rounded bg-gray-700 text-[10px]">遅い</button>
+            <button onclick="setSpeed(600)" id="spd-normal" class="px-2 py-1 rounded bg-emerald-700 text-white text-[10px]">標準</button>
+            <button onclick="setSpeed(200)" id="spd-fast" class="px-2 py-1 rounded bg-gray-700 text-[10px]">高速</button>
+        </div>
+        <div class="flex space-x-2">
+            <button id="btn-start" onclick="toggleAutoPlay()" class="bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-4 rounded text-xs shadow transition">
+                <span id="start-btn-text">再生開始</span>
+            </button>
+            <button onclick="resetGame()" class="bg-rose-700 hover:bg-rose-600 text-white font-bold py-1.5 px-3 rounded text-xs shadow transition">
+                リセット
+            </button>
+        </div>
     </footer>
 
     <!-- 麻雀ロジック・シミュレーションスクリプト -->
     <script>
-        /* 
-          麻雀牌ID定義 (0〜33)
-          0-8: 1m〜9m (萬子)
-          9-17: 1p〜9p (筒子)
-          18-26: 1s〜9s (索子)
-          27: 東, 28: 南, 29: 西, 30: 北, 31: 白, 32: 發, 33: 中 (字牌)
-        */
-
         const TILE_NAMES = [
             "1m","2m","3m","4m","5m","6m","7m","8m","9m",
             "1p","2p","3p","4p","5p","6p","7p","8p","9p",
@@ -241,23 +194,27 @@
             return `<div class="tile ${sizeClass} ${typeClass}">${dispText}</div>`;
         }
 
-        // ゲーム状態
+        // 裏向きの牌
+        function getBackTileHtml() {
+            return `<div class="tile small back">🀫</div>`;
+        }
+
         let gameState = {
-            round: 0, // 0: 東1局, 1: 東2局, 2: 東3局, 3: 東4局
+            round: 0,
             honba: 0,
             pot: 0,
             doraIndicator: 0,
-            wall: [], // 山の牌ID配列
+            wall: [],
             players: [
-                { id: 0, name: "東家: AI-Alpha", score: 25000, hand: [], river: [], melds: [], isRiichi: false, wind: 27 },
-                { id: 1, name: "南家: AI-Beta", score: 25000, hand: [], river: [], melds: [], isRiichi: false, wind: 28 },
-                { id: 2, name: "西家: AI-Gamma", score: 25000, hand: [], river: [], melds: [], isRiichi: false, wind: 29 },
-                { id: 3, name: "北家: AI-Omega", score: 25000, hand: [], river: [], melds: [], isRiichi: false, wind: 30 }
+                { id: 0, name: "東家: AI-1", score: 25000, hand: [], river: [], isRiichi: false },
+                { id: 1, name: "南家: 主役AI", score: 25000, hand: [], river: [], isRiichi: false },
+                { id: 2, name: "西家: AI-3", score: 25000, hand: [], river: [], isRiichi: false },
+                { id: 3, name: "北家: AI-4", score: 25000, hand: [], river: [], isRiichi: false }
             ],
-            turnPlayer: 0, // 0〜3
-            phase: 'waiting', // 'waiting', 'dealing', 'turn', 'ended'
+            turnPlayer: 0,
+            phase: 'waiting',
             autoPlay: false,
-            speed: 700,
+            speed: 600,
             timer: null
         };
 
@@ -266,8 +223,8 @@
         function logMessage(msg) {
             const container = document.getElementById('log-container');
             const div = document.createElement('div');
-            div.className = 'border-l-2 border-emerald-400 pl-2 py-0.5 text-gray-200';
-            div.innerHTML = `<span class="text-emerald-400 text-[10px] font-bold">[${new Date().toLocaleTimeString()}]</span> ${msg}`;
+            div.className = 'border-l-2 border-emerald-400 pl-1.5 py-0.5 text-gray-200';
+            div.innerHTML = `<span class="text-emerald-400 text-[9px] font-bold">[${new Date().toLocaleTimeString()}]</span> ${msg}`;
             container.prepend(div);
         }
 
@@ -275,12 +232,11 @@
             gameState.speed = ms;
             ['slow', 'normal', 'fast'].forEach(s => {
                 const btn = document.getElementById(`spd-${s}`);
-                btn.className = s === (ms === 1500 ? 'slow' : ms === 700 ? 'normal' : 'fast') && ms === 700 ? 'px-2 py-0.5 rounded bg-emerald-700 text-white' : 'px-2 py-0.5 rounded bg-gray-700 hover:bg-gray-600';
+                if (btn) btn.className = s === (ms === 1200 ? 'slow' : ms === 600 ? 'normal' : 'fast') && ms === 600 ? 'px-2 py-1 rounded bg-emerald-700 text-white text-[10px]' : 'px-2 py-1 rounded bg-gray-700 text-[10px]';
             });
-            // スピードボタンのアクティブ切り替えをきれいに
-            document.getElementById('spd-slow').className = ms === 1500 ? 'px-2 py-0.5 rounded bg-emerald-700 text-white' : 'px-2 py-0.5 rounded bg-gray-700 hover:bg-gray-600';
-            document.getElementById('spd-normal').className = ms === 700 ? 'px-2 py-0.5 rounded bg-emerald-700 text-white' : 'px-2 py-0.5 rounded bg-gray-700 hover:bg-gray-600';
-            document.getElementById('spd-fast').className = ms === 200 ? 'px-2 py-0.5 rounded bg-emerald-700 text-white' : 'px-2 py-0.5 rounded bg-gray-700 hover:bg-gray-600';
+            document.getElementById('spd-slow').className = ms === 1200 ? 'px-2 py-1 rounded bg-emerald-700 text-white text-[10px]' : 'px-2 py-1 rounded bg-gray-700 text-[10px]';
+            document.getElementById('spd-normal').className = ms === 600 ? 'px-2 py-1 rounded bg-emerald-700 text-white text-[10px]' : 'px-2 py-1 rounded bg-gray-700 text-[10px]';
+            document.getElementById('spd-fast').className = ms === 200 ? 'px-2 py-1 rounded bg-emerald-700 text-white text-[10px]' : 'px-2 py-1 rounded bg-gray-700 text-[10px]';
 
             if (gameState.autoPlay) {
                 clearInterval(gameState.timer);
@@ -294,25 +250,25 @@
             const btn = document.getElementById('btn-start');
             if (gameState.autoPlay) {
                 btnText.textContent = "一時停止";
-                btn.className = "bg-amber-600 hover:bg-amber-500 text-white font-bold py-2 px-3 rounded-lg text-xs shadow transition flex items-center justify-center space-x-1";
+                btn.className = "bg-amber-600 hover:bg-amber-500 text-white font-bold py-1.5 px-4 rounded text-xs shadow transition";
                 if (gameState.phase === 'waiting' || gameState.phase === 'ended') {
                     startNewHand();
                 }
                 gameState.timer = setInterval(gameLoopStep, gameState.speed);
                 logMessage("オート対局を開始しました。");
             } else {
-                btnText.textContent = "オート再生再開";
-                btn.className = "bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-3 rounded-lg text-xs shadow transition flex items-center justify-center space-x-1";
+                btnText.textContent = "再開";
+                btn.className = "bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-4 rounded text-xs shadow transition";
                 clearInterval(gameState.timer);
-                logMessage("オート対局を一時停止しました。");
+                logMessage("一時停止しました。");
             }
         }
 
         function resetGame() {
             gameState.autoPlay = false;
             clearInterval(gameState.timer);
-            document.getElementById('start-btn-text').textContent = "オート再生開始";
-            document.getElementById('btn-start').className = "bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-2 px-3 rounded-lg text-xs shadow transition flex items-center justify-center space-x-1";
+            document.getElementById('start-btn-text').textContent = "再生開始";
+            document.getElementById('btn-start').className = "bg-emerald-600 hover:bg-emerald-500 text-white font-bold py-1.5 px-4 rounded text-xs shadow transition";
             
             gameState.round = 0;
             gameState.honba = 0;
@@ -322,20 +278,19 @@
             
             clearBoardUI();
             logMessage("ゲームをリセットしました。");
-            document.getElementById('center-message').textContent = "「オート再生開始」を押してください";
+            document.getElementById('center-message').textContent = "「再生開始」を押してください";
         }
 
         function clearBoardUI() {
             ['north', 'south', 'east', 'west'].forEach(pos => {
                 document.getElementById(`hand-${pos}`).innerHTML = '';
                 document.getElementById(`status-${pos}`).textContent = '';
-                document.getElementById(`score-${pos}`).textContent = '25,000点';
+                document.getElementById(`score-${pos}`).textContent = '25,000';
             });
             document.getElementById('center-river').innerHTML = '';
             document.getElementById('dora-tile').innerHTML = '';
         }
 
-        // 牌山の生成 (136枚)
         function createWall() {
             let wall = [];
             for (let i = 0; i < 34; i++) {
@@ -343,7 +298,6 @@
                     wall.push(i);
                 }
             }
-            // シャッフル (Fisher-Yates)
             for (let i = wall.length - 1; i > 0; i--) {
                 let j = Math.floor(Math.random() * (i + 1));
                 [wall[i], wall[j]] = [wall[j], wall[i]];
@@ -351,16 +305,13 @@
             return wall;
         }
 
-        // 新しい局の開始
         function startNewHand() {
             gameState.wall = createWall();
             gameState.doraIndicator = gameState.wall.pop();
             
-            // 配牌
             gameState.players.forEach(p => {
                 p.hand = [];
                 p.river = [];
-                p.melds = [];
                 p.isRiichi = false;
                 for (let i = 0; i < 13; i++) {
                     p.hand.push(gameState.wall.pop());
@@ -368,7 +319,7 @@
                 sortHand(p.hand);
             });
 
-            gameState.turnPlayer = gameState.round % 4; // 東家スタート等
+            gameState.turnPlayer = gameState.round % 4;
             gameState.phase = 'turn';
 
             updateUI();
@@ -381,15 +332,13 @@
             hand.sort((a, b) => a - b);
         }
 
-        // ゲームループの1ステップ
         function gameLoopStep() {
             if (gameState.phase !== 'turn') return;
 
             let p = gameState.players[gameState.turnPlayer];
 
-            // 山がなくなったら流局
             if (gameState.wall.length <= 14) {
-                logMessage("流局しました（荒牌平局）。");
+                logMessage("流局しました。");
                 document.getElementById('center-message').textContent = "流局！";
                 gameState.phase = 'ended';
                 if (gameState.autoPlay) {
@@ -401,13 +350,11 @@
                 return;
             }
 
-            // 1. ツモ
             let tsumoTile = gameState.wall.pop();
             p.hand.push(tsumoTile);
             sortHand(p.hand);
             updateUI();
 
-            // ツモ和了判定
             if (checkWinning(p.hand)) {
                 logMessage(`${p.name} が ツモ和了！ 🎊`);
                 document.getElementById('center-message').textContent = `${p.name} の ツモ和了！`;
@@ -418,29 +365,26 @@
                 return;
             }
 
-            // リーチ判定 (テンパイしていてまだリーチしていなければ、30%の確率でリーチ)
             if (!p.isRiichi && p.score >= 1000 && Math.random() < 0.4) {
                 if (isTenpai(p.hand)) {
                     p.isRiichi = true;
                     p.score -= 1000;
                     gameState.pot += 1000;
-                    logMessage(`🔥 ${p.name} が 立直 (リーチ) 宣言！`);
+                    logMessage(`🔥 ${p.name} が 立直宣言！`);
                 }
             }
 
-            // 2. 打牌 (不要な牌を捨てる：AIの簡易選択：字牌や孤立牌、または一番右など)
             let discardIndex = chooseDiscard(p.hand);
             let discarded = p.hand.splice(discardIndex, 1)[0];
             p.river.push(discarded);
             
-            logMessage(`${p.name} (${WIND_NAMES[gameState.turnPlayer]}) が ${TILE_NAMES[discarded]} を打牌。`);
+            logMessage(`${p.name} が ${TILE_NAMES[discarded]} を打牌。`);
 
-            // 他家によるロン判定
             let ronPlayer = checkRon(discarded, gameState.turnPlayer);
             if (ronPlayer !== null) {
                 let rp = gameState.players[ronPlayer];
-                rp.hand.push(discarded); // 牌を加える
-                logMessage(`💥 ${rp.name} が ${p.name} の打牌 ${TILE_NAMES[discarded]} で ロン和了！ 🎉`);
+                rp.hand.push(discarded);
+                logMessage(`💥 ${rp.name} が ロン和了！ 🎉`);
                 document.getElementById('center-message').textContent = `${rp.name} の ロン和了！`;
                 rp.score += 5800 + gameState.pot;
                 p.score -= 5800;
@@ -451,7 +395,6 @@
                 return;
             }
 
-            // 次のプレイヤーへ
             gameState.turnPlayer = (gameState.turnPlayer + 1) % 4;
             updateUI();
         }
@@ -461,41 +404,30 @@
                 setTimeout(() => {
                     gameState.round = (gameState.round + 1) % 4;
                     startNewHand();
-                }, 3000);
+                }, 2500);
             }
         }
 
-        // 簡易AIの打牌選択
         function chooseDiscard(hand) {
-            // 字牌や端牌、あるいはランダムに近い形で不要牌を選ぶ
-            // ここでは簡易的に、孤立しているオタ風や1,9などを優先して捨てる
             for (let i = 0; i < hand.length; i++) {
-                let t = hand[i];
-                if (t >= 27) return i; // 字牌を優先的に捨てる
+                if (hand[i] >= 27) return i;
             }
-            // ランダムに1枚選ぶ
             return Math.floor(Math.random() * hand.length);
         }
 
-        // ロン判定（放銃したプレイヤー以外の誰かが、その牌で和了できるか）
         function checkRon(tile, discarderIdx) {
             for (let i = 0; i < 4; i++) {
                 if (i === discarderIdx) continue;
                 let p = gameState.players[i];
-                let testHand = [...p.hand, tile];
-                if (checkWinning(testHand)) {
-                    return i;
-                }
+                if (checkWinning([...p.hand, tile])) return i;
             }
             return null;
         }
 
-        // テンパイ判定（14枚のどれかを抜いて和了形になるか）
         function isTenpai(hand) {
             for (let i = 0; i < hand.length; i++) {
                 let temp = [...hand];
                 temp.splice(i, 1);
-                // 任意の牌を加えて和了形になるか（ここでは簡略化のため、特定の牌でのアガリチェック）
                 for (let t = 0; t < 34; t++) {
                     if (checkWinning([...temp, t])) return true;
                 }
@@ -503,126 +435,95 @@
             return false;
         }
 
-        // 麻雀の和了判定（4面子1雀頭の判定ロジック）
         function checkWinning(tiles) {
             if (tiles.length !== 14) return false;
             let counts = new Array(34).fill(0);
             tiles.forEach(t => counts[t]++);
-
-            // 雀頭を2枚持つ牌をすべて試す
             for (let i = 0; i < 34; i++) {
                 if (counts[i] >= 2) {
                     let tempCounts = [...counts];
                     tempCounts[i] -= 2;
-                    if (canFormMelds(tempCounts, 4)) {
-                        return true;
-                    }
+                    if (canFormMelds(tempCounts, 4)) return true;
                 }
             }
             return false;
         }
 
-        // 残りの牌が n 個の面子（順子・刻子）に分解できるか再帰チェック
         function canFormMelds(counts, meldsNeeded) {
-            if (meldsNeeded === 0) {
-                return counts.every(c => c === 0);
-            }
-
-            // 最初に見つかる枚数>0の牌を処理
+            if (meldsNeeded === 0) return counts.every(c => c === 0);
             let firstIdx = -1;
             for (let i = 0; i < 34; i++) {
-                if (counts[i] > 0) {
-                    firstIdx = i;
-                    break;
-                }
+                if (counts[i] > 0) { firstIdx = i; break; }
             }
-
             if (firstIdx === -1) return false;
 
-            // 1. 刻子 (3枚同じ)
             if (counts[firstIdx] >= 3) {
                 counts[firstIdx] -= 3;
-                if (canFormMelds(counts, meldsNeeded - 1)) {
-                    counts[firstIdx] += 3;
-                    return true;
-                }
+                if (canFormMelds(counts, meldsNeeded - 1)) { counts[firstIdx] += 3; return true; }
                 counts[firstIdx] += 3;
             }
 
-            // 2. 順子 (数牌のみ、同じスートで連続する3枚)
             if (firstIdx < 27 && firstIdx % 9 <= 6) {
-                let second = firstIdx + 1;
-                let third = firstIdx + 2;
+                let second = firstIdx + 1, third = firstIdx + 2;
                 if (counts[second] > 0 && counts[third] > 0) {
-                    counts[firstIdx]--;
-                    counts[second]--;
-                    counts[third]--;
+                    counts[firstIdx]--; counts[second]--; counts[third]--;
                     if (canFormMelds(counts, meldsNeeded - 1)) {
-                        counts[firstIdx]++;
-                        counts[second]++;
-                        counts[third]++;
-                        return true;
+                        counts[firstIdx]++; counts[second]++; counts[third]++; return true;
                     }
-                    counts[firstIdx]++;
-                    counts[second]++;
-                    counts[third]++;
+                    counts[firstIdx]++; counts[second]++; counts[third]++;
                 }
             }
-
             return false;
         }
 
-        // UIの更新
         function updateUI() {
-            // ラウンド情報
             const roundName = ["東1局", "東2局", "東3局", "東4局"][gameState.round];
-            document.getElementById('game-info').textContent = `${roundName} ${gameState.honba}本場 | 供託: ${gameState.pot}点`;
+            document.getElementById('game-info').textContent = `${roundName} (${gameState.honba}本)`;
             document.getElementById('dora-tile').innerHTML = getTileHtml(gameState.doraIndicator, 'small');
 
-            // 各プレイヤーのUI更新
-            const posMap = ['east', 'south', 'west', 'north']; // 簡易マッピング
-            
-            // 今回のビューでは、南家をプレイヤー視点として大きく、他を配置
-            // gameState.players: 0=東, 1=南, 2=西, 3=北
             const positions = ['east', 'south', 'west', 'north'];
-            
+            // プレイヤーマッピング: 0=東, 1=南(主役), 2=西, 3=北
+
             gameState.players.forEach((p, idx) => {
                 let pos = positions[idx];
-                document.getElementById(`name-${pos}`).textContent = p.name + (p.isRiichi ? " ♨️リーチ" : "");
-                document.getElementById(`score-${pos}`).textContent = p.score.toLocaleString() + "点";
-                document.getElementById(`status-${pos}`).textContent = p.isRiichi ? "立直!" : "";
+                document.getElementById(`name-${pos}`).textContent = p.name + (p.isRiichi ? " リーチ" : "");
+                document.getElementById(`score-${pos}`).textContent = p.score.toLocaleString();
+                document.getElementById(`status-${pos}`).textContent = p.isRiichi ? "🔥" : "";
 
-                // 手牌表示
+                // 主役（南家 idx=1）だけ手牌オープン、他家は裏向き表示
                 let handHtml = '';
-                p.hand.forEach(t => {
-                    handHtml += getTileHtml(t, idx === 1 ? '' : 'small');
-                });
+                if (idx === 1) {
+                    p.hand.forEach(t => {
+                        handHtml += getTileHtml(t);
+                    });
+                } else {
+                    for (let i = 0; i < p.hand.length; i++) {
+                        handHtml += getBackTileHtml();
+                    }
+                }
                 document.getElementById(`hand-${pos}`).innerHTML = handHtml;
             });
 
-            // 中央の河（全プレイヤーの捨て牌一覧）
+            // 中央の河
             let riverHtml = '';
-            gameState.players.forEach((p, idx) => {
+            gameState.players.forEach(p => {
                 p.river.forEach(t => {
                     riverHtml += getTileHtml(t, 'small');
                 });
             });
             document.getElementById('center-river').innerHTML = riverHtml;
 
-            // ターンプレイヤーの強調
+            // ターンプレイヤーのハイライト
             positions.forEach((pos, idx) => {
                 let panel = document.getElementById(`player-${pos}`);
                 if (idx === gameState.turnPlayer && gameState.phase === 'turn') {
                     panel.style.borderColor = '#34d399';
-                    panel.style.boxShadow = '0 0 15px rgba(52, 211, 153, 0.4)';
                 } else {
                     panel.style.borderColor = 'rgba(255, 255, 255, 0.1)';
-                    panel.style.boxShadow = 'none';
                 }
             });
         }
 
-        // 初期表示
         resetGame();
     </script>
 </body>
