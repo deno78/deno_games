@@ -64,3 +64,4 @@ Deno/Web games collection.
 - [51. ガンヲタ部長と映画鑑賞：めぐりあい宇宙 (Gundam Movie Screening with Fanatic Boss)](./51/index.html)
 - [52. ラーメン判定ゲーム (Ramen Judge Game)](./52/index.html)
 - [53. オート麻雀観戦シミュレーター (Auto Mahjong Watcher vs AI)](./53/index.html)
+- [54. エロ画像判定ゲーム (Ero-Image Judge Game)](./54/index.html)

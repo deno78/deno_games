@@ -1,0 +1,510 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>16bit ギャルゲー判定スリラー「これって…エロい？」</title>
+    <style>
+        body {
+            background-color: #111;
+            color: #eee;
+            font-family: 'Courier New', Courier, monospace, sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+        #game-container {
+            width: 600px;
+            background: #222;
+            border: 4px solid #555;
+            box-shadow: 0 0 20px rgba(255, 0, 128, 0.4);
+            display: flex;
+            flex-direction: column;
+            padding: 20px;
+            box-sizing: border-box;
+            position: relative;
+        }
+        h1 {
+            font-size: 20px;
+            text-align: center;
+            color: #ff77aa;
+            margin: 0 0 15px 0;
+            text-shadow: 2px 2px #ff0055;
+            letter-spacing: 2px;
+        }
+        .screen-area {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        #canvas-wrapper {
+            width: 250px;
+            height: 250px;
+            background: #000;
+            border: 3px solid #777;
+            position: relative;
+            image-rendering: pixelated;
+        }
+        canvas {
+            width: 100%;
+            height: 100%;
+            display: block;
+        }
+        .info-panel {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            background: #1a1a1a;
+            border: 2px solid #444;
+            padding: 15px;
+            box-sizing: border-box;
+        }
+        .status-bar {
+            font-size: 14px;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+        .status-bar span {
+            color: #fff;
+            font-weight: bold;
+        }
+        #timer-bar-container {
+            width: 100%;
+            height: 16px;
+            background: #333;
+            border: 2px solid #555;
+            margin-top: 10px;
+            position: relative;
+        }
+        #timer-bar {
+            width: 100%;
+            height: 100%;
+            background: #ff3366;
+            transition: width 0.1s linear;
+        }
+        .adjective-box {
+            font-size: 22px;
+            text-align: center;
+            color: #ffff55;
+            background: #000;
+            border: 2px dashed #ff55aa;
+            padding: 10px;
+            margin: 10px 0;
+            font-weight: bold;
+            letter-spacing: 1px;
+            text-shadow: 1px 1px #ff0000;
+        }
+        .btn-container {
+            display: flex;
+            gap: 15px;
+        }
+        .action-btn {
+            flex: 1;
+            padding: 15px;
+            font-size: 18px;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            outline: none;
+            text-transform: uppercase;
+            box-shadow: 0 4px 0 #000;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .action-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #000;
+        }
+        #btn-ok {
+            background: #ff3366;
+            color: #fff;
+            border: 2px solid #ff88aa;
+        }
+        #btn-ng {
+            background: #3366ff;
+            color: #fff;
+            border: 2px solid #88aaee;
+        }
+        #start-screen, #result-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(17, 17, 17, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            padding: 30px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        #start-screen h2, #result-screen h2 {
+            color: #ff77aa;
+            font-size: 24px;
+            margin-bottom: 15px;
+            text-shadow: 2px 2px #ff0055;
+        }
+        #start-screen p, #result-screen p {
+            font-size: 14px;
+            color: #ccc;
+            line-height: 1.6;
+            margin-bottom: 25px;
+        }
+        .big-btn {
+            background: #ff3366;
+            color: #fff;
+            border: 3px solid #ff88aa;
+            padding: 12px 30px;
+            font-size: 20px;
+            font-family: inherit;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #880022;
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .big-btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 0 0 #880022;
+        }
+        .hidden {
+            display: none !important;
+        }
+        #feedback-popup {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            font-size: 40px;
+            font-weight: bold;
+            text-shadow: 3px 3px #000, -3px -3px #000, 3px -3px #000, -3px 3px #000;
+            z-index: 5;
+            transition: transform 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+        }
+        .correct-color { color: #55ff55; }
+        .wrong-color { color: #ff5555; }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <h1>◆ 16bit ギャルゲー判定スリラー ◆</h1>
+        
+        <div class="screen-area">
+            <div id="canvas-wrapper">
+                <canvas id="galgame-canvas" width="128" height="128"></canvas>
+                <div id="feedback-popup">判定</div>
+            </div>
+            
+            <div class="info-panel">
+                <div>
+                    <div class="status-bar">ラウンド: <span id="round-display">1</span> / 5</div>
+                    <div class="status-bar">スコア: <span id="score-display">0</span> pt</div>
+                    <div class="adjective-box" id="adjective-display">ローディング...</div>
+                </div>
+                <div>
+                    <div class="status-bar" style="margin-bottom:2px;">残り時間:</div>
+                    <div id="timer-bar-container">
+                        <div id="timer-bar"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="btn-container">
+            <button class="action-btn" id="btn-ok" onclick="judge(true)">判定: OK (エロい)</button>
+            <button class="action-btn" id="btn-ng" onclick="judge(false)">判定: NG (健全)</button>
+        </div>
+
+        <!-- スタート画面 -->
+        <div id="start-screen">
+            <h2>これって…エロい？</h2>
+            <p>16bit風レトロギャルゲーのイラストと、微妙に文字が違う類似形容詞（エロい、工ロい、エ口い、エ□い 等）が表示されます。<br>それが本当に「エロい」内容（露出度・シチュエーション等）かどうかを10秒以内に【OK】か【NG】で判定せよ！全5ラウンド。</p>
+            <button class="big-btn" onclick="startGame()">ゲームスタート</button>
+        </div>
+
+        <!-- リザルト画面 -->
+        <div id="result-screen" class="hidden">
+            <h2 id="result-title">ゲーム終了！</h2>
+            <p id="result-text">スコア: 0 / 500</p>
+            <button class="big-btn" onclick="startGame()">もう一度プレイ</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('galgame-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // 微妙に異なる「エロい」のバリエーション (全角英数、漢字の類似など)
+        const variants = [
+            "エロい",
+            "工ロい", // 「工」(たくみ)
+            "エ口い", // 「口」(__口__)
+            "エ□い", // 全角 □
+            "エロィ",
+            "エロレ",
+            "エロイ",
+            "エロｌ",
+            "ｴﾛｲ",
+            "ェロい"
+        ];
+
+        // 健全な形容詞のバリエーション
+        const safeAdjectives = [
+            "清純い",
+            "健康い",
+            "爽やかい",
+            "ピュアい",
+            "健全い",
+            "真面目い"
+        ];
+
+        const roundDataTemplates = [
+            {
+                title: "制服の放課後",
+                desc: "夕日に照らされた教室。ちょっと距離が近い気がする？",
+                isEro: false
+            },
+            {
+                title: "プールサイドの誘惑",
+                desc: "スクール水着の裾を引っ張る彼女。濡れ髪が艶かしい…？",
+                isEro: true
+            },
+            {
+                title: "図書館の密談",
+                desc: "本棚の隙間からこちらを見上げる。至近距離での上目遣い。",
+                isEro: true
+            },
+            {
+                title: "お風呂上がりのパジャマ",
+                desc: "少し大きめのシャツを着ているだけの無防備な姿。",
+                isEro: true
+            },
+            {
+                title: "廊下のすれ違い",
+                desc: "教科書を落として一緒に拾おうとしただけの健全な日常シーン。",
+                isEro: false
+            },
+            {
+                title: "保健室のベッド",
+                desc: "授業をサボって休んでいる彼女。制服のボタンが一つ外れている…？",
+                isEro: true
+            },
+            {
+                title: "夏祭りの浴衣",
+                desc: "花火を見上げる横顔。少しはしゃぎすぎたみたい。",
+                isEro: false
+            },
+            {
+                title: "秘密の添い寝",
+                desc: "「……もう少し、このままでいい？」毛布の中でのささやき。",
+                isEro: true
+            }
+        ];
+
+        let currentRound = 0;
+        let score = 0;
+        let maxRounds = 5;
+        let timer = null;
+        let timeLeft = 10.0;
+        let roundActive = false;
+        let currentRoundInfo = null;
+
+        function startGame() {
+            currentRound = 0;
+            score = 0;
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.add('hidden');
+            nextRound();
+        }
+
+        function nextRound() {
+            if (currentRound >= maxRounds) {
+                endGame();
+                return;
+            }
+            currentRound++;
+            document.getElementById('round-display').innerText = currentRound;
+            document.getElementById('score-display').innerText = score;
+
+            // ランダムにシチュエーションを選択
+            const template = roundDataTemplates[Math.floor(Math.random() * roundDataTemplates.length)];
+            
+            // 形容詞を決定（エロい系バリエーション、または健全系）
+            let adj = "";
+            let actualIsEro = template.isEro;
+            
+            if (actualIsEro) {
+                // エロい系の場合はvariantsからランダム
+                adj = variants[Math.floor(Math.random() * variants.length)];
+            } else {
+                // 健全系のときはランダムで安全なものか、あるいはダミーのエロくない表現
+                if (Math.random() < 0.5) {
+                    adj = safeAdjectives[Math.floor(Math.random() * safeAdjectives.length)];
+                    actualIsEro = false;
+                } else {
+                    // ひっかけ：文字はエロいっぽいけどシチュエーションは健全、など
+                    adj = variants[Math.floor(Math.random() * variants.length)];
+                    actualIsEro = false; // シチュエーションが健全なので全体としてはNG判定が正解になるケース
+                }
+            }
+
+            currentRoundInfo = {
+                ...template,
+                adjective: adj,
+                isEroFinal: actualIsEro
+            };
+
+            document.getElementById('adjective-display').innerText = currentRoundInfo.adjective;
+
+            // キャラクターイラストの描画
+            drawPixelGalgame(currentRoundInfo);
+
+            // タイマー開始
+            startTimer();
+        }
+
+        function startTimer() {
+            timeLeft = 10.0;
+            roundActive = true;
+            updateTimerBar();
+
+            if (timer) clearInterval(timer);
+            timer = setInterval(() => {
+                timeLeft -= 0.05;
+                updateTimerBar();
+                if (timeLeft <= 0) {
+                    clearInterval(timer);
+                    roundActive = false;
+                    judge(null); // タイムアウト
+                }
+            }, 50);
+        }
+
+        function updateTimerBar() {
+            const pct = Math.max(0, (timeLeft / 10.0) * 100);
+            document.getElementById('timer-bar').style.width = pct + '%';
+        }
+
+        function judge(playerChoice) {
+            if (!roundActive) return;
+            roundActive = false;
+            clearInterval(timer);
+
+            const isCorrect = (playerChoice === currentRoundInfo.isEroFinal);
+            if (isCorrect) {
+                score += 100;
+                showFeedback(true);
+            } else {
+                showFeedback(false);
+            }
+
+            document.getElementById('score-display').innerText = score;
+
+            setTimeout(() => {
+                nextRound();
+            }, 1000);
+        }
+
+        function showFeedback(isCorrect) {
+            const popup = document.getElementById('feedback-popup');
+            popup.innerText = isCorrect ? "正解！" : "不正解…";
+            popup.className = isCorrect ? "correct-color" : "wrong-color";
+            popup.style.transform = "translate(-50%, -50%) scale(1.2)";
+            setTimeout(() => {
+                popup.style.transform = "translate(-50%, -50%) scale(0)";
+            }, 600);
+        }
+
+        function endGame() {
+            document.getElementById('result-screen').classList.remove('hidden');
+            document.getElementById('result-title').innerText = score >= 400 ? "名判定士！" : (score >= 200 ? "凡庸な判定士" : "見習い判定士");
+            document.getElementById('result-text').innerText = `最終スコア: ${score} / ${maxRounds * 100} pt\n\nあなたの審美眼が試されました。`;
+        }
+
+        // 16bit風ドット絵キャラクター描画関数
+        function drawPixelGalgame(info) {
+            ctx.fillStyle = info.isEroFinal ? "#2a1122" : "#11222a"; // 背景色
+            ctx.fillRect(0, 0, 128, 128);
+
+            // 簡易ピクセルアート風プロシージャル描画
+            // 髪の色、服の色、目の色などをシチュエーションやハッシュで変化させる
+            const seed = info.title.length + info.desc.length;
+            const hairColors = ["#ff99cc", "#99ccff", "#ffcc99", "#cc99ff", "#ffff99"];
+            const clothColors = info.isEroFinal ? ["#ff3366", "#aa22ff", "#ff5588"] : ["#3366ff", "#33aa66", "#dddddd"];
+            
+            const hairColor = hairColors[seed % hairColors.length];
+            const clothColor = clothColors[seed % clothColors.length];
+
+            // 髪の毛（ベース）
+            ctx.fillStyle = hairColor;
+            // ツインテールやロングヘアなどのランダム表現
+            ctx.fillRect(36, 32, 56, 60);
+            if (seed % 2 === 0) {
+                // ツインテール
+                ctx.fillRect(20, 40, 16, 50);
+                ctx.fillRect(92, 40, 16, 50);
+            } else {
+                // ロング
+                ctx.fillRect(32, 32, 12, 70);
+                ctx.fillRect(84, 32, 12, 70);
+            }
+
+            // 顔（肌色）
+            ctx.fillStyle = "#ffddcc";
+            ctx.fillRect(42, 40, 44, 44);
+
+            // 目
+            ctx.fillStyle = info.isEroFinal ? "#aa0044" : "#0044aa";
+            ctx.fillRect(50, 56, 10, 12);
+            ctx.fillRect(68, 56, 10, 12);
+            // 目のハイライト
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(52, 58, 3, 3);
+            ctx.fillRect(70, 58, 3, 3);
+
+            // 眉毛（少し上目遣い・ジト目などの表現）
+            ctx.fillStyle = "#553322";
+            ctx.fillRect(50, 52, 10, 2);
+            ctx.fillRect(68, 52, 10, 2);
+
+            // 口
+            ctx.fillRect(60, 72, 8, 3);
+
+            // 服・体
+            ctx.fillStyle = clothColor;
+            ctx.fillRect(30, 92, 68, 36);
+
+            // 襟やリボン
+            ctx.fillStyle = "#ffffff";
+            ctx.fillRect(56, 92, 16, 10);
+            ctx.fillStyle = "#ff0000";
+            ctx.fillRect(62, 98, 4, 8);
+
+            // 雰囲気演出（エロい場合はハートや少し頬を赤らめる）
+            if (info.isEroFinal) {
+                // 照れ・赤らめ
+                ctx.fillStyle = "rgba(255, 0, 100, 0.4)";
+                ctx.fillRect(46, 68, 10, 6);
+                ctx.fillRect(72, 68, 10, 6);
+
+                // ハートマーク風ドット
+                ctx.fillStyle = "#ff3366";
+                ctx.fillRect(24, 20, 6, 6);
+                ctx.fillRect(32, 20, 6, 6);
+                ctx.fillRect(22, 26, 18, 6);
+                ctx.fillRect(28, 32, 6, 6);
+            }
+        }
+    </script>
+</body>
+</html>
