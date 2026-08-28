@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>どっちが安い？コスパ大作戦</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: #1a1a2e;
+            color: #fff;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        #game-container {
+            width: 100%;
+            max-width: 480px;
+            height: 100vh;
+            max-height: 850px;
+            background: #ffffff;
+            color: #333;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 0 20px rgba(0,0,0,0.5);
+            overflow: hidden;
+        }
+        /* ヘッダー */
+        .header {
+            background: #ff5722;
+            color: white;
+            padding: 10px 15px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: bold;
+            font-size: 16px;
+        }
+        .stats {
+            display: flex;
+            gap: 15px;
+            font-size: 14px;
+        }
+        /* タイマーバー */
+        .timer-container {
+            width: 100%;
+            height: 8px;
+            background: #e0e0e0;
+        }
+        .timer-bar {
+            width: 100%;
+            height: 100%;
+            background: #4caf50;
+            transition: width 0.1s linear, background-color 0.3s;
+        }
+        /* メインコンテンツエリア */
+        .content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            padding: 12px;
+            justify-content: space-between;
+            background: #f9f9f9;
+        }
+        /* 問題プロンプト */
+        .prompt-box {
+            background: #fff3e0;
+            border: 2px dashed #ffb74d;
+            border-radius: 8px;
+            padding: 8px 12px;
+            text-align: center;
+            font-size: 15px;
+            font-weight: bold;
+            color: #e65100;
+        }
+        /* 商品比較コンテナ */
+        .products-grid {
+            display: flex;
+            gap: 10px;
+            flex: 1;
+            align-items: center;
+            margin: 8px 0;
+        }
+        .product-card {
+            flex: 1;
+            background: white;
+            border: 2px solid #ddd;
+            border-radius: 12px;
+            padding: 10px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            cursor: pointer;
+            transition: transform 0.1s, border-color 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            position: relative;
+            height: 100%;
+            max-height: 280px;
+        }
+        .product-card:active {
+            transform: scale(0.97);
+        }
+        .product-card.selected-correct {
+            border-color: #4caf50;
+            background: #e8f5e9;
+        }
+        .product-card.selected-wrong {
+            border-color: #f44336;
+            background: #ffebee;
+        }
+        .product-card.highlight {
+            border-color: #ff9800;
+            background: #fff8e1;
+        }
+        .item-icon {
+            font-size: 42px;
+            margin-bottom: 2px;
+        }
+        .item-name {
+            font-size: 14px;
+            font-weight: bold;
+            color: #444;
+            text-align: center;
+            margin-bottom: 4px;
+        }
+        .item-details {
+            width: 100%;
+            font-size: 12px;
+            color: #666;
+            background: #f1f1f1;
+            padding: 6px;
+            border-radius: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+        .detail-row {
+            display: flex;
+            justify-content: space-between;
+        }
+        .item-price {
+            font-size: 18px;
+            font-weight: bold;
+            color: #d32f2f;
+            text-align: center;
+            margin: 4px 0;
+        }
+        .unit-price {
+            font-size: 11px;
+            color: #0288d1;
+            font-weight: bold;
+            text-align: center;
+            background: #e1f5fe;
+            padding: 2px;
+            border-radius: 4px;
+        }
+        .vs-badge {
+            font-size: 18px;
+            font-weight: bold;
+            color: #ff5722;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        /* 画面共通オーバーレイ */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255,255,255,0.96);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+            z-index: 10;
+        }
+        .hidden {
+            display: none !important;
+        }
+        h1 {
+            color: #ff5722;
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        p {
+            font-size: 14px;
+            color: #555;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+        .btn {
+            background: #ff5722;
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 4px 10px rgba(255,87,34,0.4);
+            transition: background 0.2s, transform 0.1s;
+        }
+        .btn:active {
+            transform: scale(0.95);
+            background: #f4511e;
+        }
+        /* フィードバックポップアップ */
+        #feedback-banner {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0.5);
+            font-size: 32px;
+            font-weight: bold;
+            padding: 15px 30px;
+            border-radius: 12px;
+            z-index: 20;
+            opacity: 0;
+            pointer-events: none;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+        #feedback-banner.show {
+            transform: translate(-50%, -50%) scale(1);
+            opacity: 1;
+        }
+        .correct-bg { background: rgba(76, 175, 80, 0.9); color: white; box-shadow: 0 4px 20px rgba(76,175,80,0.5); }
+        .wrong-bg { background: rgba(244, 67, 54, 0.9); color: white; box-shadow: 0 4px 20px rgba(244,67,54,0.5); }
+
+        /* リザルト画面詳細 */
+        .result-stats {
+            background: #f1f1f1;
+            padding: 15px;
+            border-radius: 8px;
+            width: 100%;
+            max-width: 320px;
+            margin-bottom: 20px;
+            text-align: left;
+            font-size: 14px;
+        }
+        .result-stats div {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <!-- ヘッダー -->
+    <div class="header">
+        <div>🛒 コスパ大作戦</div>
+        <div class="stats">
+            <span id="round-text">商品: 1/5</span>
+            <span id="score-text">スコア: 0円</span>
+        </div>
+    </div>
+
+    <!-- 制限時間タイマー -->
+    <div class="timer-container">
+        <div id="timer-bar" class="timer-bar"></div>
+    </div>
+
+    <!-- メインプレイ画面 -->
+    <div class="content" id="play-content">
+        <div class="prompt-box" id="prompt-box">
+            どっちがお得（コスパが良い）か選べ！
+        </div>
+
+        <div class="products-grid">
+            <!-- 商品A -->
+            <div class="product-card" id="card-left" onclick="selectChoice(0)">
+                <div>
+                    <div class="item-icon" id="icon-left">🍎</div>
+                    <div class="item-name" id="name-left">りんご</div>
+                </div>
+                <div class="item-details" id="details-left">
+                    <div class="detail-row"><span>量:</span><span id="qty-left">1個 (200g)</span></div>
+                    <div class="detail-row"><span>品質:</span><span id="qual-left">⭐⭐⭐</span></div>
+                    <div class="detail-row"><span>割引:</span><span id="disc-left">なし</span></div>
+                </div>
+                <div>
+                    <div class="item-price" id="price-left">¥150</div>
+                    <div class="unit-price" id="unit-left">（100gあたり ¥75）</div>
+                </div>
+            </div>
+
+            <div class="vs-badge">VS</div>
+
+            <!-- 商品B -->
+            <div class="product-card" id="card-right" onclick="selectChoice(1)">
+                <div>
+                    <div class="item-icon" id="icon-right">🍎</div>
+                    <div class="item-name" id="name-right">りんご大袋</div>
+                </div>
+                <div class="item-details" id="details-right">
+                    <div class="detail-row"><span>量:</span><span id="qty-right">3個 (650g)</span></div>
+                    <div class="detail-row"><span>品質:</span><span id="qual-right">⭐⭐</span></div>
+                    <div class="detail-row"><span>割引:</span><span id="disc-right">20%OFF</span></div>
+                </div>
+                <div>
+                    <div class="item-price" id="price-right">¥420</div>
+                    <div class="unit-price" id="unit-right">（100gあたり ¥64.6）</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- フィードバックバナー -->
+    <div id="feedback-banner">正解！</div>
+
+    <!-- スタート画面 -->
+    <div class="screen" id="start-screen">
+        <h1>どっちが安い？<br>コスパ大作戦</h1>
+        <p>スーパーの買い物で賢くお買い物！<br>野菜、肉、魚など全5ステージ。<br>品質や割引を加味した実質単価（100g/個あたり）を20秒以内に見極めてお得な方を選ぼう！</p>
+        <button class="btn" onclick="startGame()">買い物に行く！</button>
+    </div>
+
+    <!-- リザルト画面 -->
+    <div class="screen hidden" id="result-screen">
+        <h1 id="result-title">お買い得マスター！</h1>
+        <p id="result-desc">すべての買い物が終了しました。</p>
+        <div class="result-stats">
+            <div><span>正解数:</span> <span id="res-correct">5 / 5問</span></div>
+            <div><span>節約金額（スコア）:</span> <span id="res-score">¥1,250</span></div>
+            <div><span>評価:</span> <span id="res-rank">主婦の鏡！</span></div>
+        </div>
+        <button class="btn" onclick="startGame()">もう一度挑戦する</button>
+    </div>
+</div>
+
+<script>
+    // アイテム定義
+    const itemCategories = [
+        { name: "キャベツ", icon: "🥬", unit: "g", baseAmount: 800, pricePerUnit: 0.35 },
+        { name: "豚肉薄切り", icon: "🥩", unit: "g", baseAmount: 300, pricePerUnit: 1.8 },
+        { name: "特選牛ステーキ", icon: "🥩", unit: "g", baseAmount: 200, pricePerUnit: 4.5 },
+        { name: "サーモン刺身", icon: "🐟", unit: "g", baseAmount: 150, pricePerUnit: 3.2 },
+        { name: "トマト", icon: "🍅", unit: "個", baseAmount: 3, pricePerUnit: 70 },
+        { name: "たまご（10個入）", icon: "🥚", unit: "パック", baseAmount: 1, pricePerUnit: 250 },
+        { name: "新じゃがいも", icon: "🥔", unit: "g", baseAmount: 1000, pricePerUnit: 0.25 },
+        { name: "たまねぎ", icon: "🧅", unit: "g", baseAmount: 800, pricePerUnit: 0.3 },
+        { name: "鶏もも肉", icon: "🍗", unit: "g", baseAmount: 400, pricePerUnit: 1.2 },
+        { name: "ほうれん草", icon: "🌿", unit: "束", baseAmount: 1, pricePerUnit: 150 }
+    ];
+
+    let currentRound = 0;
+    const maxRounds = 5;
+    let score = 0;
+    let correctCount = 0;
+    let currentPair = null;
+    let timerInterval = null;
+    let timeLeft = 20;
+    const timeLimit = 20; // 20秒
+    let isAnswered = false;
+
+    function startGame() {
+        currentRound = 0;
+        score = 0;
+        correctCount = 0;
+        document.getElementById('start-screen').classList.add('hidden');
+        document.getElementById('result-screen').classList.add('hidden');
+        nextRound();
+    }
+
+    function nextRound() {
+        if (currentRound >= maxRounds) {
+            showResult();
+            return;
+        }
+        currentRound++;
+        isAnswered = false;
+        document.getElementById('round-text').innerText = `商品: ${currentRound}/${maxRounds}`;
+        document.getElementById('score-text').innerText = `節約: ¥${score}`;
+
+        // カードのスタイルリセット
+        document.getElementById('card-left').className = 'product-card';
+        document.getElementById('card-right').className = 'product-card';
+
+        currentPair = generatePair();
+        renderPair(currentPair);
+        startTimer();
+    }
+
+    function generatePair() {
+        // カテゴリからランダムに選択（同じカテゴリで比較、またはランダム）
+        const cat = itemCategories[Math.floor(Math.random() * itemCategories.length)];
+        
+        // 商品Aと商品Bの生成
+        // 品質 (1~3星), 量, 割引率 (0%, 10%, 20%, 30%), 価格
+        const qualities = ["⭐", "⭐⭐", "⭐⭐⭐"];
+        const discounts = [0, 0, 10, 20, 30];
+
+        let itemA = createSingleItem(cat);
+        let itemB = createSingleItem(cat);
+
+        // 確実に片方が「コスパが良い（実質単価が安い、つまり品質・量を考慮した1単位あたりの価格が安い）」ように調整する
+        // ※品質係数: 星1=1.0, 星2=1.15, 星3=1.3 (品質が高い方が同じ価格でもコスパが良いとみなす、あるいは単純に純粋な1単位あたりの価格にするか。
+        // 今回の定義：「品質を加味した実質的にお得か」、またはシンプルに「1単位あたりの価格が安いか」。
+        // ここでは、ユーザーが「値段、品質、割引率」を考慮して得な方を選ぶため、
+        // 「実質スコア = (ベース価格 × 量 × 品質補正) / 割引」などで計算し、明確に差をつける。
+        // シンプルに： 実質単価 = (価格 / 割引後価格) / (量 * 品質ボーナス) が小さい方がお得！
+        
+        while (true) {
+            itemA = createSingleItem(cat);
+            itemB = createSingleItem(cat);
+            if (itemA.effectiveUnitPrice !== itemB.effectiveUnitPrice) {
+                break;
+            }
+        }
+
+        return { category: cat, left: itemA, right: itemB };
+    }
+
+    function createSingleItem(cat) {
+        const qualities = ["⭐", "⭐⭐", "⭐⭐⭐"];
+        const qualIdx = Math.floor(Math.random() * 3);
+        const qualityVal = qualIdx + 1; // 1, 2, 3
+
+        // 量のバリエーション
+        let amount, amountText;
+        if (cat.unit === "g") {
+            const qtys = [100, 200, 300, 400, 500, 600, 800, 1000];
+            amount = qtys[Math.floor(Math.random() * qtys.length)];
+            amountText = `${amount}g`;
+        } else if (cat.unit === "個") {
+            const qtys = [1, 2, 3, 5, 6];
+            amount = qtys[Math.floor(Math.random()	 * qtys.length)];
+            amountText = `${amount}個`;
+        } else {
+            const qtys = [1, 2, 3];
+            amount = qtys[Math.floor(Math.random() * qtys.length)];
+            amountText = `${amount}${cat.unit}`;
+        }
+
+        // 割引
+        const discOpts = [0, 0, 0, 10, 20, 30, 50];
+        const discount = discOpts[Math.floor(Math.random() * discOpts.length)];
+
+        // 基本価格
+        let rawPrice = Math.round(amount * cat.pricePerUnit * (0.8 + Math.random() * 0.4));
+        if (rawPrice < 50) rawPrice = 50;
+
+        // 割引適用価格
+        let finalPrice = Math.round(rawPrice * (1 - discount / 100));
+
+        // 品質補正を加えた「実質単価（1単位あたりの価値）」
+        // 品質が高いほど、同じ値段でも価値が高い＝実質単価が低くなる（お得）
+        // effectiveUnitPrice = finalPrice / (amount * (1 + (qualityVal - 1) * 0.15))
+        const qualityBonus = 1 + (qualityVal - 1) * 0.15;
+        const effectiveUnitPrice = finalPrice / (amount * qualityBonus);
+
+        return {
+            name: cat.name + (amount > 300 && cat.unit === 'g' ? ' 大容量パック' : (discount > 0 ? ' 特売品' : '')),
+            icon: cat.icon,
+            amountText: amountText,
+            amount: amount,
+            quality: qualities[qualIdx],
+            qualityVal: qualityVal,
+            discount: discount,
+            price: finalPrice,
+            effectiveUnitPrice: effectiveUnitPrice,
+            unitName: cat.unit === 'g' ? '100g' : (cat.unit === '個' ? '1個' : '1' + cat.unit),
+            unitPriceCalc: cat.unit === 'g' ? (finalPrice / (amount / 100)).toFixed(1) : (finalPrice / amount).toFixed(1)
+        };
+    }
+
+    function renderPair(pair) {
+        // 左
+        document.getElementById('icon-left').innerText = pair.left.icon;
+        document.getElementById('name-left').innerText = pair.left.name;
+        document.getElementById('qty-left').innerText = pair.left.amountText;
+        document.getElementById('qual-left').innerText = pair.left.quality;
+        document.getElementById('disc-left').innerText = pair.left.discount > 0 ? `${pair.left.discount}%OFF` : 'なし';
+        document.getElementById('price-left').innerText = `¥${pair.left.price}`;
+        document.getElementById('unit-left').innerText = `（${pair.left.unitName}あたり約¥${pair.left.unitPriceCalc}相当）`;
+
+        // 右
+        document.getElementById('icon-right').innerText = pair.right.icon;
+        document.getElementById('name-right').innerText = pair.right.name;
+        document.getElementById('qty-right').innerText = pair.right.amountText;
+        document.getElementById('qual-right').innerText = pair.right.quality;
+        document.getElementById('disc-right').innerText = pair.right.discount > 0 ? `${pair.right.discount}%OFF` : 'なし';
+        document.getElementById('price-right').innerText = `¥${pair.right.price}`;
+        document.getElementById('unit-right').innerText = `（${pair.right.unitName}あたり約¥${pair.right.unitPriceCalc}相当）`;
+    }
+
+    function startTimer() {
+        clearInterval(timerInterval);
+        timeLeft = timeLimit;
+        const bar = document.getElementById('timer-bar');
+        bar.style.width = '100%';
+        bar.style.backgroundColor = '#4caf50';
+
+        timerInterval = setInterval(() => {
+            timeLeft -= 0.1;
+            const percentage = (timeLeft / timeLimit) * 100;
+            bar.style.width = `${Math.max(0, percentage)}%`;
+
+            if (timeLeft <= 6) {
+                bar.style.backgroundColor = '#f44336';
+            }
+
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                timeOutChoice();
+            }
+        }, 100);
+    }
+
+    function selectChoice(choiceIndex) {
+        if (isAnswered) return;
+        isAnswered = true;
+        clearInterval(timerInterval);
+
+        const leftIsBetter = currentPair.left.effectiveUnitPrice < currentPair.right.effectiveUnitPrice;
+        const correctIndex = leftIsBetter ? 0 : 1;
+        const isCorrect = (choiceIndex === correctIndex);
+
+        if (isCorrect) {
+            correctCount++;
+            // 節約額の計算（損な方との差額をスコアに）
+            const diff = Math.abs(currentPair.left.effectiveUnitPrice - currentPair.right.effectiveUnitPrice) * Math.min(currentPair.left.amount, currentPair.right.amount);
+            const gained = Math.max(50, Math.round(diff));
+            score += gained;
+            showFeedback(true, `正解！ +¥${gained} 節約`);
+            highlightCards(correctIndex, true);
+        } else {
+            showFeedback(false, '不正解… そっちは割高！');
+            highlightCards(correctIndex, false);
+        }
+
+        setTimeout(() => {
+            nextRound();
+        }, 1500);
+    }
+
+    function timeOutChoice() {
+        if (isAnswered) return;
+        isAnswered = true;
+        
+        const leftIsBetter = currentPair.left.effectiveUnitPrice < currentPair.right.effectiveUnitPrice;
+        const correctIndex = leftIsBetter ? 0 : 1;
+
+        showFeedback(false, 'タイムアップ！');
+        highlightCards(correctIndex, false);
+
+        setTimeout(() => {
+            nextRound();
+        }, 1500);
+    }
+
+    function highlightCards(correctIndex, playerWon) {
+        const leftCard = document.getElementById('card-left');
+        const rightCard = document.getElementById('card-right');
+
+        if (correctIndex === 0) {
+            leftCard.classList.add('selected-correct');
+            rightCard.classList.add('selected-wrong');
+        } else {
+            rightCard.classList.add('selected-correct');
+            leftCard.classList.add('selected-wrong');
+        }
+    }
+
+    function showFeedback(isCorrect, text) {
+        const banner = document.getElementById('feedback-banner');
+        banner.innerText = text;
+        banner.className = `show ${isCorrect ? 'correct-bg' : 'wrong-bg'}`;
+        setTimeout(() => {
+            banner.className = '';
+        }, 1200);
+    }
+
+    function showResult() {
+        document.getElementById('result-screen').classList.remove('hidden');
+        document.getElementById('res-correct').innerText = `${correctCount} / ${maxRounds}問`;
+        document.getElementById('res-score').innerText = `¥${score.toLocaleString()}`;
+
+        let rank = "見習いハンター";
+        if (correctCount === 5) rank = "スーパーの主神（節約マスター）";
+        else if (correctCount >= 4) rank = "やりくり上手な主婦・主夫";
+        else if (correctCount >= 3) rank = "一般の買い物客";
+        else rank = "カモにされがち…";
+
+        document.getElementById('res-rank').innerText = rank;
+    }
+</script>
+
+</body>
+</html>

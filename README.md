@@ -66,3 +66,4 @@ Deno/Web games collection.
 - [53. オート麻雀観戦シミュレーター (Auto Mahjong Watcher vs AI)](./53/index.html)
 - [54. エロ画像判定ゲーム (Ero-Image Judge Game)](./54/index.html)
 - [55. ハシビロコウを撮れ！ (Shoebill Photo Challenge)](./55/index.html)
+- [56. どっちが安い？コスパ大作戦 (Which is Cheaper? Cost Performance Strategy Game)](./56/index.html)
