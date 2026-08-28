@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>逆インベーダー ～インベーダー軍団の逆襲～ (Inverse Space Invaders)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            user-select: none;
+        }
+        body {
+            background-color: #0b0b16;
+            color: #00ffcc;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+            text-align: center;
+            text-shadow: 0 0 10px #00ffcc;
+            letter-spacing: 2px;
+        }
+        .subtitle {
+            font-size: 0.8rem;
+            color: #ff3366;
+            margin-bottom: 10px;
+            text-align: center;
+        }
+        #game-container {
+            position: relative;
+            width: 480px;
+            height: 640px;
+            background: #000;
+            border: 3px solid #00ffcc;
+            box-shadow: 0 0 20px rgba(0,255,204,0.3);
+            overflow: hidden;
+        }
+        canvas {
+            display: block;
+            background: #000;
+        }
+        .ui-panel {
+            width: 480px;
+            display: flex;
+            justify-content: space-between;
+            background: #111122;
+            padding: 10px 15px;
+            border: 3px solid #00ffcc;
+            border-top: none;
+            font-size: 0.9rem;
+        }
+        .controls {
+            width: 480px;
+            margin-top: 12px;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+        .btn {
+            background: #111;
+            color: #00ffcc;
+            border: 2px solid #00ffcc;
+            padding: 12px;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.1s;
+            text-align: center;
+            box-shadow: 0 0 5px rgba(0,255,204,0.2);
+        }
+        .btn:hover:not(:disabled) {
+            background: #00ffcc;
+            color: #000;
+            box-shadow: 0 0 15px #00ffcc;
+        }
+        .btn:active:not(:disabled) {
+            transform: scale(0.96);
+        }
+        .btn:disabled {
+            border-color: #444;
+            color: #444;
+            cursor: not-allowed;
+            box-shadow: none;
+        }
+        .btn-ufo {
+            border-color: #ff3366;
+            color: #ff3366;
+        }
+        .btn-ufo:hover:not(:disabled) {
+            background: #ff3366;
+            color: #000;
+            box-shadow: 0 0 15px #ff3366;
+        }
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            text-align: center;
+            padding: 20px;
+        }
+        #overlay h2 {
+            font-size: 2rem;
+            color: #ff3366;
+            margin-bottom: 15px;
+            text-shadow: 0 0 15px #ff3366;
+        }
+        #overlay p {
+            font-size: 0.9rem;
+            line-height: 1.6;
+            margin-bottom: 20px;
+            color: #ccc;
+        }
+        .start-btn {
+            background: #00ffcc;
+            color: #000;
+            border: none;
+            padding: 12px 30px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            cursor: pointer;
+            font-family: 'Courier New', Courier, monospace;
+            box-shadow: 0 0 15px #00ffcc;
+            transition: 0.2s;
+        }
+        .start-energy {
+            font-size: 0.85rem;
+            color: #ffff33;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>逆インベーダー</h1>
+    <div class="subtitle">～ファイターを最適AIの猛攻から撃破せよ！～</div>
+
+    <div id="game-container">
+        <canvas id="gameCanvas" width="480" height="640"></canvas>
+        
+        <div id="overlay">
+            <h2 id="overlay-title">逆インベーダー</h2>
+            <p id="overlay-desc">
+                あなたはインベーダー軍団の司令官です。<br>
+                画面下部から次々とインベーダーを送り込み、<br>
+                人間が操作するような鬼回避・完璧照準の<br>
+                超高性能ファイターを撃破してください！<br><br>
+                [操作方法]<br>
+                ・インベーダー発射：ボタンを押して出撃位置を選択<br>
+                ・UFO出撃：高得点＆ビーム無効のUFOを上空に飛ばす<br>
+                ・エネルギーは時間経過で回復します。
+            </p>
+            <button class="start-btn" id="startBtn" onclick="startGame()">ゲームスタート</button>
+        </div>
+    </div>
+
+    <div class="ui-panel">
+        <div>ENERGY: <span id="energyVal" style="color:#ffff33; font-weight:bold;">100</span> / 100</div>
+        <div>WAVE: <span id="waveVal" style="color:#00ffcc; font-weight:bold;">1</span></div>
+        <div>SCORE: <span id="scoreVal" style="color:#fff; font-weight:bold;">0</span></div>
+    </div>
+
+    <div class="controls">
+        <button class="btn" id="spawnBtn" onclick="selectSpawnMode()">イカ/タコ/カニ出撃 (COST 25)</button>
+        <button class="btn btn-ufo" id="ufoBtn" onclick="spawnUFO()">UFO出撃 (COST 60)</button>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // ゲームステート
+        let gameState = 'START'; // START, PLAYING, GAMEOVER, CLEAR
+        let score = 0;
+        let energy = 100;
+        let maxEnergy = 100;
+        let wave = 1;
+        let fighterHP = 100;
+        let maxFighterHP = 100;
+
+        // エンティティ
+        let fighter = null;
+        let invaders = [];
+        let ufo = null;
+        let bullets = []; // ファイターの弾 ＆ インベーダーの弾
+        let particles = [];
+        let floatingTexts = [];
+
+        let spawnMode = false; // 出撃位置選択モード
+
+        // ファイタークラス（超高性能AI）
+        class Fighter {
+            constructor() {
+                this.x = canvas.width / 2;
+                this.y = 80;
+                this.w = 32;
+                this.h = 24;
+                this.vx = 0;
+                this.speed = 3.5;
+                this.shootCooldown = 0;
+                this.shieldTimer = 0;
+            }
+
+            update() {
+                // 最適AI：最も近いインベーダー・UFOの位置や弾道を予測して完璧に回避しつつ、狙い撃つ
+                let targetX = canvas.width / 2;
+                let nearestThreat = null;
+                let minDst = 9999;
+
+                // 脅威（インベーダーの弾、真上のインベーダー）の検出
+                let dangerX = null;
+                let closestBulletDist = 999;
+
+                for (let b of bullets) {
+                    if (b.fromFighter) continue;
+                    // 自分に向かってきている弾を最優先回避
+                    let dx = b.x - this.x;
+                    let dy = this.y - b.y;
+                    if (dy > -10 && dy < 150 && Math.abs(dx) < 40) {
+                        if (Math.abs(dx) < closestBulletDist) {
+                            closestBulletDist = Math.abs(dx);
+                            // 弾の反対側に逃げる
+                            dangerX = b.x;
+                        }
+                    }
+                }
+
+                if (dangerX !== null) {
+                    // 緊急回避行動
+                    if (this.x < dangerX) {
+                        targetX = this.x - 50;
+                    } else {
+                        targetX = this.x + 50;
+                    }
+                } else {
+                    // 最も脅威となる近いインベーダーを狙い撃つ / または中央付近でウェーブ制御
+                    for (let inv of invaders) {
+                        let dst = Math.hypot(inv.x - this.x, inv.y - this.y);
+                        if (dst < minDst) {
+                            minDst = dst;
+                            nearestThreat = inv;
+                        }
+                    }
+
+                    if (nearestThreat) {
+                        // インベーダーの少し上から撃ち下ろす位置をキープしつつ狙う
+                        targetX = nearestThreat.x;
+                    } else if (ufo) {
+                        // UFOが出たらUFOを最優先で狙う
+                        targetX = ufo.x;
+                    } else {
+                        // 敵がいない時は左右に巡回
+                        targetX = canvas.width / 2 + Math.sin(Date.now() / 500) * 100;
+                    }
+                }
+
+                // 画面外に出ないように制限
+                targetX = Math.max(40, Math.min(canvas.width - 40, targetX));
+
+                // 移動補間（プロ並みの滑らかかつ素早い回避）
+                if (this.x < targetX) {
+                    this.vx = this.speed;
+                    if (this.x + this.vx > targetX) this.x = targetX;
+                    else this.x += this.vx;
+                } else if (this.x > targetX) {
+                    this.vx = -this.speed;
+                    if (this.x + this.vx < targetX) this.x = targetX;
+                    else this.x += this.vx;
+                }
+
+                // 射撃処理（神エイムで直下の敵やUFOを撃つ）
+                this.shootCooldown--;
+                if (this.shootCooldown <= 0) {
+                    this.shoot();
+                    this.shootCooldown = Math.max(12, 30 - wave * 2); // ウェーブが進むと連射力アップ
+                }
+            }
+
+            shoot() {
+                // 弾を発射（ファイターは上から下へビームを撃つ）
+                bullets.push({
+                    x: this.x,
+                    y: this.y + this.h / 2,
+                    vx: 0,
+                    vy: 7,
+                    fromFighter: true,
+                    radius: 3
+                });
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                
+                // ファイター本体（自機を上下反転させた形状：宇宙戦闘機）
+                ctx.fillStyle = '#00ffcc';
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 1.5;
+
+                ctx.beginPath();
+                ctx.moveTo(0, 14);       // 機首（下向き）
+                ctx.lineTo(-16, -10);    // 左翼
+                ctx.lineTo(-6, -6);
+                ctx.lineTo(0, -10);
+                ctx.lineTo(6, -6);
+                ctx.lineTo(16, -10);     // 右翼
+                ctx.closePath();
+                ctx.fill();
+                ctx.stroke();
+
+                // コックピット窓
+                ctx.fillStyle = '#ff3366';
+                ctx.fillRect(-2, -4, 4, 6);
+
+                // バーナー炎（上向きに噴射）
+                ctx.fillStyle = '#ffff33';
+                ctx.fillRect(-4, -14, 2, 4);
+                ctx.fillRect(2, -14, 2, 4);
+
+                ctx.restore();
+            }
+        }
+
+        // インベーダークラス
+        class Invader {
+            constructor(x, y, type) {
+                this.x = x;
+                this.y = y;
+                this.type = type; // 0:イカ(小), 1:タコ(中), 2:カニ(大)
+                this.w = 28;
+                this.h = 20;
+                this.hp = type === 0 ? 1 : type === 1 ? 2 : 4;
+                this.maxHp = this.hp;
+                this.vy = -1.2 - type * 0.2; // 下から上へ進行
+                this.vx = (Math.random() - 0.5) * 1.5;
+                this.animTimer = Math.random() * 100;
+                this.shootTimer = Math.random() * 60;
+            }
+
+            update() {
+                this.y += this.vy;
+                this.x += this.vx;
+
+                // 画面端で跳ね返り
+                if (this.x < 20 || this.x > canvas.width - 20) {
+                    this.vx *= -1;
+                }
+
+                // インベーダーからの反撃弾（上向き）
+                this.shootTimer++;
+                if (this.shootTimer > 90 + Math.random() * 40) {
+                    this.shootTimer = 0;
+                    bullets.push({
+                        x: this.x,
+                        y: this.y - 10,
+                        vx: 0,
+                        vy: -4,
+                        fromFighter: false,
+                        radius: 2.5
+                    });
+                }
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.fillStyle = this.type === 0 ? '#ff3366' : this.type === 1 ? '#ff9900' : '#ffff33';
+                
+                // ドット絵風簡易描画
+                if (this.type === 0) {
+                    // イカ風
+                    ctx.fillRect(-8, -8, 16, 12);
+                    ctx.fillRect(-12, -2, 4, 8);
+                    ctx.fillRect(8, -2, 4, 8);
+                } else if (this.type === 1) {
+                    // タコ風
+                    ctx.fillRect(-10, -8, 20, 14);
+                    ctx.fillRect(-12, 2, 4, 6);
+                    ctx.fillRect(-4, 2, 3, 8);
+                    ctx.fillRect(1, 2, 3, 8);
+                    ctx.fillRect(8, 2, 4, 6);
+                } else {
+                    // カニ風
+                    ctx.fillRect(-12, -8, 24, 12);
+                    ctx.fillRect(-16, -10, 6, 4);
+                    ctx.fillRect(10, -10, 6, 4);
+                    ctx.fillRect(-10, 4, 4, 6);
+                    ctx.fillRect(6, 4, 4, 6);
+                }
+
+                // HPバー
+                if (this.hp < this.maxHp) {
+                    ctx.fillStyle = '#fff';
+                    ctx.fillRect(-12, -14, 24, 3);
+                    ctx.fillStyle = '#00ffcc';
+                    ctx.fillRect(-12, -14, (this.hp / this.maxHp) * 24, 3);
+                }
+
+                ctx.restore();
+            }
+        }
+
+        // UFOクラス（高得点・高耐久・破壊されると大量ボーナス）
+        class UFO {
+            constructor() {
+                this.x = -30;
+                this.y = 140;
+                this.w = 40;
+                this.h = 16;
+                this.vx = 2.5;
+                this.hp = 15;
+                this.maxHp = 15;
+            }
+
+            update() {
+                this.x += this.vx;
+            }
+
+            draw() {
+                ctx.save();
+                ctx.translate(this.x, this.y);
+                ctx.fillStyle = '#ff00ff';
+                ctx.strokeStyle = '#fff';
+                ctx.lineWidth = 1;
+
+                // 円盤型
+                ctx.beginPath();
+                ctx.ellipse(0, 0, 20, 8, 0, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.stroke();
+
+                // ドーム
+                ctx.fillStyle = '#00ffff';
+                ctx.beginPath();
+                ctx.arc(0, -4, 8, Math.PI, 0, false);
+                ctx.fill();
+
+                // HPバー
+                ctx.fillStyle = '#fff';
+                ctx.fillRect(-16, -14, 32, 3);
+                ctx.fillStyle = '#ff3366';
+                ctx.fillRect(-16, -14, (this.hp / this.maxHp) * 32, 3);
+
+                ctx.restore();
+            }
+        }
+
+        function startGame() {
+            document.getElementById('overlay').style.display = 'none';
+            score = 0;
+            energy = 100;
+            wave = 1;
+            fighterHP = 100;
+            maxFighterHP = 100;
+            invaders = [];
+            bullets = [];
+            particles = [];
+            ufo = null;
+            fighter = new Fighter();
+            gameState = 'PLAYING';
+            updateUI();
+        }
+
+        function selectSpawnMode() {
+            if (energy < 25) {
+                showFloatingText("エネルギー不足！", canvas.width / 2, canvas.height - 50, '#ff3366');
+                return;
+            }
+            spawnMode = true;
+            showFloatingText("出撃位置をタップ/クリックしてください", canvas.width / 2, canvas.height - 40, '#00ffcc');
+        }
+
+        function spawnUFO() {
+            if (energy < 60) {
+                showFloatingText("エネルギー不足！ (60必要)", canvas.width / 2, canvas.height - 50, '#ff3366');
+                return;
+            }
+            if (ufo) {
+                showFloatingText("すでにUFOが出撃中です！", canvas.width / 2, canvas.height - 50, '#ff3366');
+                return;
+            }
+            energy -= 60;
+            ufo = new UFO();
+            showFloatingText("UFO出撃！", canvas.width / 2, canvas.height - 50, '#ff00ff');
+            updateUI();
+        }
+
+        canvas.addEventListener('click', (e) => {
+            if (gameState !== 'PLAYING') return;
+            if (!spawnMode) return;
+
+            const rect = canvas.getBoundingClientRect();
+            const clickX = e.clientX - rect.left;
+            const clickY = e.clientY - rect.top;
+
+            // 下部エリア（y > 450）でのみ出撃可能
+            if (clickY < 450) {
+                showFloatingText("もっと下部に出撃させてください！", clickX, clickY, '#ff3366');
+                return;
+            }
+
+            // ランダムにインベーダーの種類を決定 (コスト25)
+            let type = Math.random() < 0.5 ? 0 : Math.random() < 0.8 ? 1 : 2;
+            invaders.push(new Invader(clickX, clickY, type));
+            energy -= 25;
+            spawnMode = false;
+            showFloatingText("インベーダー発進！", clickX, clickY, '#ffff33');
+            updateUI();
+        });
+
+        function showFloatingText(text, x, y, color = '#fff') {
+            floatingTexts.push({ text, x, y, alpha: 1.0, color });
+        }
+
+        function addExplosion(x, y, color = '#00ffcc', count = 15) {
+            for (let i = 0; i < count; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 4 + 1;
+                particles.push({
+                    x, y,
+                    vx: Math.cos(angle) * speed,
+                    vy: Math.sin(angle) * speed,
+                    alpha: 1.0,
+                    decay: Math.random() * 0.03 + 0.02,
+                    color
+                });
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('energyVal').innerText = Math.floor(energy);
+            document.getElementById('waveVal').innerText = wave;
+            document.getElementById('scoreVal').innerText = score;
+        }
+
+        // メインループ
+        function loop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+            // 背景の星空エフェクト
+            ctx.fillStyle = '#ffffff11';
+            for (let i = 0; i < 30; i++) {
+                let sx = (i * 37) % canvas.width;
+                let sy = (i * 73 + Date.now() * 0.05) % canvas.height;
+                ctx.fillRect(sx, sy, 1.5, 1.5);
+            }
+
+            if (gameState === 'PLAYING') {
+                // エネルギー回復
+                if (energy < maxEnergy) {
+                    energy += 0.12;
+                    if (energy > maxEnergy) energy = maxEnergy;
+                    updateUI();
+                }
+
+                // ファイター更新・描画
+                if (fighter) {
+                    fighter.update();
+                    fighter.draw();
+
+                    // ファイターのHPゲージ（上部）
+                    ctx.fillStyle = '#333';
+                    ctx.fillRect(canvas.width / 2 - 60, 15, 120, 8);
+                    ctx.fillStyle = '#ff3366';
+                    ctx.fillRect(canvas.width / 2 - 60, 15, (fighterHP / maxFighterHP) * 120, 8);
+                    ctx.strokeStyle = '#fff';
+                    ctx.strokeRect(canvas.width / 2 - 60, 15, 120, 8);
+                    
+                    ctx.fillStyle = '#fff';
+                    ctx.font = '10px Courier New';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('FIGHTER HP', canvas.width / 2, 12);
+                }
+
+                // UFO更新・描画
+                if (ufo) {
+                    ufo.update();
+                    ufo.draw();
+                    if (ufo.x > canvas.width + 40) {
+                        ufo = null; // 画面外に消えた
+                    }
+                }
+
+                // インベーダー更新・描画
+                for (let i = invaders.length - 1; i >= 0; i--) {
+                    let inv = invaders[i];
+                    inv.update();
+                    inv.draw();
+
+                    // ファイターに到達（侵略成功！）
+                    if (fighter && Math.hypot(inv.x - fighter.x, inv.y - fighter.y) < 25) {
+                        fighterHP -= 15;
+                        addExplosion(fighter.x, fighter.y, '#ff3366', 20);
+                        showFloatingText("衝突ダメージ！ -15", fighter.x, fighter.y - 20, '#ff3366');
+                        invaders.splice(i, 1);
+                        if (fighterHP <= 0) {
+                            gameState = 'CLEAR';
+                            triggerGameOver(true);
+                        }
+                        continue;
+                    }
+
+                    // 画面上部に到達して消滅
+                    if (inv.y < 40) {
+                        invaders.splice(i, 1);
+                    }
+                }
+
+                // 弾の更新・描画
+                for (let i = bullets.length - 1; i >= 0; i--) {
+                    let b = bullets[i];
+                    b.x += b.vx;
+                    b.y += b.vy;
+
+                    ctx.fillStyle = b.fromFighter ? '#00ffcc' : '#ffff33';
+                    ctx.beginPath();
+                    ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+                    ctx.fill();
+
+                    // 画面外チェック
+                    if (b.y < 0 || b.y > canvas.height || b.x < 0 || b.x > canvas.width) {
+                        bullets.splice(i, 1);
+                        continue;
+                    }
+
+                    // ファイターの弾がインベーダーに当たったか？
+                    if (b.fromFighter) {
+                        let hit = false;
+                        // UFO判定
+                        if (ufo && Math.hypot(b.x - ufo.x, b.y - ufo.y) < 22) {
+                            ufo.hp--;
+                            hit = true;
+                            addExplosion(b.x, b.y, '#ff00ff', 5);
+                            if (ufo.hp <= 0) {
+                                score += 500;
+                                addExplosion(ufo.x, ufo.y, '#ff00ff', 30);
+                                showFloatingText("+500 UFO擊破!", ufo.x, ufo.y, '#ff00ff');
+                                ufo = null;
+                            }
+                        } else {
+                            // インベーダー判定
+                            for (let j = invaders.length - 1; j >= 0; j--) {
+                                let inv = invaders[j];
+                                if (Math.abs(b.x - inv.x) < 16 && Math.abs(b.y - inv.y) < 14) {
+                                    inv.hp--;
+                                    hit = true;
+                                    addExplosion(b.x, b.y, '#ffff33', 6);
+                                    if (inv.hp <= 0) {
+                                        score += (inv.type + 1) * 100;
+                                        showFloatingText("撃墜されちゃった！", inv.x, inv.y, '#ff3366');
+                                        invaders.splice(j, 1);
+                                    }
+                                    break;
+                                }
+                            }
+                        }
+
+                        if (hit) {
+                            bullets.splice(i, 1);
+                            updateUI();
+                            continue;
+                        }
+                    } else {
+                        // インベーダーの弾がファイターに当たったか？（今回はプレイヤーが攻める側なのでファイターはインベーダーを撃つが、インベーダー側からファイターへ弾は撃たれていない、またはおまけの弾幕）
+                    }
+                }
+
+                // 出撃モード時のカーソルガイド
+                if (spawnMode) {
+                    ctx.strokeStyle = '#00ffcc55';
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([4, 4]);
+                    ctx.beginPath();
+                    ctx.moveTo(0, 450);
+                    ctx.lineTo(canvas.width, 450);
+                    ctx.stroke();
+                    ctx.setLineDash([]);
+
+                    ctx.fillStyle = '#00ffccaa';
+                    ctx.font = '12px Courier New';
+                    ctx.textAlign = 'center';
+                    ctx.fillText('▼ この下エリアをクリックしてインベーダーを出撃 ▼', canvas.width / 2, 470);
+                }
+
+                // ウェーブクリア判定（ファイターのHPが0になったらクリア）
+                if (fighterHP <= 0) {
+                    gameState = 'CLEAR';
+                    triggerGameOver(true);
+                }
+
+            }
+
+            // パーティクル描画
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.alpha -= p.decay;
+                if (p.alpha <= 0) {
+                    particles.splice(i, 1);
+                    continue;
+                }
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, 3, 3);
+                ctx.restore();
+            }
+
+            // 浮動テキスト描画
+            for (let i = floatingTexts.length - 1; i >= 0; i--) {
+                let ft = floatingTexts[i];
+                ft.y -= 0.8;
+                ft.alpha -= 0.02;
+                if (ft.alpha <= 0) {
+                    floatingTexts.splice(i, 1);
+                    continue;
+                }
+                ctx.save();
+                ctx.globalAlpha = ft.alpha;
+                ctx.fillStyle = ft.color;
+                ctx.font = 'bold 12px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText(ft.text, ft.x, ft.y);
+                ctx.restore();
+            }
+
+            requestAnimationFrame(loop);
+        }
+
+        function triggerGameOver(isClear) {
+            const overlay = document.getElementById('overlay');
+            const title = document.getElementById('overlay-title');
+            const desc = document.getElementById('overlay-desc');
+            const btn = document.getElementById('startBtn');
+
+            overlay.style.display = 'flex';
+            if (isClear) {
+                title.innerText = 'VICTORY! 侵略成功！';
+                title.style.color = '#00ffcc';
+                desc.innerHTML = `見事ファイターを撃破しました！<br>最終スコア: ${score}<br>インベーダー軍団の勝利です！`;
+                btn.innerText = '次のウェーブへ (難易度UP)';
+                btn.onclick = nextWave;
+            } else {
+                title.innerText = 'GAME OVER';
+                title.style.color = '#ff3366';
+                desc.innerHTML = `インベーダー軍団が全滅しました…<br>最終スコア: ${score}`;
+                btn.innerText = 'もう一度挑戦する';
+                btn.onclick = startGame;
+            }
+        }
+
+        function nextWave() {
+            wave++;
+            maxFighterHP += 30;
+            fighterHP = maxFighterHP;
+            energy = 100;
+            invaders = [];
+            bullets = [];
+            ufo = null;
+            fighter = new Fighter();
+            // ファイターのスピードアップ
+            fighter.speed += 0.5;
+
+            document.getElementById('overlay').style.display = 'none';
+            gameState = 'PLAYING';
+            updateUI();
+        }
+
+        // 初期描画呼び出し
+        requestAnimationFrame(loop);
+    </script>
+</body>
+</html>
