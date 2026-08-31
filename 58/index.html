@@ -31,12 +31,12 @@
             flex-direction: column;
             align-items: center;
             min-height: 100vh;
-            padding: 20px;
+            padding: 10px;
         }
 
         .container {
             width: 100%;
-            max-width: 800px;
+            max-width: 600px;
             background: var(--card-bg);
             border-radius: 16px;
             box-shadow: 0 8px 24px rgba(0,0,0,0.1);
@@ -45,38 +45,32 @@
             flex-direction: column;
         }
 
+        /* ヘルパー：日付表示のみ（タイトルなし） */
         header {
             background: linear-gradient(135deg, #FFB74D, #FF7043);
             color: white;
-            padding: 20px;
+            padding: 12px;
             text-align: center;
-            position: relative;
-        }
-
-        header h1 {
-            font-size: 1.5rem;
-            margin-bottom: 5px;
-            text-shadow: 1px 1px 2px rgba(0,0,0,0.2);
         }
 
         .date-display {
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             font-weight: bold;
-            background: rgba(255,255,255,0.2);
-            padding: 5px 15px;
+            background: rgba(255,255,255,0.25);
+            padding: 6px 20px;
             border-radius: 20px;
             display: inline-block;
-            margin-top: 5px;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.15);
         }
 
         .status-bar {
             display: flex;
             justify-content: space-around;
             background: #FFF3E0;
-            padding: 12px;
+            padding: 10px;
             border-bottom: 2px solid #FFE0B2;
             font-weight: bold;
-            font-size: 1rem;
+            font-size: 0.9rem;
         }
 
         .status-item span {
@@ -87,23 +81,17 @@
         .action-panel {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
-            gap: 12px;
-            padding: 20px;
+            gap: 10px;
+            padding: 15px;
             background: #FAFAFA;
             border-bottom: 2px solid #EEEEEE;
-        }
-
-        @media(min-width: 600px) {
-            .action-panel {
-                grid-template-columns: repeat(4, 1fr);
-            }
         }
 
         .btn-action {
             background: white;
             border: 2px solid #ccc;
             border-radius: 12px;
-            padding: 15px 10px;
+            padding: 12px 10px;
             font-size: 0.95rem;
             font-weight: bold;
             cursor: pointer;
@@ -111,7 +99,7 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            gap: 5px;
+            gap: 4px;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
         }
 
@@ -142,7 +130,7 @@
         .btn-watch:hover:not(:disabled) { background: #FFE0B2; }
 
         .btn-icon {
-            font-size: 1.5rem;
+            font-size: 1.4rem;
         }
 
         /* キャラクター＆リアクション表示エリア */
@@ -150,34 +138,28 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            padding: 20px;
+            padding: 15px;
             background: #E0F7FA;
             border-bottom: 2px solid #B2EBF2;
             position: relative;
-            min-height: 220px;
+            min-height: 180px;
             justify-content: center;
         }
 
         .child-avatar {
-            font-size: 4rem;
-            animation: bounce 1.5s infinite alternate;
-            margin-bottom: 10px;
+            font-size: 3.5rem;
+            margin-bottom: 8px;
             transition: transform 0.3s;
-        }
-
-        @keyframes bounce {
-            0% { transform: translateY(0); }
-            100% { transform: translateY(-8px); }
         }
 
         .speech-bubble {
             background: white;
             border: 2px solid #00ACC1;
             border-radius: 16px;
-            padding: 12px 20px;
+            padding: 10px 16px;
             max-width: 90%;
             text-align: center;
-            font-size: 1rem;
+            font-size: 0.95rem;
             font-weight: bold;
             position: relative;
             box-shadow: 0 4px 10px rgba(0,0,0,0.08);
@@ -194,34 +176,34 @@
             border-color: transparent transparent #00ACC1 transparent;
         }
 
-        /* 宿題進捗表示エリア（画面下部） */
+        /* 宿題進捗表示エリア（画面下部：横2列・縦3列グリッド） */
         .homework-panel {
-            padding: 20px;
+            padding: 15px;
             background: #FFF;
         }
 
         .homework-panel h2 {
-            font-size: 1.1rem;
-            margin-bottom: 15px;
+            font-size: 1rem;
+            margin-bottom: 10px;
             color: #546E7A;
             border-left: 4px solid var(--primary);
             padding-left: 8px;
         }
 
-        .homework-list {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
+        .homework-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
         }
 
         .homework-item {
             background: #F8F9FA;
             border: 1px solid #E0E0E0;
-            border-radius: 10px;
-            padding: 12px 15px;
+            border-radius: 8px;
+            padding: 8px 10px;
             display: flex;
             flex-direction: column;
-            gap: 8px;
+            gap: 5px;
         }
 
         .hw-info {
@@ -229,34 +211,33 @@
             justify-content: space-between;
             align-items: center;
             font-weight: bold;
-            font-size: 0.95rem;
+            font-size: 0.85rem;
         }
 
         .hw-name {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 4px;
         }
 
         .progress-bar-container {
             width: 100%;
             background: #E0E0E0;
-            border-radius: 8px;
-            height: 14px;
+            border-radius: 6px;
+            height: 10px;
             overflow: hidden;
-            position: relative;
         }
 
         .progress-bar {
             height: 100%;
             background: linear-gradient(90deg, #66BB6A, #43A047);
             width: 0%;
-            transition: width 0.4s ease;
-            border-radius: 8px;
+            transition: width 0.3s ease;
+            border-radius: 6px;
         }
 
         .progress-text {
-            font-size: 0.85rem;
+            font-size: 0.75rem;
             color: #78909C;
         }
 
@@ -338,13 +319,13 @@
         }
 
         .start-screen h1 {
-            font-size: 2rem;
+            font-size: 1.8rem;
             color: #E65100;
             margin-bottom: 15px;
         }
 
         .start-screen p {
-            font-size: 1.05rem;
+            font-size: 1rem;
             color: #555;
             margin-bottom: 25px;
             line-height: 1.6;
@@ -376,18 +357,18 @@
         <div class="start-screen" id="start-screen">
             <h1>📝 夏休みの宿題を終わらせよう大作戦</h1>
             <p>あなたは親となって、小学生の子どもを見守ります。<br>
-            8月31日までにすべての宿題を終わらせましょう！<br>
-            5秒で1日が過ぎます。ボタンを駆使して子どもを導こう！</p>
+            ボタンを1回押すと1日が進み、その日の行動結果が決まります。<br>
+            7月21日スタート！8月31日までにすべての宿題を完遂させよう！</p>
             <button class="btn-start" onclick="startGame()">作戦スタート！</button>
         </div>
 
+        <!-- ヘルパー：日付表示のみ -->
         <header>
-            <h1>夏休みの宿題を終わらせよう大作戦</h1>
-            <div class="date-display" id="date-display">8月 1日 (木)</div>
+            <div class="date-display" id="date-display">7月 21日 (月)</div>
         </header>
 
         <div class="status-bar">
-            <div class="status-item">残り日数: <span id="days-left">30</span>日</div>
+            <div class="status-item">残り日数: <span id="days-left">41</span>日</div>
             <div class="status-item">子どもの機嫌: <span id="child-mood">ご機嫌 ☀️</span></div>
             <div class="status-item">疲労度: <span id="child-fatigue">普通 🍵</span></div>
         </div>
@@ -415,14 +396,14 @@
         <!-- キャラクター＆リアクションステージ -->
         <div class="room-stage">
             <div class="child-avatar" id="child-avatar">👦</div>
-            <div class="speech-bubble" id="speech-bubble">「まだ夏休みは始まったばかりだし、余裕余裕〜！」</div>
+            <div class="speech-bubble" id="speech-bubble">「夏休み始まったばかりだし、まだまだ余裕だよ！」</div>
         </div>
 
-        <!-- 画面下部：宿題進捗状況 -->
+        <!-- 画面下部：宿題進捗状況（横2列・縦3列グリッド） -->
         <div class="homework-panel">
             <h2>📚 宿題の進捗状況</h2>
-            <div class="homework-list" id="homework-list">
-                <!-- 動的に生成 -->
+            <div class="homework-grid" id="homework-list">
+                <!-- 動的に生成 (全5項目) -->
             </div>
         </div>
     </div>
@@ -438,9 +419,8 @@
 
     <script>
         // ゲーム状態
-        let currentMonth = 7; // 7月スタート
-        let currentDay = 21; // 7/21スタート
-        let timer = null;
+        let currentMonth = 7;
+        let currentDay = 21;
         let isPlaying = false;
         let mood = 70; // 0 ~ 100
         let fatigue = 10; // 0 ~ 100
@@ -453,14 +433,13 @@
             { id: 'essay', name: '読書感想文', progress: 0, max: 100, unit: '%' }
         ];
 
-        const daysOfWeek = ['木', '金', '土', '日', '月', '火', '水', '木', '金', '土', '日', '月', '火', '水', '木', '金', '土', '日', '月', '火', '水', '木', '金', '土', '日', '月', '火', '水', '木', '金', '土', '日', '月', '火', '水', '木', '金', '土', '日', '月', '火'];
+        const daysOfWeek = ['月', '火', '水', '木', '金', '土', '日'];
 
         function startGame() {
             document.getElementById('start-screen').style.display = 'none';
             resetGameState();
             renderHomeworks();
             updateDisplay();
-            startTimer();
             isPlaying = true;
         }
 
@@ -479,32 +458,82 @@
             document.getElementById('result-modal').style.display = 'none';
         }
 
-        function startTimer() {
-            if (timer) clearInterval(timer);
-            // 2秒で1日経過
-            timer = setInterval(() => {
-                advanceDay();
-            }, 2000);
+        function performAction(type) {
+            if (!isPlaying) return;
+
+            const avatar = document.getElementById('child-avatar');
+            const speech = document.getElementById('speech-bubble');
+
+            let progressGained = 0;
+
+            switch(type) {
+                case 'gentle':
+                    mood = Math.min(100, mood + 8);
+                    fatigue = Math.max(0, fatigue - 4);
+                    progressGained = Math.floor(Math.random() * 5) + 3; // 3~7%
+                    progressRandomHomework(progressGained);
+                    avatar.innerText = '😊';
+                    speech.innerText = `「わかったよ、お母さん。コツコツ頑張るね (+${progressGained}%)」`;
+                    break;
+
+                case 'angry':
+                    mood = Math.max(0, mood - 20);
+                    fatigue = Math.min(100, fatigue + 12);
+                    progressGained = Math.floor(Math.random() * 8) + 6; // 6~13% (はかどるが機嫌悪化)
+                    progressRandomHomework(progressGained);
+                    avatar.innerText = '💢';
+                    speech.innerText = `「うわっ、怒った！…もー、やるからそんなに怒らないでよ！ (+${progressGained}%)」`;
+                    break;
+
+                case 'help':
+                    mood = Math.min(100, mood + 12);
+                    fatigue = Math.min(100, fatigue + 15);
+                    progressGained = Math.floor(Math.random() * 10) + 12; // 12~21% (大きく進む)
+                    progressRandomHomework(progressGained);
+                    avatar.innerText = '🤩';
+                    speech.innerText = `₂「お母さん一緒にやってくれるの！？めちゃはかどる！ (+${progressGained}%)」`;
+                    break;
+
+                case 'watch':
+                    mood = Math.min(100, mood + 3);
+                    fatigue = Math.max(0, fatigue - 5);
+                    let r = Math.random();
+                    if (r < 0.5) {
+                        progressGained = Math.floor(Math.random() * 4) + 2; // 2~5%
+                        progressRandomHomework(progressGained);
+                        avatar.innerText = '😎';
+                        speech.innerText = `「ふふん、自分のペースで結構進んだよ！ (+${progressGained}%)」`;
+                    } else {
+                        progressGained = 0;
+                        avatar.innerText = '📺';
+                        speech.innerText = `「…（漫画やテレビに夢中で、今日は全然進まなかった…）」`;
+                    }
+                    break;
+            }
+
+            // 1日経過
+            advanceDay();
+
+            renderHomeworks();
+            updateDisplay();
+
+            // 終了判定
+            if (checkAllCompleted()) {
+                endGame(true);
+            } else if (isGameOverCondition()) {
+                endGame(false);
+            }
+        }
+
+        function progressRandomHomework(amount) {
+            let unfinished = homeworks.filter(h => h.progress < 100);
+            if (unfinished.length > 0) {
+                let target = unfinished[Math.floor(Math.random() * unfinished.length)];
+                target.progress = Math.min(100, target.progress + amount);
+            }
         }
 
         function advanceDay() {
-            if (!isPlaying) return;
-
-            // 自然進行による宿題の進み具合（機嫌や疲労度に左右される）
-            let progressBonus = 0;
-            if (mood > 50 && fatigue < 80) {
-                progressBonus = Math.floor(Math.random() * 4) + 2; // 少し進む
-            } else if (mood <= 30) {
-                progressBonus = 0; // やる気なし
-            } else {
-                progressBonus = Math.floor(Math.random() * 3);
-            }
-
-            if (progressBonus > 0) {
-                progressRandomHomework(progressBonus);
-            }
-
-            // 日数・月数経過
             currentDay++;
             if (currentMonth === 7) {
                 if (currentDay > 31) {
@@ -513,111 +542,22 @@
                 }
             } else if (currentMonth === 8) {
                 if (currentDay > 31) {
-                    checkGameEnd();
-                    return;
+                    // 8/31を超えたら終了判定へ
+                    currentDay = 31;
                 }
             }
 
             // 疲労度の自然回復
-            fatigue = Math.max(0, fatigue - 5);
-
-            updateDisplay();
-            showDailyEvent();
+            fatigue = Math.max(0, fatigue - 3);
         }
 
-        function progressRandomHomework(amount) {
-            // まだ終わっていない宿題を選ぶ
-            let unfinished = homeworks.filter(h => h.progress < 100);
-            if (unfinished.length > 0) {
-                let target = unfinished[Math.floor(Math.random() * unfinished.length)];
-                target.progress = Math.min(100, target.progress + amount);
+        function isGameOverCondition() {
+            // 8月31日を過ぎて（あるいは31日で未完了の場合）
+            if (currentMonth === 8 && currentDay >= 31 && !checkAllCompleted()) {
+                // 最後のターンでまだ終わってなければ判定
+                return true;
             }
-        }
-
-        function showDailyEvent() {
-            const avatar = document.getElementById('child-avatar');
-            const speech = document.getElementById('speech-bubble');
-
-            if (currentDay >= 25 && getAverageProgress() < 80) {
-                avatar.innerText = '😭';
-                speech.innerText = `「やばい！あと${32 - currentDay}日しかないよ〜！助けてお母さん！」`;
-            } else if (mood < 30) {
-                avatar.innerText = '😡';
-                speech.innerText = `「もう勉強なんて嫌だ！ほっといてよ！」`;
-            } else if (fatigue > 70) {
-                avatar.innerText = '🥱';
-                speech.innerText = `「ねむいよ…ちょっと休憩していい？」`;
-            } else {
-                avatar.innerText = '👦';
-                const comments = [
-                    "「今日もテレビ見てもいい？」",
-                    "「アイス食べたいな〜」",
-                    "「宿題、気が向いたらやるよ…」",
-                    "「友達と遊んできてもいい？」"
-                ];
-                speech.innerText = comments[Math.floor(Math.random() * comments.length)];
-            }
-        }
-
-        function performAction(type) {
-            if (!isPlaying) return;
-
-            const avatar = document.getElementById('child-avatar');
-            const speech = document.getElementById('speech-bubble');
-
-            switch(type) {
-                case 'gentle':
-                    mood = Math.min(100, mood + 10);
-                    fatigue = Math.max(0, fatigue - 5);
-                    // 少し進む
-                    progressRandomHomework(Math.floor(Math.random() * 6) + 3);
-                    avatar.innerText = '😊';
-                    speech.innerText = "「わかったよ、お母さん。今から少しだけやるね。」";
-                    break;
-
-                case 'angry':
-                    mood = Math.max(0, mood - 25);
-                    fatigue = Math.min(100, fatigue + 15);
-                    // 怒られて焦って進むが機嫌最悪
-                    progressRandomHomework(Math.floor(Math.random() * 10) + 5);
-                    avatar.innerText = '💢';
-                    speech.innerText = "「うわっ、怒った！…もー、やるからそんなに怒らないでよ！」";
-                    break;
-
-                case 'help':
-                    mood = Math.min(100, mood + 15);
-                    fatigue = Math.min(100, fatigue + 10);
-                    // 親が手伝うので大きく進む
-                    let unfinished = homeworks.filter(h => h.progress < 100);
-                    if (unfinished.length > 0) {
-                        let target = unfinished[Math.floor(Math.random() * unfinished.length)];
-                        target.progress = Math.min(100, target.progress + 20);
-                    }
-                    avatar.innerText = '🤩';
-                    speech.innerText = "「お母さん手伝ってくれるの！？やったー！めちゃはかどる！」";
-                    break;
-
-                case 'watch':
-                    // 放置：機嫌は変わらないが、子どもがサボるか勝手にやるかランダム
-                    let r = Math.random();
-                    if (r < 0.4) {
-                        progressRandomHomework(Math.floor(Math.random() * 5) + 2);
-                        avatar.innerText = '😎';
-                        speech.innerText = "「ふふん、自分のペースで結構進んでるよ！」";
-                    } else {
-                        avatar.innerText = '📺';
-                        speech.innerText = "「…（漫画を読んだりゲームしたりして全く進んでいない）」";
-                    }
-                    break;
-            }
-
-            renderHomeworks();
-            updateDisplay();
-
-            // アクション後に全クリア判定
-            if (checkAllCompleted()) {
-                endGame(true);
-            }
+            return false;
         }
 
         function getAverageProgress() {
@@ -629,20 +569,8 @@
             return homeworks.every(h => h.progress >= 100);
         }
 
-        function checkGameEnd() {
-            isPlaying = false;
-            clearInterval(timer);
-
-            if (checkAllCompleted()) {
-                endGame(true);
-            } else {
-                endGame(false);
-            }
-        }
-
         function endGame(isSuccess) {
             isPlaying = false;
-            clearInterval(timer);
 
             const modal = document.getElementById('result-modal');
             const title = document.getElementById('modal-title');
@@ -663,7 +591,6 @@
 
         function updateDisplay() {
             // 日付表示
-            // 7/21スタート（7/21〜8/31）
             let dayIndex = 0;
             if (currentMonth === 7) {
                 dayIndex = currentDay - 21;
@@ -673,9 +600,8 @@
             let dayOfWeek = daysOfWeek[dayIndex % daysOfWeek.length];
             document.getElementById('date-display').innerText = `${currentMonth}月 ${currentDay}日 (${dayOfWeek})`;
             
-            // 残り日数計算（8月31日まで）
             let daysLeft = (currentMonth === 7) ? (31 - currentDay + 31) : (31 - currentDay);
-            document.getElementById('days-left').innerText = daysLeft;
+            document.getElementById('days-left').innerText = Math.max(0, daysLeft);
 
             // 機嫌表示
             let moodText = 'ご機嫌 ☀️';
@@ -715,7 +641,6 @@
             resetGameState();
             renderHomeworks();
             updateDisplay();
-            startTimer();
             isPlaying = true;
             document.getElementById('child-avatar').innerText = '👦';
             document.getElementById('speech-bubble').innerText = '「さあ、今年の夏休みも頑張るぞ〜！」';
