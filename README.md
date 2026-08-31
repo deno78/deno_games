@@ -68,3 +68,4 @@ Deno/Web games collection.
 - [55. ハシビロコウを撮れ！ (Shoebill Photo Challenge)](./55/index.html)
 - [56. どっちが安い？コスパ大作戦 (Which is Cheaper? Cost Performance Strategy Game)](./56/index.html)
 - [57. 逆インベーダー ～インベーダー軍団の逆襲～ (Inverse Space Invaders)](./57/index.html)
+- [58. 夏休みの宿題を終わらせよう大作戦 (Summer Homework Strategy Game)](./58/index.html)
