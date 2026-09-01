@@ -71,3 +71,4 @@ Deno/Web games collection.
 - [58. 夏休みの宿題を終わらせよう大作戦 (Summer Homework Strategy Game)](./58/index.html)
 - [59. ファミコン発売日 偶数・奇数クイズ (Famicom Release Date Even/Odd Quiz)](./59/index.html)
 - [60. レトロ震度当てゲーム ～防災の日スペシャル～ (Retro Earthquake Shindo Guess Game)](./60/index.html)
+- [61. チ。天体観測ゲーム (Chi: Celestial Observation Simulator)](./61/index.html)

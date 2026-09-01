@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>チ。天体観測ゲーム - 恒星か惑星かを見極めろ</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #050510;
+            color: #e0e0ff;
+            font-family: 'Courier New', Courier, monospace, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        #game-container {
+            width: 100%;
+            max-width: 480px;
+            height: 100vh;
+            max-height: 850px;
+            background: radial-gradient(circle at center, #0c0c24 0%, #020208 100%);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.8);
+            border: 2px solid #2a2a50;
+        }
+        header {
+            padding: 12px;
+            background: rgba(10, 10, 30, 0.9);
+            border-bottom: 1px solid #333366;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            z-index: 10;
+        }
+        .status-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .status-label {
+            font-size: 10px;
+            color: #8888bb;
+        }
+        .status-value {
+            font-weight: bold;
+            font-size: 16px;
+            color: #ffff88;
+        }
+        #sky-canvas-container {
+            flex: 1;
+            position: relative;
+            overflow: hidden;
+            background: #020206;
+            cursor: crosshair;
+        }
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+        .night-overlay {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.6);
+            padding: 6px 12px;
+            border-radius: 4px;
+            border: 1px solid #444488;
+            font-size: 13px;
+            pointer-events: none;
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .time-bar-container {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 6px;
+            background: #111122;
+        }
+        .time-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff8800, #ffff00);
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+        .controls {
+            padding: 15px;
+            background: rgba(10, 10, 25, 0.95);
+            border-top: 1px solid #333366;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 10;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        .game-btn {
+            flex: 1;
+            padding: 14px;
+            font-size: 16px;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .btn-fixed {
+            background: linear-gradient(135deg, #3366cc, #224499);
+            color: #fff;
+            border: 1px solid #5599ff;
+        }
+        .btn-fixed:hover {
+            background: linear-gradient(135deg, #4477dd, #3355aa);
+            box-shadow: 0 0 12px rgba(85, 153, 255, 0.6);
+        }
+        .btn-wandering {
+            background: linear-gradient(135deg, #cc3366, #992244);
+            color: #fff;
+            border: 1px solid #ff5599;
+        }
+        .btn-wandering:hover {
+            background: linear-gradient(135deg, #dd4477, #aa3355);
+            box-shadow: 0 0 12px rgba(255, 85, 153, 0.6);
+        }
+        .game-btn:active {
+            transform: translateY(2px);
+            box-shadow: none;
+        }
+        .game-btn:disabled {
+            background: #333344;
+            color: #666677;
+            border-color: #444455;
+            cursor: not-allowed;
+            box-shadow: none;
+            transform: none;
+        }
+        .mission-info {
+            font-size: 12px;
+            text-align: center;
+            color: #aaccff;
+            background: rgba(20, 20, 50, 0.6);
+            padding: 6px;
+            border-radius: 4px;
+            border: 1px dashed #444488;
+        }
+        /* モダール・オーバーレイ */
+        .modal {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(2, 2, 10, 0.92);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            text-align: center;
+            z-index: 100;
+        }
+        .modal h1 {
+            color: #ffcc00;
+            font-size: 26px;
+            margin-bottom: 10px;
+            text-shadow: 0 0 10px rgba(255, 204, 0, 0.5);
+        }
+        .modal h2 {
+            color: #88ffaa;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+        .modal p {
+            font-size: 14px;
+            line-height: 1.6;
+            color: #ccccff;
+            margin-bottom: 20px;
+            max-width: 380px;
+        }
+        .modal-btn {
+            background: linear-gradient(135deg, #ffaa00, #cc7700);
+            color: #000;
+            font-weight: bold;
+            padding: 12px 30px;
+            font-size: 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(255, 170, 0, 0.5);
+            font-family: inherit;
+        }
+        .modal-btn:hover {
+            background: linear-gradient(135deg, #ffbb22, #dd8800);
+            box-shadow: 0 0 20px rgba(255, 187, 34, 0.8);
+        }
+        .result-badge {
+            font-size: 24px;
+            font-weight: bold;
+            margin: 10px 0;
+        }
+        .correct { color: #55ff55; text-shadow: 0 0 10px rgba(85,255,85,0.6); }
+        .incorrect { color: #ff5555; text-shadow: 0 0 10px rgba(255,85,85,0.6); }
+        
+        .tip-box {
+            font-size: 11px;
+            color: #8888aa;
+            text-align: center;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <header>
+        <div class="status-item">
+            <span class="status-label">観測期間</span>
+            <span class="status-value" id="day-display">第 1 夜 / 7夜</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">真理探求度 (スコア)</span>
+            <span class="status-value" id="score-display">0</span>
+        </div>
+        <div class="status-item">
+            <span class="status-label">正解数</span>
+            <span class="status-value" id="correct-display">0 / 0</span>
+        </div>
+    </header>
+
+    <div id="sky-canvas-container">
+        <canvas id="skyCanvas"></canvas>
+        <div class="night-overlay">
+            <span id="time-text">時刻: 20:00</span>
+            <span id="weather-text" style="color: #88ff88;">快晴</span>
+        </div>
+        <div class="time-bar-container">
+            <div class="time-bar-fill" id="timeBarFill"></div>
+        </div>
+    </div>
+
+    <div class="controls">
+        <div class="mission-info" id="missionInfo">
+            夜空を見上げ、真ん中の北極星を中心に回転する星を観察せよ。一晩（約10秒）の動きを追え！
+        </div>
+        <div class="btn-group">
+            <button class="game-btn btn-fixed" id="btnFixed" onclick="judgeStar('fixed')">
+                恒星 (Fixed Star)<br><span style="font-size:10px; font-weight:normal;">他の星と同じ規則正しい軌跡</span>
+            </button>
+            <button class="game-btn btn-wandering" id="btnWandering" onclick="judgeStar('wandering')">
+                惑星 (Wandering Star)<br><span style="font-size:10px; font-weight:normal;">周囲の星に対して少しずつ位置を変える</span>
+            </button>
+        </div>
+        <div class="tip-box">※恒星は北極星を中心に一晩中全く同じ相対位置で回ります。惑星は独自の微小な動きをします。</div>
+    </div>
+
+    <!-- スタート画面モダール -->
+    <div id="startModal" class="modal">
+        <h1>チ。 — 天体観測の夜 —</h1>
+        <h2>地動説の証明のため、星の真理を見極めよ</h2>
+        <p>
+            プレイヤーは夜空を見上げ、一晩（約10秒）かけて東から西へ横切る星の軌跡を観測します。<br><br>
+            <b>【ルール】</b><br>
+            ・北極星を中心に北半天が回ります。<br>
+            ・<b>恒星</b>：周囲の星と完全に一体となって同じ軌跡を描く。<br>
+            ・<b>惑星</b>：周囲の星々に対して、一晩または日を追うごとに少しずつズレた動き（または逆行）をする。<br><br>
+            全7夜の観測を成功させ、真理にたどり着け！
+        </p>
+        <button class="modal-btn" onclick="startGame()">観測を開始する</button>
+    </div>
+
+    <!-- 夜の結果画面モダール -->
+    <div id="resultModal" class="modal" style="display: none;">
+        <h1 id="resultTitle">第 1 夜 観測結果</h1>
+        <div class="result-badge" id="resultBadge">正解！</div>
+        <p id="resultDesc">
+            この星は規則正しい恒星であった。あなたの観測眼は確かなものだ。
+        </p>
+        <button class="modal-btn" id="nextNightBtn" onclick="nextNight()">次の夜へ進む</button>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('skyCanvas');
+    const ctx = canvas.getContext('2d');
+
+    // キャンバスのリサイズ
+    function resizeCanvas() {
+        const container = document.getElementById('sky-canvas-container');
+        canvas.width = container.clientWidth;
+        canvas.height = container.clientHeight;
+    }
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // ゲーム状態
+    let currentDay = 1;
+    const maxDays = 7;
+    let score = 0;
+    let correctCount = 0;
+    
+    let nightTime = 0; // 0.0 ~ 1.0 (一晩)
+    const nightDuration = 10000; // 10秒
+    let nightTimer = null;
+    let isObserving = false;
+
+    // 背景の恒星データ（無数に配置）
+    let backgroundStars = [];
+    function initBackgroundStars() {
+        backgroundStars = [];
+        for (let i = 0; i < 150; i++) {
+            backgroundStars.push({
+                // 極座標ベース (中心が北極星)
+                radiusRatio: 0.1 + Math.random() * 0.85, // 中心からの距離
+                baseAngle: Math.random() * Math.PI * 2,    // 初期角度
+                size: Math.random() * 1.5 + 0.5,
+                alpha: Math.random() * 0.7 + 0.3
+            });
+        }
+    }
+    initBackgroundStars();
+
+    // その日の観測対象の星
+    let targetStar = {
+        type: 'fixed', // 'fixed' or 'wandering'
+        radiusRatio: 0.4,
+        baseAngle: 0,
+        // 惑星固有のパラメータ
+        wanderSpeed: 0, // 一晩での角度ズレ係数
+        name: ''
+    };
+
+    const wanderingNames = [
+        "赤き惑う星 (火星状)", 
+        "宵の明星 (金星状)", 
+        "黄道を進む旅人 (木星状)", 
+        "変則軌道の惑い星",
+        "逆行する微光"
+    ];
+
+    const fixedNames = [
+        "北天の定点星",
+        "白き恒久の星",
+        "変わらぬ幾何学の星",
+        "天球の釘",
+        "不変の瞬き"
+    ];
+
+    function startNight() {
+        nightTime = 0;
+        isObserving = true;
+        document.getElementById('day-displayinnerText') || (document.getElementById('day-display').innerText = `第 ${currentDay} 夜 / ${maxDays}夜`);
+        
+        // 対象の星を決める (50%の確率で恒星か惑星)
+        const isWandering = Math.random() < 0.5;
+        targetStar.type = isWandering ? 'wandering' : 'fixed';
+        targetStar.radiusRatio = 0.25 + Math.random() * 0.5;
+        targetStar.baseAngle = Math.random() * Math.PI * 2;
+        
+        if (isWandering) {
+            targetStar.wanderSpeed = (Math.random() > 0.5 ? 1 : -1) * (0.3 + Math.random() * 0.4);
+            targetStar.name = wanderingNames[Math.floor(Math.random() * wanderingNames.length)];
+        } else {
+            targetStar.wanderSpeed = 0;
+            targetStar.name = fixedNames[Math.floor(Math.random() * fixedNames.length)];
+        }
+
+        document.getElementById('missionInfo').innerText = `【第 ${currentDay} 夜】中央の北極星の周りを回る星を追え。動きに違和感はないか？`;
+        
+        // ボタン有効化
+        document.getElementById('btnFixed').disabled = false;
+        document.getElementById('btnWandering').disabled = false;
+
+        const startTime = performance.now();
+        
+        if (nightTimer) cancelAnimationFrame(nightTimer);
+
+        function updateNight(timestamp) {
+            const elapsed = timestamp - startTime;
+            nightTime = Math.min(1.0, elapsed / nightDuration);
+
+            // 時刻表示 (20:00 ~ 04:00)
+            const hours = Math.floor(20 + nightTime * 8);
+            const minutes = Math.floor((nightTime * 8 * 60) % 60);
+            const timeStr = `${hours % 24 < 10 ? '0' + (hours % 24) : hours % 24}:${minutes < 10 ? '0' + minutes : minutes}`;
+            document.getElementById('time-text').innerText = `時刻: ${timeStr}`;
+            document.getElementById('timeBarFill').style.width = `${nightTime * 100}%`;
+
+            renderSky();
+
+            if (nightTime < 1.0 && isObserving) {
+                nightTimer = requestAnimationFrame(updateNight);
+            } else if (nightTime >= 1.0 && isObserving) {
+                // 時間切れで自動的にボタンを促す or 強制終了
+                document.getElementById('missionInfo').innerText = `観測終了！この星は「恒星」か「惑星」か判定してください。`;
+            }
+        }
+
+        nightTimer = requestAnimationFrame(updateNight);
+    }
+
+    function renderSky() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        const cx = canvas.width / 2;
+        const cy = canvas.height / 2;
+        const maxDim = Math.min(cx, cy) * 0.9;
+
+        // 星座線や補助的な同心円（天球儀風）
+        ctx.strokeStyle = 'rgba(40, 40, 80, 0.4)';
+        ctx.lineWidth = 1;
+        [0.3, 0.6, 0.9].forEach(r => {
+            ctx.beginPath();
+            ctx.arc(cx, cy, maxDim * r, 0, Math.PI * 2);
+            ctx.stroke();
+        });
+
+        // 北極星 (中心に固定)
+        ctx.fillStyle = '#ffffff';
+        ctx.shadowColor = '#88ccff';
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.arc(cx, cy, 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // 北極星ラベル
+        ctx.fillStyle = '#88aaff';
+        ctx.font = '10px Courier New';
+        ctx.fillText('北極星 (Polaris)', cx + 8, cy - 8);
+
+        // 一晩の回転角 (0 ~ Math.PI * 1.2)
+        const rotationAngle = nightTime * Math.PI * 1.0;
+
+        // 背景の星を描画 (すべて同じ角速度で回転 = 恒星)
+        backgroundStars.forEach(star => {
+            const angle = star.baseAngle + rotationAngle;
+            const r = star.radiusRatio * maxDim;
+            const x = cx + Math.cos(angle) * r;
+            const y = cy + Math.sin(angle) * r;
+
+            // 画面内のみ
+            if (x >= 0 && x <= canvas.width && y >= 0 && y <= canvas.height) {
+                ctx.fillStyle = `rgba(220, 220, 255, ${star.alpha})`;
+                ctx.beginPath();
+                ctx.arc(x, y, star.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+        });
+
+        // 観測対象の星を描画
+        // 恒星なら rotationAngle と同じ。惑星なら追加の固有変位を加える
+        const targetAngle = targetStar.baseAngle + rotationAngle + (nightTime * targetStar.wanderSpeed);
+        const targetR = targetStar.radiusRatio * maxDim;
+        const tx = cx + Math.cos(targetAngle) * targetR;
+        const ty = cy + Math.sin(targetAngle) * targetR;
+
+        // ターゲット星は少し大きく、光彩を放つ
+        ctx.shadowColor = targetStar.type === 'wandering' ? '#ff5599' : '#ffff55';
+        ctx.shadowBlur = 15;
+        ctx.fillStyle = targetStar.type === 'wandering' ? '#ff88bb' : '#ffffaa';
+        ctx.beginPath();
+        ctx.arc(tx, ty, 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // ターゲット星への照準マーカー（プレイヤーに見つけやすくする）
+        ctx.strokeStyle = 'rgba(255, 255, 100, 0.6)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.arc(tx, ty, 14 + Math.sin(Date.now() / 200) * 3, 0, Math.PI * 2);
+        ctx.stroke();
+
+        // ターゲット名ラベル
+        ctx.fillStyle = '#ffffaa';
+        ctx.font = 'bold 12px Courier New';
+        ctx.fillText('★ 観測対象の星', tx + 18, ty - 5);
+    }
+
+    function judgeStar(playerChoice) {
+        if (!isObserving) return;
+        isObserving = false;
+        if (nightTimer) cancelAnimationFrame(nightTimer);
+
+        // ボタン無効化
+        document.getElementById('btnFixed').disabled = true;
+        document.getElementById('btnWandering').disabled = true;
+
+        const isCorrect = (playerChoice === targetStar.type);
+        if (isCorrect) {
+            score += 150 + currentDay * 50;
+            correctCount++;
+        }
+
+        // 結果モーダル表示
+        const modal = document.getElementById('resultModal');
+        const title = document.getElementById('resultTitle');
+        const badge = document.getElementById('resultBadge');
+        const desc = document.getElementById('resultDesc');
+        const nextBtn = document.getElementById('nextNightBtn');
+
+        title.innerText = `第 ${currentDay} 夜 観測結果`;
+        
+        if (isCorrect) {
+            badge.className = 'result-badge correct';
+            badge.innerText = '正解！ (真理に近づいた)';
+            desc.innerHTML = `お見事！この星は<b>${targetStar.type === 'wandering' ? '惑星（独自の軌跡を持つ星）' : '恒星（不動の天球に固定された星）'}</b>でした。<br>あなたの観測は正しく真理を捉えています。`;
+        } else {
+            badge.className = 'result-badge incorrect';
+            badge.innerText = '不正解…';
+            desc.innerHTML = `残念！この星は実際には<b>${targetStar.type === 'wandering' ? '惑星' : '恒星'}</b>でした。<br>周囲の星々に対する微小な相対位置のズレを見逃してしまいました。`;
+        }
+
+        if (currentDay >= maxDays) {
+            nextBtn.innerText = '最終結果を見る';
+        } else {
+            nextBtn.innerText = '次の夜へ進む';
+        }
+
+        updateStatusDisplay();
+        modal.style.display = 'flex';
+    }
+
+    function updateStatusDisplay() {
+        document.getElementById('day-display').innerText = `第 ${currentDay} 夜 / ${maxDays}夜`;
+        document.getElementById('score-display').innerText = score;
+        document.getElementById('correct-display').innerText = `${correctCount} / ${currentDay}`;
+    }
+
+    function nextNight() {
+        document.getElementById('resultModal').style.display = 'none';
+        currentDay++;
+
+        if (currentDay > maxDays) {
+            showFinalResult();
+        } else {
+            startNight();
+        }
+    }
+
+    function showFinalResult() {
+        const modal = document.getElementById('resultModal');
+        const title = document.getElementById('resultTitle');
+        const badge = document.getElementById('resultBadge');
+        const desc = document.getElementById('resultDesc');
+        const nextBtn = document.getElementById('nextNightBtn');
+
+        title.innerText = '全七夜の観測完了';
+        
+        let rankComment = '';
+        if (correctCount === 7) {
+            rankComment = '【天文学者の栄誉】すべての星の真理を見抜いた！地動説の証明はあなたの手に委ねられた！';
+        } else if (correctCount >= 5) {
+            rankComment = '【優秀な観測士】優れた眼光で多くの惑い星を看破した。素晴らしい実績だ。';
+        } else if (correctCount >= 3) {
+            rankComment = '【見習い観測者】半分ほどの真理にたどり着いた。さらなる夜空の探求が必要だ。';
+        } else {
+            rankComment = '【闇の中の迷い子】星々の動きは複雑怪奇だった…。もう一度夜空を見上げよう。';
+        }
+
+        badge.className = 'result-badge correct';
+        badge.innerText = `正解数: ${correctCount} / 7夜 (スコア: ${score})`;
+        desc.innerHTML = `${rankComment}<br><br>星は回り、真理は動く。あなたが夜空に見たものは確かな真実だった。`;
+        nextBtn.innerText = 'もう一度最初から観測する';
+        nextBtn.onclick = resetGame;
+
+        modal.style.display = 'flex';
+    }
+
+    function startGame() {
+        document.getElementById('startModal').style.display = 'none';
+        resetGameValues();
+        startNight();
+    }
+
+    function resetGameValues() {
+        currentDay = 1;
+        score = 0;
+        correctCount = 0;
+        updateStatusDisplay();
+        const nextBtn = document.getElementById('nextNightBtn');
+        nextBtn.onclick = nextNight;
+    }
+
+    function resetGame() {
+        document.getElementById('resultModal').style.display = 'none';
+        resetGameValues();
+        startNight();
+    }
+</script>
+
+</body>
+</html>
