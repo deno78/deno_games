@@ -1,0 +1,635 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Luddite: Smash or Smile - ラッダイト運動ミニゲーム</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@400;700;900&family=Playfair+Display:ital,wght@0,600;0,900;1,400&display=swap');
+
+        :root {
+            --bg-parchment: #F4ECD8;
+            --bg-parchment-dark: #EAE0C8;
+            --ink-black: #2B2B2A;
+            --accent-red: #8C2D19;
+            --accent-gold: #B8860B;
+            --accent-green: #3B5E4B;
+            --border-ink: #2B2B2A;
+            --paper-texture: repeating-linear-gradient(0deg, rgba(0,0,0,0.03), rgba(0,0,0,0.03) 1px, transparent 1px, transparent 2px);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-parchment);
+            color: var(--ink-black);
+            font-family: 'Noto Serif JP', 'Playfair Display', serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+            background-image: var(--paper-texture), radial-gradient(circle, #f9f4e6 0%, #d8ccb0 100%);
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 480px;
+            background: var(--bg-parchment-dark);
+            border: 4px double var(--ink-black);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.3), inset 0 0 40px rgba(0,0,0,0.05);
+            margin: 20px;
+            padding: 20px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        /* 画面シェイクエフェクト */
+        @keyframes shake {
+            0% { transform: translate(1px, 1px) rotate(0deg); }
+            20% { transform: translate(-3px, 0px) rotate(-1deg); }
+            40% { transform: translate(3px, 2px) rotate(1deg); }
+            60% { transform: translate(-1px, -1px) rotate(0deg); }
+            80% { transform: translate(2px, 1px) rotate(-1deg); }
+            100% { transform: translate(0px, 0px) rotate(0deg); }
+        }
+        .shake {
+            animation: shake 0.4s ease-in-out;
+        }
+
+        /* スチームエフェクト演出 */
+        @keyframes puff {
+            0% { transform: scale(0.8); opacity: 1; }
+            100% { transform: translateY(-40px) scale(1.5); opacity: 0; }
+        }
+        .steam-effect {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 3rem;
+            pointer-events: none;
+            animation: puff 0.8s ease-out forwards;
+            z-index: 100;
+        }
+
+        /* ヘッダー・活版印刷風タイトル */
+        .newspaper-header {
+            text-align: center;
+            border-bottom: 2px solid var(--ink-black);
+            padding-bottom: 8px;
+        }
+        .newspaper-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.6rem;
+            font-weight: 900;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+        }
+        .newspaper-subtitle {
+            font-size: 0.8rem;
+            font-style: italic;
+            opacity: 0.8;
+            margin-top: 2px;
+        }
+
+        /* ステータスバー */
+        .status-bar {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            background: var(--bg-parchment);
+            border: 2px solid var(--ink-black);
+            padding: 8px;
+            text-align: center;
+            font-size: 0.85rem;
+        }
+        .status-item {
+            display: flex;
+            flex-direction: column;
+            border-right: 1px dashed var(--ink-black);
+        }
+        .status-item:last-child {
+            border-right: none;
+        }
+        .status-label {
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            opacity: 0.7;
+        }
+        .status-value {
+            font-weight: 700;
+            font-size: 1.05rem;
+        }
+        .warning-text {
+            color: var(--accent-red);
+        }
+
+        /* プレイヤーステータス */
+        .player-badge {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(43, 43, 42, 0.05);
+            border: 1px solid var(--ink-black);
+            padding: 8px 12px;
+            font-size: 0.9rem;
+        }
+        .player-icon {
+            font-size: 1.8rem;
+        }
+        .player-info h3 {
+            font-size: 0.95rem;
+            margin-bottom: 2px;
+        }
+        .player-info p {
+            font-size: 0.75rem;
+            opacity: 0.8;
+        }
+
+        /* メインカード (商人・機械エリア) */
+        .merchant-card {
+            background: var(--bg-parchment);
+            border: 2px solid var(--ink-black);
+            padding: 16px;
+            position: relative;
+            min-height: 200px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            box-shadow: 3px 3px 0px rgba(43, 43, 42, 0.2);
+        }
+        .merchant-dialogue {
+            font-size: 0.9rem;
+            background: #fff;
+            border: 1px solid var(--ink-black);
+            padding: 10px;
+            margin-bottom: 12px;
+            position: relative;
+            font-style: italic;
+        }
+        .merchant-dialogue::after {
+            content: '';
+            position: absolute;
+            bottom: -8px;
+            left: 20px;
+            border-width: 8px 8px 0;
+            border-style: solid;
+            border-color: #fff transparent;
+            display: block;
+            width: 0;
+        }
+        .machine-box {
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            background: rgba(0,0,0,0.02);
+            padding: 10px;
+            border: 1px dashed var(--ink-black);
+        }
+        .machine-icon-area {
+            font-size: 2.5rem;
+            background: #e2d7be;
+            width: 60px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid var(--ink-black);
+            flex-shrink: 0;
+        }
+        .machine-details h4 {
+            font-size: 1rem;
+            margin-bottom: 4px;
+        }
+        .machine-details p {
+            font-size: 0.8rem;
+            line-height: 1.3;
+            opacity: 0.85;
+        }
+
+        /* アクションボタンエリア */
+        .action-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+        }
+        .btn {
+            font-family: 'Noto Serif JP', serif;
+            font-weight: 700;
+            padding: 14px 10px;
+            cursor: pointer;
+            border: 2px solid var(--ink-black);
+            font-size: 0.95rem;
+            text-align: center;
+            transition: all 0.1s ease;
+            box-shadow: 2px 2px 0px var(--ink-black);
+        }
+        .btn:active {
+            transform: translate(2px, 2px);
+            box-shadow: 0px 0px 0px var(--ink-black);
+        }
+        .btn-smash {
+            background-color: var(--accent-red);
+            color: #fff;
+        }
+        .btn-accept {
+            background-color: var(--accent-gold);
+            color: #fff;
+        }
+
+        /* フッター・ログ表示領域 */
+        .footer-area {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        .log-box {
+            background: rgba(0,0,0,0.05);
+            border: 1px solid var(--ink-black);
+            padding: 8px;
+            height: 65px;
+            font-size: 0.8rem;
+            overflow-y: auto;
+            font-family: monospace;
+            line-height: 1.4;
+        }
+        .culture-display {
+            text-align: right;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        /* モーダル / 画面切り替え */
+        .screen {
+            display: none;
+            flex-direction: column;
+            gap: 16px;
+        }
+        .screen.active {
+            display: flex;
+        }
+
+        .title-screen {
+            text-align: center;
+            padding: 20px 0;
+        }
+        .title-screen h1 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            font-family: 'Playfair Display', serif;
+        }
+        .title-screen p {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            margin-bottom: 20px;
+        }
+        .btn-start {
+            background: var(--ink-black);
+            color: var(--bg-parchment);
+            width: 100%;
+            padding: 14px;
+            font-size: 1.1rem;
+        }
+
+        .result-screen {
+            text-align: center;
+            padding: 10px 0;
+        }
+        .result-screen h2 {
+            font-size: 1.5rem;
+            margin-bottom: 10px;
+        }
+        .result-screen p {
+            font-size: 0.9rem;
+            line-height: 1.5;
+            margin-bottom: 15px;
+            background: rgba(0,0,0,0.03);
+            padding: 12px;
+            border: 1px dashed var(--ink-black);
+            text-align: left;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container" id="gameContainer">
+        
+        <!-- タイトル画面 -->
+        <div id="titleScreen" class="screen active title-screen">
+            <div class="newspaper-header">
+                <h1 class="newspaper-title">Luddite</h1>
+                <div class="newspaper-subtitle">Smash or Smile — 1811年 英国産業革命期</div>
+            </div>
+            <p>
+                時は19世紀初頭のイギリス。突如現れた蒸気機械や革新的な自動化技術が、職人たちの生活を脅かしている。<br><br>
+                自らの手仕事と誇りを守るためハンマーを振るうか、それとも時代の波を受け入れて新しい文明を築くか？あなたの選択が運命を決める。
+            </p>
+            <button class="btn btn-start" onclick="startGame()">▶ ゲームを開始する</button>
+        </div>
+
+        <!-- ゲームプレイ画面 -->
+        <div id="playScreen" class="screen">
+            <!-- ヘッダー -->
+            <div class="newspaper-header">
+                <div class="newspaper-title" id="yearHeader">YEAR 1811 - TURN 1 / 10</div>
+                <div class="newspaper-subtitle">THE NOTTINGHAM CHRONICLE</div>
+            </div>
+
+            <!-- ステータスバー -->
+            <div class="status-bar">
+                <div class="status-item">
+                    <span class="status-label">職の安定度 (HP)</span>
+                    <span class="status-value" id="hpValue">100</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">治安警戒度 (Wanted)</span>
+                    <span class="status-value warning-text" id="wantedValue">0</span>
+                </div>
+                <div class="status-item">
+                    <span class="status-label">文化スコア</span>
+                    <span class="status-value" id="cultureValue">0</span>
+                </div>
+            </div>
+
+            <!-- プレイヤーステータス -->
+            <div class="player-badge">
+                <div class="player-icon" id="playerIcon">🧵</div>
+                <div class="player-info">
+                    <h3 id="playerName">熟練織物職人</h3>
+                    <p id="playerDesc">手織り機で高品質な布を織る熟練工。</p>
+                </div>
+            </div>
+
+            <!-- メインカード -->
+            <div class="merchant-card" id="merchantCard">
+                <div class="merchant-dialogue" id="merchantDialogue">
+                    「旦那、これからは蒸気の時代ですぜ！この機械を導入しねえと置いてかれちまいますよ！」
+                </div>
+                <div class="machine-box">
+                    <div class="machine-icon-area" id="machineIcon">⚙️</div>
+                    <div class="machine-details">
+                        <h4 id="machineName">力織機 (Power Loom)</h4>
+                        <p id="machineDesc">蒸気機関で動く自動織機。手織りの数十倍の速度で布を織り上げる。</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- アクションボタンエリア -->
+            <div class="action-buttons">
+                <button class="btn btn-smash" onclick="actionChoice('smash')">
+                    🔨 打ち壊す<br><span style="font-size:0.75rem; opacity:0.8;">(Smash!)</span>
+                </button>
+                <button class="btn btn-accept" onclick="actionChoice('accept')">
+                    ☕ 受け入れる<br><span style="font-size:0.75rem; opacity:0.8;">(Accept)</span>
+                </button>
+            </div>
+
+            <!-- フッターログ -->
+            <div class="footer-area">
+                <div class="log-box" id="logBox">
+                    [1811年] 労働者と機械を巡る激動の時代が幕を開けた...
+                </div>
+            </div>
+        </div>
+
+        <!-- 結果画面 -->
+        <div id="resultScreen" class="screen result-screen">
+            <div class="newspaper-header">
+                <h1 class="newspaper-title" id="resultTitle">GAME OVER</h1>
+                <div class="newspaper-subtitle">THE FINAL EXTRA</div>
+            </div>
+            <div style="font-size: 3rem; margin: 10px 0;" id="resultIcon">📜</div>
+            <p id="resultDesc">ここに結末のストーリーが表示されます。</p>
+            <div style="display: flex; gap: 10px;">
+                <button class="btn btn-start" onclick="startGame()" style="flex: 1;">もう一度プレイする</button>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+        const OCCUPATIONS = {
+            weaver: { name: "織物職人", icon: "🧵", desc: "手織り機で高品質な布を織る熟練工。" },
+            carpenter: { name: "木工職人", icon: "🪓", desc: "家具や建築の木材を手作業で加工する親方。" },
+            shoemaker: { name: "革・靴職人", icon: "👞", desc: "革を鞣し、一針ずつ手縫いで靴を作る職人。" },
+            typesetter: { name: "植字工・書記", icon: "📜", desc: "活字を一文字ずつ手で並べる知識層職人。" }
+        };
+
+        const INVENTIONS = [
+            { id: 1, name: "力織機 (Power Loom)", target: "weaver", icon: "🏭", desc: "蒸気機関で動く自動織機。手織りの数十倍の速度で布を織り上げる。" },
+            { id: 2, name: "ジェニー紡績機", target: "weaver", icon: "🧶", desc: "一度に何本もの糸を同時に紡ぐ革新的マシン。" },
+            { id: 3, name: "蒸気駆動丸鋸盤", target: "carpenter", icon: "🪚", desc: "回転する大径丸鋸。丸太を瞬時に角材へ両断する。" },
+            { id: 4, name: "自動木工かんな盤", target: "carpenter", icon: "🪵", desc: "木材の表面を平滑に自動切削する蒸気機械。" },
+            { id: 5, name: "マッケイ製靴ミシン", target: "shoemaker", icon: "🥾", desc: "靴底と甲革を一瞬で縫い合わせる工業用大型ミシン。" },
+            { id: 6, name: "皮革圧延裁断機", target: "shoemaker", icon: "✂️", desc: "型抜き刃で何十枚もの革を一撃で正確に切り抜くプレス機。" },
+            { id: 7, name: "蒸気輪転印刷機", target: "typesetter", icon: "📰", desc: "シリンダーの回転により毎時数千枚の新聞を刷り出す怪物機械。" },
+            { id: 8, name: "全自動鋳造植字機", target: "typesetter", icon: "🔠", desc: "キーボード入力で活字の鋳造と組版を同時に行う装置。" },
+            // 無害・生活向上アイテム（target: null）
+            { id: 9, name: "蒸気機関車", target: null, icon: "🚂", desc: "石炭と人を大量に運ぶ鉄の馬。物流革命が起きる。" },
+            { id: 10, name: "都市ガス灯", target: null, icon: "🏮", desc: "夜の街を明るく照らすインフラ。夜道の治安が向上する。" },
+            { id: 11, name: "近代上水道ポンプ", target: null, icon: "🚰", desc: "清潔な水を街中に供給し、コレラの蔓延を防ぐ。" },
+            { id: 12, name: "密閉缶詰製法", target: null, icon: "🥫", desc: "食品を長期間保存可能にする画期的な保存技術。" }
+        ];
+
+        const MERCHANT_QUOTES = [
+            "「旦那、これからは蒸気の時代ですぜ！この機械を導入しねえと置いてかれちまいますよ！」",
+            "「効率こそ正義！手仕事なんて時代遅れの骨董品さ！」",
+            "「お上の許可も得ている最新鋭のプラントだ。文句はあるまい？」",
+            "「安く大量に作れるのだから、消費者も大喜びさ！君も乗るかい？」"
+        ];
+
+        let gameState = {
+            turn: 1,
+            maxTurns: 10,
+            hp: 100,
+            wanted: 0,
+            culture: 0,
+            occupationKey: 'weaver',
+            occupation: {},
+            currentInvention: null,
+            deck: []
+        };
+
+        function startGame() {
+            // ランダムに職業を選択
+            const keys = Object.keys(OCCUPATIONS);
+            const randomKey = keys[Math.floor(Math.random() * keys.length)];
+            
+            gameState = {
+                turn: 1,
+                maxTurns: 10,
+                hp: 100,
+                wanted: 0,
+                culture: 0,
+                occupationKey: randomKey,
+                occupation: OCCUPATIONS[randomKey],
+                currentInvention: null,
+                deck: generateDeck()
+            };
+
+            // 画面切り替え
+            document.getElementById('titleScreen').classList.remove('active');
+            document.getElementById('resultScreen').classList.remove('active');
+            document.getElementById('playScreen').classList.add('active');
+
+            updateUI();
+            nextTurn();
+        }
+
+        function generateDeck() {
+            // シャッフルされたインベントリデッキを作成 (10ターン分)
+            let shuffled = [...INVENTIONS].sort(() => Math.random() - 0.5);
+            return shuffled.slice(0, 10);
+        }
+
+        function updateUI() {
+            document.getElementById('yearHeader').innerText = `YEAR 1811 - TURN ${gameState.turn} / ${gameState.maxTurns}`;
+            document.getElementById('hpValue').innerText = gameState.hp;
+            document.getElementById('wantedValue').innerText = gameState.wanted;
+            document.getElementById('cultureValue').innerText = gameState.culture;
+
+            document.getElementById('playerIcon').innerText = gameState.occupation.icon;
+            document.getElementById('playerName').innerText = gameState.occupation.name;
+            document.getElementById('playerDesc').innerText = gameState.occupation.desc;
+        }
+
+        function nextTurn() {
+            if (gameState.turn > gameState.maxTurns || gameState.hp <= 0 || gameState.wanted >= 100) {
+                endGame();
+                return;
+            }
+
+            gameState.currentInvention = gameState.deck[gameState.turn - 1];
+            
+            // 商人のセリフ設定
+            const quote = MERCHANT_QUOTES[Math.floor(Math.random() * MERCHANT_QUOTES.length)];
+            document.getElementById('merchantDialogue').innerText = quote;
+
+            // 機械情報設定
+            document.getElementById('machineIcon').innerText = gameState.currentInvention.icon;
+            document.getElementById('machineName').innerText = gameState.currentInvention.name;
+            document.getElementById('machineDesc').innerText = gameState.currentInvention.desc;
+
+            updateUI();
+        }
+
+        function actionChoice(action) {
+            const inv = gameState.currentInvention;
+            const isThreat = (inv.target === gameState.occupationKey);
+            let logMsg = "";
+
+            const container = document.getElementById('gameContainer');
+
+            if (action === 'smash') {
+                // 画面シェイクエフェクト
+                container.classList.add('shake');
+                setTimeout(() => container.classList.remove('shake'), 400);
+
+                // クラッシュ演出エフェクト
+                showEffect('💥');
+
+                if (isThreat) {
+                    // 正解：職を脅かす機械を打ち壊した
+                    gameState.wanted += 15;
+                    logMsg = `[Turn ${gameState.turn}] 🔨 【${inv.name}】を夜陰に乗じて打ち壊した！職を守ったが、憲兵の目が光る… (Wanted +15)`;
+                } else {
+                    // ミス：無関係な機械を壊した
+                    gameState.wanted += 30;
+                    gameState.culture -= 10;
+                    logMsg = `[Turn ${gameState.turn}] 🔨 【${inv.name}】は無関係な生活利器だった！暴徒扱いされて手配度が跳ね上がった！ (Wanted +30, Culture -10)`;
+                }
+            } else {
+                // スチームパーティクル演出
+                showEffect('💨');
+
+                if (isThreat) {
+                    // ミス：職を脅かす機械を受け入れた
+                    gameState.hp -= 40;
+                    gameState.culture += 10;
+                    logMsg = `[Turn ${gameState.turn}] ☕ 【${inv.name}】を受け入れた。機械に仕事を奪われ、賃金が激減した！ (HP -40, Culture +10)`;
+                } else {
+                    // 正解：生活向上アイテムを受け入れた
+                    gameState.culture += 25;
+                    gameState.hp = Math.min(100, gameState.hp + 5);
+                    logMsg = `[Turn ${gameState.turn}] ☕ 【${inv.name}】を受け入れた。便利な世の中になり生活が向上した！ (Culture +25, HP +5)`;
+                }
+            }
+
+            // 値のクランプ
+            gameState.hp = Math.max(0, Math.min(100, gameState.hp));
+            gameState.wanted = Math.max(0, Math.min(100, gameState.wanted));
+
+            addLog(logMsg);
+            gameState.turn++;
+
+            // チェック
+            if (gameState.hp <= 0 || gameState.wanted >= 100 || gameState.turn > gameState.maxTurns) {
+                setTimeout(endGame, 600);
+            } else {
+                setTimeout(nextTurn, 600);
+            }
+        }
+
+        function showEffect(emoji) {
+            const container = document.getElementById('gameContainer');
+            const el = document.createElement('div');
+            el.className = 'steam-effect';
+            el.innerText = emoji;
+            container.appendChild(el);
+            setTimeout(() => el.remove(), 800);
+        }
+
+        function addLog(msg) {
+            const logBox = document.getElementById('logBox');
+            logBox.innerHTML += `<br>` + msg;
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function endGame() {
+            document.getElementById('playScreen').classList.remove('active');
+            document.getElementById('resultScreen').classList.add('active');
+
+            let title = "";
+            let icon = "";
+            let desc = "";
+
+            if (gameState.hp <= 0) {
+                title = "失業エンド (GAME OVER)";
+                icon = "💸";
+                desc = `【失業】<br>機械の波に呑み込まれ、あなたの仕事は完全に消滅してしまった…。スラム街へと落ちぶれたあなたは、過酷な近代労働の底辺で細々と生きるほかない。`;
+            } else if (gameState.wanted >= 100) {
+                title = "オーストラリア流刑エンド (GAME OVER)";
+                icon = "⚓";
+                desc = `【流刑】<br>次々と工場設備を破壊したあなたの罪は重く、ついに治安判事によって逮捕されてしまった。王立裁判所の下す判決は、遥か彼方の新天地・オーストラリアへの流刑であった……！`;
+            } else {
+                // 10ターン完走
+                if (gameState.wanted < 50 && gameState.hp >= 60) {
+                    title = "真・職人エンド (TRUE ARTISAN)";
+                    icon = "🏛️";
+                    desc = `【伝統を守り抜いた名匠】<br>驚異的な技量と絶妙な立ち回りで、過激な破壊に走ることもなく、かといって機械に屈することもなかった。あなたの手仕事の価値はかえって高まり、街の重鎮として歴史に名を刻むことになった！最終文化スコア: ${gameState.culture}`;
+                } else if (gameState.culture >= 150 && gameState.hp >= 40) {
+                    title = "ブルジョワ転身エンド (FACTORY BOSS)";
+                    icon = "🎩";
+                    desc = `【文明の利器を使いこなす工場長へ】<br>時代のうねりを冷静に見極め、多くの機械やインフラを受け入れたあなたは、やがて自らも工場を経営する立場に出世した！労働者から資本家への華麗なる転身を果たしたあなたに、もはや敵はいない。最終文化スコア: ${gameState.culture}`;
+                } else {
+                    title = "ギリギリ平民エンド (SURVIVOR)";
+                    icon = "🍞";
+                    desc = `【波乱の時代を生き延びた庶民】<br>ハンマーを振るい、時には諦めてお茶を飲みながら、泥臭く10年を生き抜いた。大富豪にも名匠にもなれなかったが、明日のパンはある。産業革命の荒波はまだまだ続く…。最終文化スコア: ${gameState.culture}`;
+                }
+            }
+
+            document.getElementById('resultTitle').innerText = title;
+            document.getElementById('resultIcon').innerText = icon;
+            document.getElementById('resultDesc').innerHTML = desc;
+        }
+    </script>
+</body>
+</html>
