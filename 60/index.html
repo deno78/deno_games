@@ -1,0 +1,684 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>レトロ地震・震度当てゲーム</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&family=DotGothic16&display=swap');
+
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+
+        body {
+            background-color: #121216;
+            color: #fff;
+            font-family: 'DotGothic16', monospace;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 640px;
+            background: #1e1e24;
+            border: 4px solid #4e4e5e;
+            box-shadow: 0 8px 0 #0a0a0c;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+        }
+
+        h1 {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 16px;
+            color: #ffcc00;
+            text-shadow: 2px 2px #ff3300;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        /* レトロな部屋のスクリーン */
+        .room-screen {
+            width: 100%;
+            height: 280px;
+            background: #2a2a38;
+            border: 4px solid #111;
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 20px;
+        }
+
+        .room-inner {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* 部屋の内装オブジェクト (CSS Pixel Art風) */
+        .wallpaper {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                linear-gradient(rgba(0,0,0,0.1) 50%, transparent 50%),
+                linear-gradient(90deg, rgba(0,0,0,0.1) 50%, transparent 50%);
+            background-size: 20px 20px;
+            background-color: #3b3b4f;
+        }
+
+        .floor {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 80px;
+            background-color: #5c3a21;
+            border-top: 4px solid #2b1a0f;
+            background-image: linear-gradient(90deg, #4a2e19 50%, #5c3a21 50%);
+            background-size: 40px 40px;
+        }
+
+        .window {
+            position: absolute;
+            top: 30px;
+            left: 60px;
+            width: 100px;
+            height: 110px;
+            background: #87ceeb;
+            border: 6px solid #5a3e1b;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+        .window::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 47px;
+            width: 6px; height: 100%;
+            background: #5a3e1b;
+        }
+        .window::after {
+            content: '';
+            position: absolute;
+            top: 50px; left: 0;
+            width: 100%; height: 6px;
+            background: #5a3e1b;
+        }
+
+        /* 時計 */
+        .clock {
+            position: absolute;
+            top: 25px;
+            right: 80px;
+            width: 50px;
+            height: 50px;
+            background: #fff;
+            border: 4px solid #333;
+            border-radius: 50%;
+        }
+        .clock-hand {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: 18px;
+            background: #000;
+            transform-origin: bottom center;
+            transform: translate(-50%, -100%) rotate(45deg);
+        }
+
+        /* 本棚 */
+        .bookshelf {
+            position: absolute;
+            bottom: 80px;
+            right: 40px;
+            width: 90px;
+            height: 140px;
+            background: #6b4423;
+            border: 4px solid #3d2512;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-around;
+            padding: 5px;
+        }
+        .shelf-row {
+            width: 100%;
+            height: 4px;
+            background: #3d2512;
+        }
+        .books {
+            display: flex;
+            justify-content: space-around;
+            padding: 0 4px;
+        }
+        .book {
+            width: 10px;
+            height: 35px;
+        }
+
+        /* 観葉植物 */
+        .plant {
+            position: absolute;
+            bottom: 80px;
+            left: 30px;
+            width: 40px;
+            height: 60px;
+        }
+        .pot {
+            position: absolute;
+            bottom: 0;
+            left: 5px;
+            width: 30px;
+            height: 25px;
+            background: #b55239;
+            border: 2px solid #7a3523;
+        }
+        .leaves {
+            position: absolute;
+            bottom: 25px;
+            left: -5px;
+            width: 50px;
+            height: 40px;
+            background: #2e8b57;
+            border-radius: 50% 50% 10% 10%;
+        }
+
+        /* 吊りランプ */
+        .lamp-wire {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            width: 2px;
+            height: 40px;
+            background: #333;
+            transform: translateX(-50%);
+        }
+        .lamp-shade {
+            position: absolute;
+            top: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 50px;
+            height: 25px;
+            background: #d4af37;
+            clip-path: polygon(20% 0%, 80% 0%, 100% 100%, 0% 100%);
+        }
+        .lamp-light {
+            position: absolute;
+            top: 65px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 30px;
+            height: 15px;
+            background: rgba(255, 255, 0, 0.6);
+            border-radius: 50%;
+            filter: blur(4px);
+        }
+
+        /* 震度表示・UIパネル */
+        .ui-panel {
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .status-box {
+            background: #111;
+            border: 2px solid #333;
+            padding: 10px;
+            text-align: center;
+            font-size: 18px;
+            min-height: 50px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* 選択グリッド (1〜10) */
+        .choices-grid {
+            display: grid;
+            grid-template-columns: repeat(5, 1fr);
+            gap: 8px;
+        }
+
+        .btn-choice {
+            background: #3b3b4f;
+            color: #fff;
+            border: 2px solid #6b6b8a;
+            padding: 12px 0;
+            font-family: 'DotGothic16', monospace;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.1s;
+            box-shadow: 0 4px 0 #22222e;
+        }
+
+        .btn-choice:hover:not(:disabled) {
+            background: #4e4e6e;
+            border-color: #8f8ffc;
+        }
+
+        .btn-choice:active:not(:disabled) {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #22222e;
+        }
+
+        .btn-choice:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .btn-action {
+            background: #cc2e2e;
+            color: #fff;
+            border: 2px solid #ff5c5c;
+            padding: 15px;
+            font-family: 'DotGothic16', monospace;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #7a1717;
+            width: 100%;
+            text-align: center;
+        }
+
+        .btn-action:hover {
+            background: #e03b3b;
+        }
+
+        .btn-action:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 0 #7a1717;
+        }
+
+        /* モーダル / 結果表示 */
+        .result-overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.3s;
+        }
+
+        .result-overlay.show {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .result-title {
+            font-family: 'Press Start 2P', monospace;
+            font-size: 20px;
+            margin-bottom: 15px;
+            color: #ffcc00;
+        }
+
+        .result-text {
+            font-size: 18px;
+            margin-bottom: 20px;
+            text-align: center;
+            line-height: 1.5;
+        }
+
+        .score-board {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            font-size: 14px;
+            color: #aaa;
+            margin-bottom: 10px;
+            padding: 0 5px;
+        }
+
+        /* 揺れのクラス */
+        @keyframes shake-gentle {
+            0% { transform: translate(0, 0); }
+            50% { transform: translate(-1px, 1px); }
+            100% { transform: translate(1px, 0); }
+        }
+        @keyframes shake-mild {
+            0% { transform: translate(0, 0); }
+            20% { transform: translate(-2px, 2px); }
+            40% { transform: translate(2px, -1px); }
+            60% { transform: translate(-1px, -2px); }
+            80% { transform: translate(2px, 2px); }
+            100% { transform: translate(0, 0); }
+        }
+        @keyframes shake-medium {
+            0% { transform: translate(0, 0); }
+            15% { transform: translate(-4px, 3px); }
+            30% { transform: translate(4px, -3px); }
+            45% { transform: translate(-3px, -4px); }
+            60% { transform: translate(4px, 4px); }
+            75% { transform: translate(-2px, 2px); }
+            90% { transform: translate(3px, -2px); }
+            100% { transform: translate(0, 0); }
+        }
+        @keyframes shake-strong {
+            0% { transform: translate(0, 0); }
+            10% { transform: translate(-8px, 6px); }
+            20% { transform: translate(8px, -6px); }
+            30% { transform: translate(-7px, -8px); }
+            40% { transform: translate(8px, 8px); }
+            50% { transform: translate(-6px, 4px); }
+            60% { transform: translate(7px, -5px); }
+            70% { transform: translate(-8px, 7px); }
+            80% { transform: translate(6px, -7px); }
+            90% { transform: translate(-4px, 4px); }
+            100% { transform: translate(0, 0); }
+        }
+        @keyframes shake-extreme {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            10% { transform: translate(-15px, 12px) rotate(-1deg); }
+            20% { transform: translate(15px, -12px) rotate(1deg); }
+            30% { transform: translate(-14px, -15px) rotate(-2deg); }
+            40% { transform: translate(15px, 15px) rotate(1.5deg); }
+            50% { transform: translate(-12px, 10px) rotate(-1deg); }
+            60% { transform: translate(14px, -10px) rotate(1deg); }
+            70% { transform: translate(-15px, 14px) rotate(-1.5deg); }
+            80% { transform: translate(12px, -14px) rotate(1deg); }
+            90% { transform: translate(-8px, 8px) rotate(-0.5deg); }
+            100% { transform: translate(0, 0) rotate(0deg); }
+        }
+
+        .shake-1 { animation: shake-gentle 0.4s infinite; }
+        .shake-2 { animation: shake-gentle 0.25s infinite; }
+        .shake-3 { animation: shake-mild 0.3s infinite; }
+        .shake-4 { animation: shake-mild 0.2s infinite; }
+        .shake-5 { animation: shake-medium 0.25s infinite; }
+        .shake-6 { animation: shake-medium 0.18s infinite; }
+        .shake-7 { animation: shake-strong 0.2s infinite; }
+        .shake-8 { animation: shake-strong 0.15s infinite; }
+        .shake-9 { animation: shake-extreme 0.15s infinite; }
+        .shake-10 { animation: shake-extreme 0.1s infinite; }
+
+        .info-footer {
+            margin-top: 15px;
+            font-size: 12px;
+            color: #777;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>BOUZAI-NIN: SHINDO GUESS</h1>
+        
+        <div class="score-board">
+            <span id="score-display">スコア: 0</span>
+            <span id="round-display">第 1 / 5 問</span>
+        </div>
+
+        <div class="room-screen" id="room-screen">
+            <div class="room-inner" id="room-inner">
+                <div class="wallpaper"></div>
+                <div class="floor"></div>
+                <div class="window"></div>
+                <div class="clock">
+                    <div class="clock-hand" id="clock-hand"></div>
+                </div>
+                <div class="lamp-wire"></div>
+                <div class="lamp-shade"></div>
+                <div class="lamp-light" id="lamp-light"></div>
+                
+                <div class="plant">
+                    <div class="leaves"></div>
+                    <div class="pot"></div>
+                </div>
+
+                <div class="bookshelf">
+                    <div class="shelf-row"></div>
+                    <div class="books">
+                        <div class="book" style="background:#cc3333;"></div>
+                        <div class="book" style="background:#33cc33;"></div>
+                        <div class="book" style="background:#3333cc;"></div>
+                        <div class="book" style="background:#cccc33;"></div>
+                    </div>
+                    <div class="shelf-row"></div>
+                    <div class="books">
+                        <div class="book" style="background:#cc33cc;"></div>
+                        <div class="book" style="background:#33ccff;"></div>
+                        <div class="book" style="background:#ff9933;"></div>
+                    </div>
+                    <div class="shelf-row"></div>
+                </div>
+            </div>
+
+            <!-- 結果オーバーレイ -->
+            <div class="result-overlay" id="result-overlay">
+                <div class="result-title" id="result-title">判定結果</div>
+                <div class="result-text" id="result-text">正解！ 震度は 5 でした。</div>
+                <button class="btn-action" id="next-btn" style="width: 200px; padding: 10px;">次へ進む</button>
+            </div>
+        </div>
+
+        <div class="ui-panel">
+            <div class="status-box" id="status-message">
+                「スタート」ボタンを押して地震を発生させてください。
+            </div>
+
+            <div class="choices-grid" id="choices-grid">
+                <!-- 1〜10の選択ボタン -->
+                <button class="btn-choice" data-val="1" disabled>1</button>
+                <button class="btn-choice" data-val="2" disabled>2</button>
+                <button class="btn-choice" data-val="3" disabled>3</button>
+                <button class="btn-choice" data-val="4" disabled>4</button>
+                <button class="btn-choice" data-val="5" disabled>5</button>
+                <button class="btn-choice" data-val="6" disabled>6</button>
+                <button class="btn-choice" data-val="7" disabled>7</button>
+                <button class="btn-choice" data-val="8" disabled>8</button>
+                <button class="btn-choice" data-val="9" disabled>9</button>
+                <button class="btn-choice" data-val="10" disabled>10</button>
+            </div>
+
+            <button class="btn-action" id="start-btn">地震発生 (スタート)</button>
+        </div>
+
+        <div class="info-footer">
+            防災の日特別企画：レトロスタイル震度当てトレーニング
+        </div>
+    </div>
+
+    <script>
+        const roomInner = document.getElementById('room-inner');
+        const statusMessage = document.getElementById('status-message');
+        const startBtn = document.getElementById('start-btn');
+        const choiceBtns = document.querySelectorAll('.btn-choice');
+        const resultOverlay = document.getElementById('result-overlay');
+        const resultTitle = document.getElementById('result-title');
+        const resultText = document.getElementById('result-text');
+        const nextBtn = document.getElementById('next-btn');
+        const scoreDisplay = document.getElementById('score-display');
+        const roundDisplay = document.getElementById('round-display');
+
+        let currentShindo = 1;
+        let score = 0;
+        let round = 1;
+        const maxRounds = 5;
+        let isPlaying = false;
+        let selectedShindo = null;
+
+        // 簡易効果音 (Web Audio API)
+        let audioCtx = null;
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function playSound(type) {
+            if (!audioCtx) return;
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+
+                const now = audioCtx.currentTime;
+
+                if (type === 'start') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(150, now);
+                    osc.frequency.exponentialRampToValueAtTime(40, now + 0.5);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.5);
+                    osc.start(now);
+                    osc.stop(now + 0.5);
+                } else if (type === 'click') {
+                    osc.type = 'square';
+                    osc.frequency.setValueAtTime(440, now);
+                    gain.gain.setValueAtTime(0.1, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.08);
+                    osc.start(now);
+                    osc.stop(now + 0.08);
+                } else if (type === 'correct') {
+                    osc.type = 'triangle';
+                    osc.frequency.setValueAtTime(523.25, now); // C5
+                    osc.frequency.setValueAtTime(659.25, now + 0.1); // E5
+                    osc.frequency.setValueAtTime(783.99, now + 0.2); // G5
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.4);
+                    osc.start(now);
+                    osc.stop(now + 0.4);
+                } else if (type === 'wrong') {
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(200, now);
+                    osc.frequency.setValueAtTime(120, now + 0.15);
+                    gain.gain.setValueAtTime(0.2, now);
+                    gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                    osc.start(now);
+                    osc.stop(now + 0.3);
+                }
+            } catch(e) {}
+        }
+
+        startBtn.addEventListener('click', () => {
+            initAudio();
+            startRound();
+        });
+
+        function startRound() {
+            isPlaying = true;
+            selectedShindo = null;
+            startBtn.style.display = 'none';
+            
+            // 1〜10のランダムな震度を決定
+            currentShindo = Math.floor(Math.random() * 10) + 1;
+
+            // 部屋を揺らす
+            roomInner.className = `room-inner shake-${currentShindo}`;
+            playSound('start');
+
+            statusMessage.innerHTML = "地震発生中！ 揺れを感じ取れ…<br>下のボタンから震度を選んでください。";
+
+            // 選択ボタンを有効化
+            choiceBtns.forEach(btn => {
+                btn.disabled = false;
+            });
+        }
+
+        choiceBtns.forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                if (!isPlaying) return;
+                initAudio();
+                playSound('click');
+                selectedShindo = parseInt(e.target.getAttribute('data-val'));
+                checkAnswer();
+            });
+        });
+
+        function checkAnswer() {
+            isPlaying = false;
+            // 揺れを止める
+            roomInner.className = 'room-inner';
+
+            // 選択ボタンを無効化
+            choiceBtns.forEach(btn => {
+                btn.disabled = true;
+            });
+
+            const diff = Math.abs(selectedShindo - currentShindo);
+            let roundScore = 0;
+
+            if (diff === 0) {
+                score += 100;
+                roundScore = 100;
+                playSound('correct');
+                resultTitle.style.color = "#55ff55";
+                resultTitle.textContent = "大正解！";
+                resultText.innerHTML = `あなたの予想: 震度 ${selectedShindo}<br>実際の震度: 震度 ${currentShindo}<br><span style="color:#55ff55;">+100 pt 獲得！</span>`;
+            } else if (diff === 1) {
+                score += 50;
+                roundScore = 50;
+                playSound('correct');
+                resultTitle.style.color = "#ffff55";
+                resultTitle.textContent = "おしい！";
+                resultText.innerHTML = `あなたの予想: 震度 ${selectedShindo}<br>実際の震度: 震度 ${currentShindo}<br><span style="color:#ffff55;">+50 pt 獲得！</span>`;
+            } else {
+                playSound('wrong');
+                resultTitle.style.color = "#ff5555";
+                resultTitle.textContent = "はずれ…";
+                resultText.innerHTML = `あなたの予想: 震度 ${selectedShindo}<br>実際の震度: 震度 ${currentShindo}<br><span style="color:#ff5555;">+0 pt</span>`;
+            }
+
+            scoreDisplay.textContent = `スコア: ${score}`;
+            resultOverlay.classList.add('show');
+        }
+
+        nextBtn.addEventListener('click', () => {
+            initAudio();
+            playSound('click');
+            resultOverlay.classList.remove('show');
+            round++;
+
+            if (round > maxRounds) {
+                showFinalResult();
+            } else {
+                roundDisplay.textContent = `第 ${round} / ${maxRounds} 問`;
+                statusMessage.innerHTML = "「スタート」ボタンを押して次の地震を発生させてください。";
+                startBtn.style.display = 'block';
+            }
+        });
+
+        function showFinalResult() {
+            roundDisplay.textContent = `ゲーム終了`;
+            let rank = "防災見習い";
+            if (score >= 400) rank = "防災マスター";
+            else if (score >= 250) rank = "上級震度探知機";
+            else if (score >= 100) rank = "一般市民";
+
+            resultTitle.style.color = "#ffcc00";
+            resultTitle.textContent = "訓練終了";
+            resultText.innerHTML = `全 ${maxRounds} 問終了！<br>最終スコア: <strong>${score} pt</strong><br>称号: <span style="color:#ffcc00;">${rank}</span><br><br>防災の日は日頃の備えを確認しましょう！`;
+            nextBtn.textContent = "もう一度プレイする";
+            resultOverlay.classList.add('show');
+
+            // 次回のリセット用イベントリスナーを1回限り変更
+            nextBtn.onclick = () => {
+                location.reload();
+            };
+        }
+    </script>
+</body>
+</html>
