@@ -69,3 +69,5 @@ Deno/Web games collection.
 - [56. どっちが安い？コスパ大作戦 (Which is Cheaper? Cost Performance Strategy Game)](./56/index.html)
 - [57. 逆インベーダー ～インベーダー軍団の逆襲～ (Inverse Space Invaders)](./57/index.html)
 - [58. 夏休みの宿題を終わらせよう大作戦 (Summer Homework Strategy Game)](./58/index.html)
+- [59. ファミコン発売日 偶数・奇数クイズ (Famicom Release Date Even/Odd Quiz)](./59/index.html)
+- [60. レトロ震度当てゲーム ～防災の日スペシャル～ (Retro Earthquake Shindo Guess Game)](./60/index.html)

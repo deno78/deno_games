@@ -1,0 +1,396 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ファミコン発売日 偶数・奇数クイズ</title>
+    <style>
+        :root {
+            --primary: #e60012;
+            --secondary: #ffcc00;
+            --dark: #222;
+            --light: #f7f9fc;
+        }
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e, #16213e);
+            color: #fff;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 600px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            box-sizing: border-box;
+            text-align: center;
+        }
+        h1 {
+            color: var(--secondary);
+            margin-top: 0;
+            font-size: 1.8rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .screen {
+            display: none;
+        }
+        .screen.active {
+            display: block;
+        }
+        .btn {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 10px rgba(230, 0, 18, 0.4);
+            margin: 10px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            background: #ff1a2e;
+            box-shadow: 0 6px 15px rgba(230, 0, 18, 0.6);
+        }
+        .btn-option {
+            background: #3a506b;
+            font-size: 1.3rem;
+            padding: 15px 30px;
+            width: 45%;
+            margin: 10px 2.5%;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .btn-option:hover {
+            background: #4a6fa5;
+        }
+        .btn-even {
+            background: #0077b6;
+        }
+        .btn-even:hover {
+            background: #0096c7;
+        }
+        .btn-odd {
+            background: #d90429;
+        }
+        .btn-odd:hover {
+            background: #ef233c;
+        }
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 20px;
+            font-size: 1.1rem;
+            color: #a0aec0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 10px;
+        }
+        .game-card {
+            background: rgba(0, 0, 0, 0.3);
+            border-radius: 12px;
+            padding: 30px 20px;
+            margin-bottom: 25px;
+            border: 1px solid rgba(255,255,255,0.05);
+        }
+        .game-title {
+            font-size: 1.8rem;
+            font-weight: bold;
+            color: #fff;
+            margin: 10px 0;
+            word-break: break-all;
+        }
+        .question-type {
+            font-size: 1.2rem;
+            color: var(--secondary);
+            margin-bottom: 15px;
+            font-weight: bold;
+        }
+        .options-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+        .feedback {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 15px 0;
+            min-height: 2rem;
+        }
+        .correct { color: #2ec4b6; }
+        .incorrect { color: #e71d36; }
+        .result-stats {
+            font-size: 1.2rem;
+            margin: 20px 0;
+            line-height: 1.6;
+        }
+        .ranking-table {
+            width: 100%;
+            margin-top: 20px;
+            border-collapse: collapse;
+            text-align: left;
+        }
+        .ranking-table th, .ranking-table td {
+            padding: 10px;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .ranking-table th {
+            color: var(--secondary);
+        }
+        .input-box {
+            padding: 10px;
+            font-size: 1.1rem;
+            border-radius: 6px;
+            border: 1px solid #ccc;
+            margin-right: 10px;
+            width: 60%;
+            max-width: 250px;
+        }
+        .footer-note {
+            margin-top: 20px;
+            font-size: 0.8rem;
+            color: #718096;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>ファミコン発売日 偶数・奇数クイズ</h1>
+
+    <!-- スタート画面 -->
+    <div id="screen-start" class="screen active">
+        <p style="line-height: 1.6; margin-bottom: 25px;">
+            ファミコンソフト（約1000タイトル）のデータベースからランダムに出題！<br>
+            「発売年」「発売月」「発売日」の数字が<br>
+            <strong>偶数か奇数か</strong>を当てる全10問のクイズです。
+        </p>
+        <button class="btn" onclick="startGame()">ゲームスタート</button>
+    </div>
+
+    <!-- クイズ画面 -->
+    <div id="screen-quiz" class="screen">
+        <div class="game-header">
+            <span id="question-counter">第 1 問 / 10問</span>
+            <span id="score-counter">スコア: 0</span>
+        </div>
+        <div class="game-card">
+            <div id="question-type" class="question-type">このソフトの「発売年」は偶数？ 奇数？</div>
+            <div id="game-title" class="game-title">スーパーマリオブラザーズ</div>
+        </div>
+        <div class="options-container" id="options-container">
+            <button class="btn btn-option btn-even" onclick="answer(0)">偶数 (Even)</button>
+            <button class="btn btn-option btn-odd" onclick="answer(1)">奇数 (Odd)</button>
+        </div>
+        <div id="feedback" class="feedback"></div>
+    </div>
+
+    <!-- リザルト画面 -->
+    <div id="screen-result" class="screen">
+        <h2>クイズ終了！</h2>
+        <div class="result-stats" id="final-score-text">
+            正解数: 10 / 10問正解！
+        </div>
+        <div id="name-input-container" style="margin: 20px 0;">
+            <input type="text" id="player-name" class="input-box" placeholder="あなたの名前を入力" maxlength="15">
+            <button class="btn" onclick="saveScore()">ランキングに登録</button>
+        </div>
+        <div style="margin-top: 30px;">
+            <h3>ランキング TOP 5</h3>
+            <table class="ranking-table" id="ranking-table">
+                <tr><th>順位</th><th>名前</th><th>正解数</th></tr>
+                <tr><td colspan="3" style="text-align: center; color: #718096;">まだ記録がありません</td></tr>
+            </table>
+        </div>
+        <div style="margin-top: 30px;">
+            <button class="btn" onclick="startGame()">もう一度プレイする</button>
+        </div>
+    </div>
+</div>
+
+<div class="footer-note">ファミコン発売日データ約1000件搭載</div>
+
+<script>
+    let gamesData = [];
+    let currentQuestions = [];
+    let currentIndex = 0;
+    let score = 0;
+    let currentAnswer = null; // 0: 偶数, 1: 奇数
+    let waitingNext = false;
+
+    // データ読み込み
+    async function loadData() {
+        try {
+            const res = await fetch('games.json');
+            gamesData = await res.json();
+        } catch (e) {
+            console.error('Failed to load games.json', e);
+            // フォールバックデータ
+            gamesData = [
+                { name: "スーパーマリオブラザーズ", date: "1985-09-13" },
+                { name: "ドラゴンクエスト", date: "1986-05-27" },
+                { name: "ゼルダの伝説", date: "1986-02-21" },
+                { name: "スーパーマリオブラザーズ3", date: "1988-10-23" },
+                { name: "ファイナルファンタジー", date: "1987-12-18" }
+            ];
+        }
+    }
+
+    loadData();
+
+    function showScreen(screenId) {
+        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+        document.getElementById(screenId).classList.add('active');
+    }
+
+    function startGame() {
+        if (gamesData.length === 0) {
+            alert('データを読み込み中です。少々お待ちください。');
+            return;
+        }
+
+        // 10問をランダムに抽出
+        const shuffled = [...gamesData].sort(() => 0.5 - Math.random());
+        currentQuestions = shuffled.slice(0, 10);
+        currentIndex = 0;
+        score = 0;
+
+        showScreen('screen-quiz');
+        nextQuestion();
+    }
+
+    function nextQuestion() {
+        if (currentIndex >= 10) {
+            endGame();
+            return;
+        }
+
+        waitingNext = false;
+        document.getElementById('feedback').textContent = '';
+        document.getElementById('options-container').style.pointerEvents = 'auto';
+
+        const q = currentQuestions[currentIndex];
+        document.getElementById('question-counter').textContent = `第 ${currentIndex + 1} 問 / 10問`;
+        document.getElementById('score-counter').textContent = `スコア: ${score}`;
+        document.getElementById('game-title').textContent = q.name;
+
+        // 日付をパース (YYYY-MM-DD)
+        const [yearStr, monthStr, dayStr] = q.date.split('-');
+        const year = parseInt(yearStr, 10);
+        const month = parseInt(monthStr, 10);
+        const day = parseInt(dayStr, 10);
+
+        // クイズタイプをランダムに決定 (0: 年, 1: 月, 2: 日)
+        const type = Math.floor(Math.random() * 3);
+        let targetValue, typeName;
+
+        if (type === 0) {
+            targetValue = year;
+            typeName = `このソフトの「発売年 (${year}年)」は偶数？ 奇数？`;
+        } else if (type === 1) {
+            targetValue = month;
+            typeName = `このソフトの「発売月 (${month}月)」は偶数？ 奇数？`;
+        } else {
+            targetValue = day;
+            typeName = `このソフトの「発売日 (${day}日)」は偶数？ 奇数？`;
+        }
+
+        document.getElementById('question-type').textContent = typeName;
+        currentAnswer = targetValue % 2 === 0 ? 0 : 1; // 0: 偶数, 1: 奇数
+    }
+
+    function answer(choice) {
+        if (waitingNext) return;
+        waitingNext = true;
+        document.getElementById('options-container').style.pointerEvents = 'none';
+
+        const feedbackEl = document.getElementById('feedback');
+        const q = currentQuestions[currentIndex];
+        const [y, m, d] = q.date.split('-');
+        const dateFullStr = `${y}年${parseInt(m,10)}月${parseInt(d,10)}日`;
+
+        const isCorrect = (choice === currentAnswer);
+        if (isCorrect) {
+            score++;
+            feedbackEl.textContent = `正解！ (発売日: ${dateFullStr})`;
+            feedbackEl.className = 'feedback correct';
+        } else {
+            feedbackEl.textContent = `不正解… (発売日: ${dateFullStr})`;
+            feedbackEl.className = 'feedback incorrect';
+        }
+
+        document.getElementById('score-counter').textContent = `スコア: ${score}`;
+        currentIndex++;
+
+        setTimeout(() => {
+            nextQuestion();
+        }, 1500);
+    }
+
+    function endGame() {
+        showScreen('screen-result');
+        document.getElementById('final-score-text').innerHTML = `全10問中 <strong>${score}問</strong> 正解！`;
+        document.getElementById('player-name').value = '';
+        document.getElementById('name-input-container').style.display = 'block';
+        updateRankingTable();
+    }
+
+    function saveScore() {
+        const nameInput = document.getElementById('player-name').value.trim() || '名無しさん';
+        const rankings = JSON.parse(localStorage.getItem('famicom_quiz_ranking') || '[]');
+        
+        rankings.push({ name: nameInput, score: score, date: new Date().toLocaleDateString() });
+        rankings.sort((a, b) => b.score - a.score);
+        
+        // 上位5件のみ保存
+        const top5 = rankings.slice(0, 5);
+        localStorage.setItem('famicom_quiz_ranking', JSON.stringify(top5));
+
+        document.getElementById('name-input-container').style.display = 'none';
+        updateRankingTable();
+    }
+
+    function updateRankingTable() {
+        const rankings = JSON.parse(localStorage.getItem('famicom_quiz_ranking') || '[]');
+        const table = document.getElementById('ranking-table');
+        
+        if (rankings.length === 0) {
+            table.innerHTML = `<tr><th>順位</th><th>名前</th><th>正解数</th></tr><tr><td colspan="3" style="text-align: center; color: #718096;">まだ記録がありません</td></tr>`;
+            return;
+        }
+
+        let html = `<tr><th>順位</th><th>名前</th><th>正解数</th></tr>`;
+        rankings.forEach((r, index) => {
+            html += `<tr><td>第${index + 1}位</td><td>${escapeHtml(r.name)}</td><td><strong>${r.score}</strong> / 10問</td></tr>`;
+        });
+        table.innerHTML = html;
+    }
+
+    function escapeHtml(str) {
+        return str.replace(/[&<>""']/g, function(match) {
+            const escape = {
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+                '"': '&quot;',
+                "'": '&#039;'
+            };
+            return escape[match];
+        });
+    }
+
+    // 初期化時にランキング表示
+    updateRankingTable();
+</script>
+
+</body>
+</html>
