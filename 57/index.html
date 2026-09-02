@@ -423,7 +423,8 @@
         function startGame() {
             document.getElementById('overlay').style.display = 'none';
             score = 0;
-            energy = 100;
+            energy = 150;
+            maxEnergy = 150;
             wave = 1;
             fighterHP = 100;
             maxFighterHP = 100;
@@ -466,21 +467,21 @@
             const clickX = (clientX - rect.left) * scaleX;
             const clickY = (clientY - rect.top) * scaleY;
 
-            // 下部エリア（y > 450）でのみ出撃可能
-            if (clickY < 450) {
-                showFloatingText("画面下部をタップして出撃！", clickX, clickY, '#ff3366');
+            // 下部エリア（y > 420）でのみ出撃可能
+            if (clickY < 420) {
+                showFloatingText("▼ この下のタッチエリアをタップ！ ▼", clickX, clickY, '#ff3366');
                 return;
             }
 
-            if (energy < 25) {
-                showFloatingText("エネルギー不足！ (25必要)", clickX, clickY, '#ff3366');
+            if (energy < 15) {
+                showFloatingText("エネルギー不足！ (15必要)", clickX, clickY, '#ff3366');
                 return;
             }
 
-            // ランダムにインベーダーの種類を決定 (コスト25)
+            // ランダムにインベーダーの種類を決定 (コスト15に低減してモリモリ出せるように)
             let type = Math.random() < 0.5 ? 0 : Math.random() < 0.8 ? 1 : 2;
             invaders.push(new Invader(clickX, clickY, type));
-            energy -= 25;
+            energy -= 15;
             showFloatingText("インベーダー発進！", clickX, clickY, '#ffff33');
             updateUI();
         }
@@ -652,15 +653,23 @@
                     }
                 }
 
-                // 出撃可能エリアガイドライン
-                ctx.strokeStyle = '#00ffcc33';
-                ctx.lineWidth = 1.5;
-                ctx.setLineDash([4, 4]);
+                // 出撃可能エリアガイドライン & 装飾
+                ctx.fillStyle = 'rgba(255, 51, 102, 0.08)';
+                ctx.fillRect(0, 420, canvas.width, canvas.height - 420);
+
+                ctx.strokeStyle = '#ff3366aa';
+                ctx.lineWidth = 2;
+                ctx.setLineDash([6, 4]);
                 ctx.beginPath();
-                ctx.moveTo(0, 450);
-                ctx.lineTo(canvas.width, 450);
+                ctx.moveTo(0, 420);
+                ctx.lineTo(canvas.width, 420);
                 ctx.stroke();
                 ctx.setLineDash([]);
+
+                ctx.fillStyle = '#ff3366';
+                ctx.font = 'bold 13px Courier New';
+                ctx.textAlign = 'center';
+                ctx.fillText('▼ [ TOUCH ME! ] インベーダー出撃エリア ▼', canvas.width / 2, 442);
 
                 if (fighterHP <= 0) {
                     gameState = 'CLEAR';
