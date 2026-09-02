@@ -283,7 +283,9 @@
 
         waitingNext = false;
         document.getElementById('feedback').textContent = '';
-        document.getElementById('year-grid').style.pointerEvents = 'auto';
+        const grid = document.getElementById('year-grid');
+        grid.style.pointerEvents = 'auto';
+        Array.from(grid.children).forEach(btn => btn.style.opacity = '1');
 
         const q = currentQuestions[currentIndex];
         document.getElementById('question-counter').textContent = `第 ${currentIndex + 1} 問 / 10問`;
@@ -294,13 +296,22 @@
     function answer(selectedYear) {
         if (waitingNext) return;
         waitingNext = true;
-        document.getElementById('year-grid').style.pointerEvents = 'none';
+        const grid = document.getElementById('year-grid');
+        grid.style.pointerEvents = 'none';
 
         const feedbackEl = document.getElementById('feedback');
         const q = currentQuestions[currentIndex];
         const [y, m, d] = q.date.split('-');
         const correctYear = parseInt(y, 10);
         const dateFullStr = `${correctYear}年${parseInt(m,10)}月${parseInt(d,10)}日`;
+
+        // 押されたボタン以外の不透明度を下げるなどの視覚フィードバック（またはポインターイベント制御）
+        Array.from(grid.children).forEach(btn => {
+            const btnYear = parseInt(btn.textContent, 10);
+            if (btnYear !== correctYear) {
+                btn.style.opacity = '0.4';
+            }
+        });
 
         const isCorrect = (selectedYear === correctYear);
         if (isCorrect) {
@@ -317,7 +328,7 @@
 
         setTimeout(() => {
             nextQuestion();
-        }, 1800);
+        }, 1500);
     }
 
     function endGame() {
