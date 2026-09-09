@@ -8,10 +8,12 @@
         * {
             box-sizing: border-box;
             user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
         }
         body {
             margin: 0;
-            padding: 5px;
+            padding: 4px;
             background: linear-gradient(135deg, #1e1e2f, #2a2a40);
             color: #fff;
             font-family: 'Helvetica Neue', Arial, sans-serif;
@@ -25,33 +27,32 @@
         }
         h1 {
             margin: 2px 0;
-            font-size: 1.4rem;
+            font-size: 1.2rem;
             background: linear-gradient(45deg, #ff7b7b, #ffda7b, #7bd5ff);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-shadow: 0 1px 2px rgba(0,0,0,0.3);
         }
         .subtitle {
-            font-size: 0.75rem;
+            font-size: 0.65rem;
             color: #aaa;
-            margin-bottom: 5px;
+            margin-bottom: 4px;
         }
         .main-container {
             display: flex;
-            gap: 10px;
+            gap: 8px;
             background: rgba(0, 0, 0, 0.4);
-            padding: 10px;
-            border-radius: 12px;
+            padding: 8px;
+            border-radius: 10px;
             box-shadow: 0 8px 25px rgba(0,0,0,0.5);
             border: 1px solid rgba(255,255,255,0.1);
-            max-height: calc(100vh - 65px);
         }
         .game-board-wrapper {
             position: relative;
         }
         canvas {
             background-color: #111119;
-            border: 3px solid #444;
+            border: 2px solid #444;
             border-radius: 6px;
             box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
             display: block;
@@ -60,39 +61,38 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            width: 210px;
-            max-height: 100%;
+            width: 170px;
         }
         .panel-box {
             background: rgba(255, 255, 255, 0.05);
             border: 1px solid rgba(255, 255, 255, 0.1);
             border-radius: 6px;
-            padding: 8px;
-            margin-bottom: 8px;
+            padding: 6px;
+            margin-bottom: 6px;
         }
         .panel-box h3 {
-            margin: 0 0 4px 0;
-            font-size: 0.85rem;
+            margin: 0 0 2px 0;
+            font-size: 0.75rem;
             color: #7bd5ff;
             border-bottom: 1px solid rgba(255,255,255,0.1);
             padding-bottom: 2px;
         }
         .score-val {
-            font-size: 1.2rem;
+            font-size: 1rem;
             font-weight: bold;
             color: #ffda7b;
         }
         .flag-dex {
-            max-height: 140px;
+            max-height: 110px;
             overflow-y: auto;
-            font-size: 0.75rem;
+            font-size: 0.68rem;
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 3px;
             padding-right: 2px;
         }
         .flag-dex::-webkit-scrollbar {
-            width: 4px;
+            width: 3px;
         }
         .flag-dex::-webkit-scrollbar-thumb {
             background: rgba(255,255,255,0.2);
@@ -103,7 +103,7 @@
             align-items: center;
             justify-content: space-between;
             background: rgba(0,0,0,0.3);
-            padding: 3px 6px;
+            padding: 2px 4px;
             border-radius: 3px;
         }
         .flag-colors {
@@ -111,24 +111,44 @@
             gap: 2px;
         }
         .color-dot {
-            width: 10px;
-            height: 10px;
+            width: 8px;
+            height: 8px;
             border-radius: 2px;
             border: 1px solid rgba(255,255,255,0.3);
         }
-        .controls-hint {
-            font-size: 0.7rem;
-            color: #ccc;
-            line-height: 1.3;
+        /* Touch Controller Pad */
+        .touch-pad {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 5px;
+            margin-top: 6px;
+            width: 100%;
         }
-        .controls-hint kbd {
-            background: #333;
-            border: 1px solid #555;
-            padding: 1px 4px;
-            border-radius: 3px;
-            font-family: monospace;
-            color: #ffda7b;
+        .ctrl-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            color: white;
+            padding: 10px 0;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+            text-align: center;
+            transition: background 0.1s;
+            touch-action: manipulation;
         }
+        .ctrl-btn:active {
+            background: rgba(255, 255, 255, 0.4);
+        }
+        .ctrl-btn.action-rotate {
+            background: linear-gradient(45deg, #007aff, #5ac8fa);
+            border: none;
+        }
+        .ctrl-btn.action-drop {
+            background: linear-gradient(45deg, #ff9500, #ffcc00);
+            border: none;
+        }
+
         /* Overlay messages */
         .overlay {
             position: absolute;
@@ -142,41 +162,32 @@
             z-index: 10;
         }
         .overlay h2 {
-            font-size: 1.8rem;
-            margin: 0 0 8px 0;
+            font-size: 1.6rem;
+            margin: 0 0 6px 0;
             color: #ff7b7b;
         }
         .overlay p {
             color: #ddd;
-            margin: 5px 0 15px 0;
-            font-size: 0.95rem;
+            margin: 5px 0 12px 0;
+            font-size: 0.85rem;
             text-align: center;
-            padding: 0 15px;
-            line-height: 1.4;
+            padding: 0 10px;
+            line-height: 1.3;
         }
         .btn {
             background: linear-gradient(45deg, #ff416c, #ff4b2b);
             color: white;
             border: none;
-            padding: 10px 25px;
-            font-size: 1rem;
+            padding: 10px 22px;
+            font-size: 0.95rem;
             font-weight: bold;
             border-radius: 25px;
             cursor: pointer;
             box-shadow: 0 4px 15px rgba(255, 75, 43, 0.4);
-            transition: transform 0.1s, box-shadow 0.1s;
-        }
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(255, 75, 43, 0.6);
-        }
-        .btn:active {
-            transform: translateY(1px);
         }
         .hidden {
             display: none !important;
         }
-        /* Notification popup for matched flag */
         #match-popup {
             position: absolute;
             top: 15%;
@@ -184,16 +195,15 @@
             transform: translateX(-50%) scale(0.5);
             background: rgba(255, 215, 0, 0.95);
             color: #111;
-            padding: 8px 20px;
+            padding: 6px 16px;
             border-radius: 20px;
-            font-size: 1.2rem;
+            font-size: 1.1rem;
             font-weight: bold;
             box-shadow: 0 4px 20px rgba(255,215,0,0.6);
             opacity: 0;
             pointer-events: none;
             transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             z-index: 20;
-            text-align: center;
             white-space: nowrap;
         }
         #match-popup.show {
@@ -209,27 +219,25 @@
 
     <div class="main-container">
         <div class="game-board-wrapper">
-            <!-- Compact board size for mobile screen fit -->
-            <canvas id="gameCanvas" width="240" height="480"></canvas>
-            <div id="match-popup">フランス国旗！ +1000</div>
+            <canvas id="gameCanvas" width="220" height="440"></canvas>
+            <div id="match-popup">フランス国旗！</div>
             
-            <!-- Start / Game Over overlay -->
             <div id="overlay" class="overlay">
                 <h2 id="overlay-title">国旗リス</h2>
-                <p id="overlay-desc">左右の3個ブロックを動かし、三色旗の配色を縦・横に完成させよう！<br>↑キーで順序変更、↓で高速落下。</p>
+                <p id="overlay-desc">左右の3個ブロックを動かし、三色旗の配色を縦・横に完成させよう！<br>画面下のボタンやキーボードで操作できます。</p>
                 <button id="start-btn" class="btn">ゲームスタート</button>
             </div>
         </div>
 
         <div class="side-panel">
             <div>
-                <div class="panel-box" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px;">
+                <div class="panel-box" style="display: flex; justify-content: space-between; align-items: center; padding: 4px 8px;">
                     <h3 style="margin:0; border:none;">スコア</h3>
-                    <div id="score" class="score-val" style="font-size: 1.1rem;">0</div>
+                    <div id="score" class="score-val">0</div>
                 </div>
-                <div class="panel-box" style="text-align: center; padding: 6px;">
+                <div class="panel-box" style="text-align: center; padding: 4px;">
                     <h3 style="margin-bottom: 2px;">ネクスト</h3>
-                    <canvas id="nextCanvas" width="60" height="80" style="background:#111119; border-radius:4px; display:inline-block;"></canvas>
+                    <canvas id="nextCanvas" width="50" height="70" style="background:#111119; border-radius:4px; display:inline-block;"></canvas>
                 </div>
                 <div class="panel-box">
                     <h3>国旗図鑑</h3>
@@ -238,12 +246,15 @@
                     </div>
                 </div>
             </div>
-            <div class="panel-box controls-hint">
-                <h3>操作</h3>
-                <div><kbd>←</kbd><kbd>→</kbd>:移動 <kbd>↓</kbd>:加速</div>
-                <div><kbd>↑</kbd>:順番入替 <kbd>Space</kbd>:急降下</div>
-            </div>
         </div>
+    </div>
+
+    <!-- On-screen Touch Controls -->
+    <div class="touch-pad" style="width: 220px; max-width: 95vw;">
+        <button class="ctrl-btn" id="btn-left">◀</button>
+        <button class="ctrl-btn action-rotate" id="btn-rotate">↻</button>
+        <button class="ctrl-btn action-drop" id="btn-space">⏬</button>
+        <button class="ctrl-btn" id="btn-right">▶</button>
     </div>
 
 <script>
@@ -253,7 +264,7 @@ const ctx = canvas.getContext('2d');
 const nextCanvas = document.getElementById('nextCanvas');
 const nextCtx = nextCanvas.getContext('2d');
 
-const BLOCK_SIZE = 24; // Compact size to fit mobile screen
+const BLOCK_SIZE = 22; // Compact size to fit mobile screen perfectly
 const COLS = 10;
 const ROWS = 20;
 
@@ -267,10 +278,8 @@ const COLORS = {
     G: { code: '#34c759', name: '緑' }
 };
 
-// Color list for random generation (Red, Blue, White, Black, Yellow, Green)
 const COLOR_KEYS = ['R', 'B', 'W', 'K', 'Y', 'G'];
 
-// Flag definitions
 const FLAGS = [
     { name: 'フランス国旗', pattern: ['B', 'W', 'R'], type: 'H', desc: '青・白・赤 (縦)' },
     { name: 'ドイツ国旗', pattern: ['K', 'R', 'Y'], type: 'V', desc: '黒・赤・黄 (横)' },
@@ -288,17 +297,15 @@ const FLAGS = [
     { name: 'ブルガリア国旗', pattern: ['W', 'G', 'R'], type: 'V', desc: '白・緑・赤 (横)' }
 ];
 
-// Game State
 let board = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
 let score = 0;
 let gameOver = false;
 let gameStarted = false;
 let dropCounter = 0;
-let dropInterval = 800; // ms
+let dropInterval = 800;
 let lastTime = 0;
 let foundFlagsSet = new Set();
 
-// Current falling piece (Column of 3 blocks)
 let currentPiece = {
     x: 4,
     y: 0,
@@ -338,7 +345,6 @@ function initGame() {
     };
 }
 
-// Draw block helper
 function drawBlock(context, x, y, colorKey, size = BLOCK_SIZE) {
     const color = COLORS[colorKey];
     if (!color) return;
@@ -346,7 +352,6 @@ function drawBlock(context, x, y, colorKey, size = BLOCK_SIZE) {
     context.fillStyle = color.code;
     context.fillRect(x * size, y * size, size, size);
 
-    // 3D glossy effect
     context.fillStyle = 'rgba(255, 255, 255, 0.25)';
     context.fillRect(x * size + 2, y * size + 2, size - 4, 3);
     context.fillStyle = 'rgba(0, 0, 0, 0.2)';
@@ -357,13 +362,10 @@ function drawBlock(context, x, y, colorKey, size = BLOCK_SIZE) {
     context.strokeRect(x * size, y * size, size, size);
 }
 
-// Render game state
 function draw() {
-    // Clear main board
     ctx.fillStyle = '#111119';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Draw grid lines (subtle)
     ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
     ctx.lineWidth = 1;
     for (let r = 0; r < ROWS; r++) {
@@ -372,7 +374,6 @@ function draw() {
         }
     }
 
-    // Draw settled board blocks
     for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c < COLS; c++) {
             if (board[r][c]) {
@@ -387,7 +388,6 @@ function draw() {
         }
     }
 
-    // Draw current piece
     if (!gameOver && gameStarted) {
         for (let i = 0; i < 3; i++) {
             if (currentPiece.y + i >= 0) {
@@ -396,15 +396,14 @@ function draw() {
         }
     }
 
-    // Draw Next canvas
     nextCtx.fillStyle = '#111119';
     nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
     for (let i = 0; i < 3; i++) {
         let color = COLORS[nextPiece.blocks[i]];
         if (color) {
-            let nSize = 20;
-            let nx = (60 - nSize) / 2;
-            let ny = 10 + i * 20;
+            let nSize = 16;
+            let nx = (50 - nSize) / 2;
+            let ny = 6 + i * 18;
             nextCtx.fillStyle = color.code;
             nextCtx.fillRect(nx, ny, nSize, nSize);
             nextCtx.strokeStyle = 'rgba(0,0,0,0.4)';
@@ -456,9 +455,7 @@ function dropPiece() {
 }
 
 function hardDrop() {
-    while (dropPiece()) {
-        // loop until locked
-    }
+    while (dropPiece()) {}
 }
 
 function lockPiece() {
@@ -488,7 +485,6 @@ function checkMatches() {
     let matchedCoords = new Set();
     let matchedFlagsInfo = [];
 
-    // Vertical 3-stacks
     for (let r = 0; r <= ROWS - 3; r++) {
         for (let c = 0; c < COLS; c++) {
             let b1 = board[r][c];
@@ -510,7 +506,6 @@ function checkMatches() {
         }
     }
 
-    // Horizontal 3-rows
     for (let r = 0; r < ROWS; r++) {
         for (let c = 0; c <= COLS - 3; c++) {
             let b1 = board[r][c];
@@ -628,7 +623,6 @@ function triggerGameOver() {
     document.getElementById('overlay').classList.remove('hidden');
 }
 
-// Game Loop
 function gameLoop(time) {
     if (!gameStarted || gameOver) return;
 
@@ -645,7 +639,7 @@ function gameLoop(time) {
     requestAnimationFrame(gameLoop);
 }
 
-// Controls
+// Keyboard controls
 window.addEventListener('keydown', e => {
     if (!gameStarted || gameOver) return;
 
@@ -669,6 +663,28 @@ window.addEventListener('keydown', e => {
         draw();
         e.preventDefault();
     }
+});
+
+// Touch / Button controls
+document.getElementById('btn-left').addEventListener('click', () => {
+    if (!gameStarted || gameOver) return;
+    moveLeft();
+    draw();
+});
+document.getElementById('btn-right').addEventListener('click', () => {
+    if (!gameStarted || gameOver) return;
+    moveRight();
+    draw();
+});
+document.getElementById('btn-rotate').addEventListener('click', () => {
+    if (!gameStarted || gameOver) return;
+    rotatePiece();
+    draw();
+});
+document.getElementById('btn-space').addEventListener('click', () => {
+    if (!gameStarted || gameOver) return;
+    hardDrop();
+    draw();
 });
 
 // Start button
