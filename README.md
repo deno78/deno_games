@@ -73,3 +73,4 @@ Deno/Web games collection.
 - [60. レトロ震度当てゲーム ～防災の日スペシャル～ (Retro Earthquake Shindo Guess Game)](./60/index.html)
 - [61. チ。天体観測ゲーム (Chi: Celestial Observation Simulator)](./61/index.html)
 - [62. ラッダイト運動ミニゲーム「Luddite: Smash or Smile」 (Luddite: Smash or Smile)](./62/index.html)
+- [63. 国旗リス (Flag Columns Puzzle)](./63/index.html)

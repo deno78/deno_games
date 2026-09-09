@@ -1,0 +1,689 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>国旗リス (Flag Columns Puzzle)</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+        }
+        body {
+            margin: 0;
+            padding: 5px;
+            background: linear-gradient(135deg, #1e1e2f, #2a2a40);
+            color: #fff;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            height: 100vh;
+            max-height: 100vh;
+            overflow: hidden;
+        }
+        h1 {
+            margin: 2px 0;
+            font-size: 1.4rem;
+            background: linear-gradient(45deg, #ff7b7b, #ffda7b, #7bd5ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+        }
+        .subtitle {
+            font-size: 0.75rem;
+            color: #aaa;
+            margin-bottom: 5px;
+        }
+        .main-container {
+            display: flex;
+            gap: 10px;
+            background: rgba(0, 0, 0, 0.4);
+            padding: 10px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.5);
+            border: 1px solid rgba(255,255,255,0.1);
+            max-height: calc(100vh - 65px);
+        }
+        .game-board-wrapper {
+            position: relative;
+        }
+        canvas {
+            background-color: #111119;
+            border: 3px solid #444;
+            border-radius: 6px;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.8);
+            display: block;
+        }
+        .side-panel {
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            width: 210px;
+            max-height: 100%;
+        }
+        .panel-box {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 6px;
+            padding: 8px;
+            margin-bottom: 8px;
+        }
+        .panel-box h3 {
+            margin: 0 0 4px 0;
+            font-size: 0.85rem;
+            color: #7bd5ff;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+            padding-bottom: 2px;
+        }
+        .score-val {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: #ffda7b;
+        }
+        .flag-dex {
+            max-height: 140px;
+            overflow-y: auto;
+            font-size: 0.75rem;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            padding-right: 2px;
+        }
+        .flag-dex::-webkit-scrollbar {
+            width: 4px;
+        }
+        .flag-dex::-webkit-scrollbar-thumb {
+            background: rgba(255,255,255,0.2);
+            border-radius: 2px;
+        }
+        .flag-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            background: rgba(0,0,0,0.3);
+            padding: 3px 6px;
+            border-radius: 3px;
+        }
+        .flag-colors {
+            display: flex;
+            gap: 2px;
+        }
+        .color-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 2px;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+        .controls-hint {
+            font-size: 0.7rem;
+            color: #ccc;
+            line-height: 1.3;
+        }
+        .controls-hint kbd {
+            background: #333;
+            border: 1px solid #555;
+            padding: 1px 4px;
+            border-radius: 3px;
+            font-family: monospace;
+            color: #ffda7b;
+        }
+        /* Overlay messages */
+        .overlay {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 6px;
+            z-index: 10;
+        }
+        .overlay h2 {
+            font-size: 1.8rem;
+            margin: 0 0 8px 0;
+            color: #ff7b7b;
+        }
+        .overlay p {
+            color: #ddd;
+            margin: 5px 0 15px 0;
+            font-size: 0.95rem;
+            text-align: center;
+            padding: 0 15px;
+            line-height: 1.4;
+        }
+        .btn {
+            background: linear-gradient(45deg, #ff416c, #ff4b2b);
+            color: white;
+            border: none;
+            padding: 10px 25px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(255, 75, 43, 0.4);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(255, 75, 43, 0.6);
+        }
+        .btn:active {
+            transform: translateY(1px);
+        }
+        .hidden {
+            display: none !important;
+        }
+        /* Notification popup for matched flag */
+        #match-popup {
+            position: absolute;
+            top: 15%;
+            left: 50%;
+            transform: translateX(-50%) scale(0.5);
+            background: rgba(255, 215, 0, 0.95);
+            color: #111;
+            padding: 8px 20px;
+            border-radius: 20px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            box-shadow: 0 4px 20px rgba(255,215,0,0.6);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 20;
+            text-align: center;
+            white-space: nowrap;
+        }
+        #match-popup.show {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+        }
+    </style>
+</head>
+<body>
+
+    <h1>国旗リス</h1>
+    <div class="subtitle">3色のブロックで三色旗を作って消そう！</div>
+
+    <div class="main-container">
+        <div class="game-board-wrapper">
+            <!-- Compact board size for mobile screen fit -->
+            <canvas id="gameCanvas" width="240" height="480"></canvas>
+            <div id="match-popup">フランス国旗！ +1000</div>
+            
+            <!-- Start / Game Over overlay -->
+            <div id="overlay" class="overlay">
+                <h2 id="overlay-title">国旗リス</h2>
+                <p id="overlay-desc">左右の3個ブロックを動かし、三色旗の配色を縦・横に完成させよう！<br>↑キーで順序変更、↓で高速落下。</p>
+                <button id="start-btn" class="btn">ゲームスタート</button>
+            </div>
+        </div>
+
+        <div class="side-panel">
+            <div>
+                <div class="panel-box" style="display: flex; justify-content: space-between; align-items: center; padding: 6px 10px;">
+                    <h3 style="margin:0; border:none;">スコア</h3>
+                    <div id="score" class="score-val" style="font-size: 1.1rem;">0</div>
+                </div>
+                <div class="panel-box" style="text-align: center; padding: 6px;">
+                    <h3 style="margin-bottom: 2px;">ネクスト</h3>
+                    <canvas id="nextCanvas" width="60" height="80" style="background:#111119; border-radius:4px; display:inline-block;"></canvas>
+                </div>
+                <div class="panel-box">
+                    <h3>国旗図鑑</h3>
+                    <div id="flagDex" class="flag-dex">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+            </div>
+            <div class="panel-box controls-hint">
+                <h3>操作</h3>
+                <div><kbd>←</kbd><kbd>→</kbd>:移動 <kbd>↓</kbd>:加速</div>
+                <div><kbd>↑</kbd>:順番入替 <kbd>Space</kbd>:急降下</div>
+            </div>
+        </div>
+    </div>
+
+<script>
+// Canvas & Context setup
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const nextCanvas = document.getElementById('nextCanvas');
+const nextCtx = nextCanvas.getContext('2d');
+
+const BLOCK_SIZE = 24; // Compact size to fit mobile screen
+const COLS = 10;
+const ROWS = 20;
+
+// Color definitions
+const COLORS = {
+    R: { code: '#ff3b30', name: '赤' },
+    B: { code: '#007aff', name: '青' },
+    W: { code: '#f2f2f7', name: '白' },
+    K: { code: '#1c1c1e', name: '黒' },
+    Y: { code: '#ffcc00', name: '黄' },
+    G: { code: '#34c759', name: '緑' }
+};
+
+// Color list for random generation (Red, Blue, White, Black, Yellow, Green)
+const COLOR_KEYS = ['R', 'B', 'W', 'K', 'Y', 'G'];
+
+// Flag definitions
+const FLAGS = [
+    { name: 'フランス国旗', pattern: ['B', 'W', 'R'], type: 'H', desc: '青・白・赤 (縦)' },
+    { name: 'ドイツ国旗', pattern: ['K', 'R', 'Y'], type: 'V', desc: '黒・赤・黄 (横)' },
+    { name: 'イタリア国旗', pattern: ['G', 'W', 'R'], type: 'H', desc: '緑・白・赤 (縦)' },
+    { name: 'ベルギー国旗', pattern: ['K', 'Y', 'R'], type: 'H', desc: '黒・黄・赤 (縦)' },
+    { name: 'オランダ国旗', pattern: ['R', 'W', 'B'], type: 'V', desc: '赤・白・青 (横)' },
+    { name: 'ロシア国旗', pattern: ['W', 'B', 'R'], type: 'V', desc: '白・青・赤 (横)' },
+    { name: 'ガボン国旗', pattern: ['G', 'Y', 'B'], type: 'V', desc: '緑・黄・青 (横)' },
+    { name: 'オーストリア国旗', pattern: ['R', 'W', 'R'], type: 'V', desc: '赤・白・赤 (横)' },
+    { name: 'ナイジェリア国旗', pattern: ['G', 'W', 'G'], type: 'V', desc: '緑・白・緑 (横)' },
+    { name: 'マリ国旗', pattern: ['G', 'Y', 'R'], type: 'H', desc: '緑・黄・赤 (縦)' },
+    { name: 'ギニア国旗', pattern: ['R', 'Y', 'G'], type: 'H', desc: '赤・黄・緑 (縦)' },
+    { name: 'リトアニア国旗', pattern: ['Y', 'G', 'R'], type: 'V', desc: '黄・緑・赤 (横)' },
+    { name: 'エストニア国旗', pattern: ['B', 'K', 'W'], type: 'V', desc: '青・黒・白 (横)' },
+    { name: 'ブルガリア国旗', pattern: ['W', 'G', 'R'], type: 'V', desc: '白・緑・赤 (横)' }
+];
+
+// Game State
+let board = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
+let score = 0;
+let gameOver = false;
+let gameStarted = false;
+let dropCounter = 0;
+let dropInterval = 800; // ms
+let lastTime = 0;
+let foundFlagsSet = new Set();
+
+// Current falling piece (Column of 3 blocks)
+let currentPiece = {
+    x: 4,
+    y: 0,
+    blocks: ['R', 'W', 'B']
+};
+
+let nextPiece = {
+    blocks: ['G', 'Y', 'R']
+};
+
+let clearingBlocks = [];
+
+function getRandomColor() {
+    return COLOR_KEYS[Math.floor(Math.random() * COLOR_KEYS.length)];
+}
+
+function generateRandomPiece() {
+    return [getRandomColor(), getRandomColor(), getRandomColor()];
+}
+
+function initGame() {
+    board = Array(ROWS).fill(null).map(() => Array(COLS).fill(null));
+    score = 0;
+    gameOver = false;
+    dropInterval = 800;
+    foundFlagsSet.clear();
+    updateScore();
+    updateFlagDex();
+    
+    currentPiece = {
+        x: Math.floor(COLS / 2) - 1,
+        y: 0,
+        blocks: generateRandomPiece()
+    };
+    nextPiece = {
+        blocks: generateRandomPiece()
+    };
+}
+
+// Draw block helper
+function drawBlock(context, x, y, colorKey, size = BLOCK_SIZE) {
+    const color = COLORS[colorKey];
+    if (!color) return;
+
+    context.fillStyle = color.code;
+    context.fillRect(x * size, y * size, size, size);
+
+    // 3D glossy effect
+    context.fillStyle = 'rgba(255, 255, 255, 0.25)';
+    context.fillRect(x * size + 2, y * size + 2, size - 4, 3);
+    context.fillStyle = 'rgba(0, 0, 0, 0.2)';
+    context.fillRect(x * size + 2, y * size + size - 5, size - 4, 3);
+
+    context.strokeStyle = 'rgba(0, 0, 0, 0.4)';
+    context.lineWidth = 1;
+    context.strokeRect(x * size, y * size, size, size);
+}
+
+// Render game state
+function draw() {
+    // Clear main board
+    ctx.fillStyle = '#111119';
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Draw grid lines (subtle)
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+    ctx.lineWidth = 1;
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+            ctx.strokeRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+        }
+    }
+
+    // Draw settled board blocks
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c < COLS; c++) {
+            if (board[r][c]) {
+                let isClearing = clearingBlocks.some(b => b.r === r && b.c === c);
+                if (isClearing) {
+                    ctx.fillStyle = '#ffffff';
+                    ctx.fillRect(c * BLOCK_SIZE, r * BLOCK_SIZE, BLOCK_SIZE, BLOCK_SIZE);
+                } else {
+                    drawBlock(ctx, c, r, board[r][c]);
+                }
+            }
+        }
+    }
+
+    // Draw current piece
+    if (!gameOver && gameStarted) {
+        for (let i = 0; i < 3; i++) {
+            if (currentPiece.y + i >= 0) {
+                drawBlock(ctx, currentPiece.x, currentPiece.y + i, currentPiece.blocks[i]);
+            }
+        }
+    }
+
+    // Draw Next canvas
+    nextCtx.fillStyle = '#111119';
+    nextCtx.fillRect(0, 0, nextCanvas.width, nextCanvas.height);
+    for (let i = 0; i < 3; i++) {
+        let color = COLORS[nextPiece.blocks[i]];
+        if (color) {
+            let nSize = 20;
+            let nx = (60 - nSize) / 2;
+            let ny = 10 + i * 20;
+            nextCtx.fillStyle = color.code;
+            nextCtx.fillRect(nx, ny, nSize, nSize);
+            nextCtx.strokeStyle = 'rgba(0,0,0,0.4)';
+            nextCtx.strokeRect(nx, ny, nSize, nSize);
+        }
+    }
+}
+
+function isValidPosition(piece, boardData) {
+    for (let i = 0; i < 3; i++) {
+        let r = piece.y + i;
+        let c = piece.x;
+        if (r >= ROWS) return false;
+        if (c < 0 || c >= COLS) return false;
+        if (r >= 0 && boardData[r][c] !== null) return false;
+    }
+    return true;
+}
+
+function moveLeft() {
+    currentPiece.x--;
+    if (!isValidPosition(currentPiece, board)) {
+        currentPiece.x++;
+    }
+}
+
+function moveRight() {
+    currentPiece.x++;
+    if (!isValidPosition(currentPiece, board)) {
+        currentPiece.x--;
+    }
+}
+
+function rotatePiece() {
+    let temp = currentPiece.blocks[0];
+    currentPiece.blocks[0] = currentPiece.blocks[1];
+    currentPiece.blocks[1] = currentPiece.blocks[2];
+    currentPiece.blocks[2] = temp;
+}
+
+function dropPiece() {
+    currentPiece.y++;
+    if (!isValidPosition(currentPiece, board)) {
+        currentPiece.y--;
+        lockPiece();
+        return false;
+    }
+    return true;
+}
+
+function hardDrop() {
+    while (dropPiece()) {
+        // loop until locked
+    }
+}
+
+function lockPiece() {
+    for (let i = 0; i < 3; i++) {
+        let r = currentPiece.y + i;
+        let c = currentPiece.x;
+        if (r < 0) {
+            triggerGameOver();
+            return;
+        }
+        board[r][c] = currentPiece.blocks[i];
+    }
+
+    processMatchesAndGravity();
+
+    currentPiece.x = Math.floor(COLS / 2) - 1;
+    currentPiece.y = 0;
+    currentPiece.blocks = [...nextPiece.blocks];
+    nextPiece.blocks = generateRandomPiece();
+
+    if (!isValidPosition(currentPiece, board)) {
+        triggerGameOver();
+    }
+}
+
+function checkMatches() {
+    let matchedCoords = new Set();
+    let matchedFlagsInfo = [];
+
+    // Vertical 3-stacks
+    for (let r = 0; r <= ROWS - 3; r++) {
+        for (let c = 0; c < COLS; c++) {
+            let b1 = board[r][c];
+            let b2 = board[r+1][c];
+            let b3 = board[r+2][c];
+            if (!b1 || !b2 || !b3) continue;
+
+            for (let flag of FLAGS) {
+                if (flag.pattern[0] === b1 && flag.pattern[1] === b2 && flag.pattern[2] === b3) {
+                    matchedCoords.add(`${r},${c}`);
+                    matchedCoords.add(`${r+1},${c}`);
+                    matchedCoords.add(`${r+2},${c}`);
+                    if (!matchedFlagsInfo.includes(flag.name)) {
+                        matchedFlagsInfo.push(flag.name);
+                        foundFlagsSet.add(flag.name);
+                    }
+                }
+            }
+        }
+    }
+
+    // Horizontal 3-rows
+    for (let r = 0; r < ROWS; r++) {
+        for (let c = 0; c <= COLS - 3; c++) {
+            let b1 = board[r][c];
+            let b2 = board[r][c+1];
+            let b3 = board[r][c+2];
+            if (!b1 || !b2 || !b3) continue;
+
+            for (let flag of FLAGS) {
+                if (flag.pattern[0] === b1 && flag.pattern[1] === b2 && flag.pattern[2] === b3) {
+                    matchedCoords.add(`${r},${c}`);
+                    matchedCoords.add(`${r},${c+1}`);
+                    matchedCoords.add(`${r},${c+2}`);
+                    if (!matchedFlagsInfo.includes(flag.name)) {
+                        matchedFlagsInfo.push(flag.name);
+                        foundFlagsSet.add(flag.name);
+                    }
+                }
+            }
+        }
+    }
+
+    return { coords: Array.from(matchedCoords).map(s => { let p = s.split(','); return {r: parseInt(p[0]), c: parseInt(p[1])}; }), flags: matchedFlagsInfo };
+}
+
+function applyGravity() {
+    for (let c = 0; c < COLS; c++) {
+        let colBlocks = [];
+        for (let r = ROWS - 1; r >= 0; r--) {
+            if (board[r][c] !== null) {
+                colBlocks.push(board[r][c]);
+                board[r][c] = null;
+            }
+        }
+        for (let i = 0; i < colBlocks.length; i++) {
+            let targetR = ROWS - 1 - i;
+            board[targetR][c] = colBlocks[i];
+        }
+    }
+}
+
+function showPopup(text) {
+    const popup = document.getElementById('match-popup');
+    popup.innerText = text;
+    popup.classList.add('show');
+    setTimeout(() => {
+        popup.classList.remove('show');
+    }, 1200);
+}
+
+function processMatchesAndGravity() {
+    let matchResult = checkMatches();
+    if (matchResult.coords.length > 0) {
+        score += matchResult.coords.length * 150 * (matchResult.flags.length || 1);
+        updateScore();
+
+        if (matchResult.flags.length > 0) {
+            showPopup(`${matchResult.flags[0]}完成！`);
+        } else {
+            showPopup(`国旗成立！`);
+        }
+
+        matchResult.coords.forEach(b => {
+            board[b.r][b.c] = null;
+        });
+
+        updateFlagDex();
+
+        setTimeout(() => {
+            applyGravity();
+            setTimeout(() => {
+                processMatchesAndGravity();
+            }, 120);
+        }, 150);
+    }
+}
+
+function updateScore() {
+    document.getElementById('score').innerText = score;
+}
+
+function updateFlagDex() {
+    const dexContainer = document.getElementById('flagDex');
+    dexContainer.innerHTML = '';
+    
+    FLAGS.forEach(flag => {
+        let isFound = foundFlagsSet.has(flag.name);
+        let item = document.createElement('div');
+        item.className = 'flag-item';
+        item.style.opacity = isFound ? '1' : '0.4';
+        
+        let nameSpan = document.createElement('span');
+        nameSpan.innerText = isFound ? flag.name : '？？？';
+        
+        let colorsDiv = document.createElement('div');
+        colorsDiv.className = 'flag-colors';
+        flag.pattern.forEach(colKey => {
+            let dot = document.createElement('div');
+            dot.className = 'color-dot';
+            dot.style.background = isFound ? COLORS[colKey].code : '#444';
+            colorsDiv.appendChild(dot);
+        });
+
+        item.appendChild(nameSpan);
+        item.appendChild(colorsDiv);
+        dexContainer.appendChild(item);
+    });
+}
+
+function triggerGameOver() {
+    gameOver = true;
+    gameStarted = false;
+    document.getElementById('overlay-title').innerText = 'ゲームオーバー';
+    document.getElementById('overlay-desc').innerText = `スコア: ${score}\nお見事！たくさんの国旗を完成させました。`;
+    document.getElementById('start-btn').innerText = 'もう一度プレイ';
+    document.getElementById('overlay').classList.remove('hidden');
+}
+
+// Game Loop
+function gameLoop(time) {
+    if (!gameStarted || gameOver) return;
+
+    const deltaTime = time - lastTime;
+    lastTime = time;
+    dropCounter += deltaTime;
+
+    if (dropCounter > dropInterval) {
+        dropPiece();
+        dropCounter = 0;
+    }
+
+    draw();
+    requestAnimationFrame(gameLoop);
+}
+
+// Controls
+window.addEventListener('keydown', e => {
+    if (!gameStarted || gameOver) return;
+
+    if (e.key === 'ArrowLeft') {
+        moveLeft();
+        draw();
+    } else if (e.key === 'ArrowRight') {
+        moveRight();
+        draw();
+    } else if (e.key === 'ArrowUp') {
+        rotatePiece();
+        draw();
+        e.preventDefault();
+    } else if (e.key === 'ArrowDown') {
+        dropPiece();
+        dropCounter = 0;
+        draw();
+        e.preventDefault();
+    } else if (e.key === ' ') {
+        hardDrop();
+        draw();
+        e.preventDefault();
+    }
+});
+
+// Start button
+document.getElementById('start-btn').addEventListener('click', () => {
+    document.getElementById('overlay').classList.add('hidden');
+    initGame();
+    gameStarted = true;
+    lastTime = performance.now();
+    requestAnimationFrame(gameLoop);
+});
+
+// Initial draw
+initGame();
+draw();
+updateFlagDex();
+</script>
+</body>
+</html>
