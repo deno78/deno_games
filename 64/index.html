@@ -426,14 +426,13 @@
             }
 
             // 描画量が少なすぎる場合
-            if (blackPixels < 30) {
+            if (blackPixels < 15) {
                 showFeedback("判別不可（線が少なすぎます）", "#ff6b6b");
                 clearCanvas();
                 return;
             }
 
-            // 4文字（木、炭、油、煽）のいずれかに割り振る（黒ピクセル数やストロークのバランス、もしくはランダム要素＋書き込み特徴）
-            // プレイヤーが楽しく遊べるよう、描かれたストローク量やランダム性をミックスして4種のいずれかに決定
+            // 4文字（木、炭、油、煽）のいずれかに割り振る
             const kanjiList = [
                 { name: '木', score: 10, msg: '「木」を投下！ ボワッ (+10)' },
                 { name: '炭', score: 30, msg: '「炭」を投下！ ゴゥッ (+30)' },
@@ -441,24 +440,27 @@
                 { name: '煽', score: 100, msg: '「煽」を投下！ 大炎上！！ (+100)' }
             ];
 
-            // ピクセル量に応じて確率を重み付け
+            // ピクセル量やストロークに応じて寛容に判定（「木」が出やすくなるように範囲を調整）
             let selected;
-            if (blackPixels < 150) {
+            if (blackPixels < 120) {
                 selected = kanjiList[0]; // 木
-            } else if (blackPixels < 350) {
-                selected = Math.random() < 0.6 ? kanjiList[1] : kanjiList[0]; // 炭 or 木
+            } else if (blackPixels < 300) {
+                // 木か炭か油
+                const r = Math.random();
+                selected = r < 0.5 ? kanjiList[0] : (r < 0.8 ? kanjiList[1] : kanjiList[2]);
             } else if (blackPixels < 600) {
-                selected = Math.random() < 0.5 ? kanjiList[2] : kanjiList[1]; // 油 or 炭
+                const r = Math.random();
+                selected = r < 0.4 ? kanjiList[1] : (r < 0.8 ? kanjiList[2] : kanjiList[3]);
             } else {
-                // 大きく描かれている場合は高得点が出やすい
                 const rand = Math.random();
-                if (rand < 0.4) selected = kanjiList[3]; // 煽
-                else if (rand < 0.7) selected = kanjiList[2]; // 油
+                if (rand < 0.5) selected = kanjiList[3]; // 煽
+                else if (rand < 0.8) selected = kanjiList[2]; // 油
                 else selected = kanjiList[1]; // 炭
             }
 
-            // まれに判別不可にする（ゴミクズ判定）
-            if (blackPixels > 1200 || blackPixels < 40 && Math.random() < 0.5) {
+            // 「木」と書きたい場合に認識されやすくするため、全体のバランス調整として少し小さめの描画も「木」になりやすくする
+            // 判別不可の条件をかなり緩くする
+            if (blackPixels > 1500) {
                 showFeedback("判別不可！文字として認識できません", "#ff6b6b");
                 clearCanvas();
                 return;
