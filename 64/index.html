@@ -399,7 +399,7 @@
             bonfire.style.transform = `scale(${scale})`;
         }
 
-        // 簡易的な漢字判定（手書きキャンバスのピクセル黒密度・重心・特徴量による擬似判定 + お楽しみランダム判定）
+        // 簡易的な漢字判定（描画されていれば何かしらの指定された漢字として必ず判定する）
         function submitKanji() {
             if (!isPlaying) return;
             if (!hasDrawn) {
@@ -407,32 +407,28 @@
                 return;
             }
 
-            // キャンバスのピクセルデータを分析してそれっぽい漢字を判定する
+            // キャンバスのピクセルデータを分析
             const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
             const data = imgData.data;
             let blackPixels = 0;
-            let sumX = 0, sumY = 0;
 
             for (let y = 0; y < canvas.height; y++) {
                 for (let x = 0; x < canvas.width; x++) {
                     const idx = (y * canvas.width + x) * 4;
-                    // 黒に近いピクセルをカウント
                     if (data[idx] < 100 && data[idx+1] < 100 && data[idx+2] < 100) {
                         blackPixels++;
-                        sumX += x;
-                        sumY += y;
                     }
                 }
             }
 
-            // 描画量が少なすぎる場合
-            if (blackPixels < 15) {
-                showFeedback("判別不可（線が少なすぎます）", "#ff6b6b");
+            // 描画が少しでもあれば必ず4文字（木、炭、油、煽）のいずれかとして成功させる
+            if (blackPixels < 5) {
+                showFeedback("線が少なすぎます！", "#ff6b6b");
                 clearCanvas();
                 return;
             }
 
-            // 4文字（木、炭、油、煽）のいずれかに割り振る
+            // 描いた線の量やランダム性で4文字に割り振る（ストレスなく必ずどれかに決まる）
             const kanjiList = [
                 { name: '木', score: 10, msg: '「木」を投下！ ボワッ (+10)' },
                 { name: '炭', score: 30, msg: '「炭」を投下！ ゴゥッ (+30)' },
@@ -440,30 +436,15 @@
                 { name: '煽', score: 100, msg: '「煽」を投下！ 大炎上！！ (+100)' }
             ];
 
-            // ピクセル量やストロークに応じて寛容に判定（「木」が出やすくなるように範囲を調整）
             let selected;
-            if (blackPixels < 120) {
+            if (blackPixels < 80) {
                 selected = kanjiList[0]; // 木
-            } else if (blackPixels < 300) {
-                // 木か炭か油
-                const r = Math.random();
-                selected = r < 0.5 ? kanjiList[0] : (r < 0.8 ? kanjiList[1] : kanjiList[2]);
-            } else if (blackPixels < 600) {
-                const r = Math.random();
-                selected = r < 0.4 ? kanjiList[1] : (r < 0.8 ? kanjiList[2] : kanjiList[3]);
+            } else if (blackPixels < 200) {
+                selected = Math.random() < 0.6 ? kanjiList[0] : kanjiList[1]; // 木 or 炭
+            } else if (blackPixels < 400) {
+                selected = Math.random() < 0.6 ? kanjiList[1] : kanjiList[2]; // 炭 or 油
             } else {
-                const rand = Math.random();
-                if (rand < 0.5) selected = kanjiList[3]; // 煽
-                else if (rand < 0.8) selected = kanjiList[2]; // 油
-                else selected = kanjiList[1]; // 炭
-            }
-
-            // 「木」と書きたい場合に認識されやすくするため、全体のバランス調整として少し小さめの描画も「木」になりやすくする
-            // 判別不可の条件をかなり緩くする
-            if (blackPixels > 1500) {
-                showFeedback("判別不可！文字として認識できません", "#ff6b6b");
-                clearCanvas();
-                return;
+                selected = Math.random() < 0.5 ? kanjiList[2] : kanjiList[3]; // 油 or 煽
             }
 
             heatScore += selected.score;
