@@ -1,0 +1,527 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>炎上を狙えゲーム</title>
+    <style>
+        :root {
+            --bg-color: #1a1a1a;
+            --panel-bg: #2d2d2d;
+            --text-color: #fff;
+            --accent-fire: #ff4500;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        header {
+            text-align: center;
+            margin: 10px 0;
+        }
+        h1 {
+            margin: 0;
+            font-size: 1.8rem;
+            color: #ff6b6b;
+            text-shadow: 0 0 10px rgba(255, 107, 107, 0.5);
+        }
+        .instructions {
+            font-size: 0.9rem;
+            color: #aaa;
+            margin-top: 5px;
+        }
+        .game-container {
+            position: relative;
+            width: 100%;
+            max-width: 480px;
+            background: var(--panel-bg);
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 15px;
+            box-sizing: border-box;
+            margin-bottom: 20px;
+        }
+        .status-bar {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            font-size: 1.2rem;
+            font-weight: bold;
+            margin-bottom: 10px;
+            background: rgba(0,0,0,0.3);
+            padding: 8px 15px;
+            border-radius: 8px;
+            box-sizing: border-box;
+        }
+        .fire-stage {
+            position: relative;
+            width: 100%;
+            height: 180px;
+            background: #111;
+            border-radius: 8px;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-end;
+            align-items: center;
+            margin-bottom: 15px;
+            border: 2px solid #444;
+        }
+        .bonfire {
+            font-size: 4rem;
+            animation: flicker 0.2s infinite alternate;
+            z-index: 2;
+            margin-bottom: 5px;
+            text-shadow: 0 0 20px #ff4500, 0 0 40px #ff8c00;
+        }
+        @keyframes flicker {
+            0% { transform: scale(1) rotate(-2deg); opacity: 0.9; }
+            100% { transform: scale(1.08) rotate(2deg); opacity: 1; }
+        }
+        .heat-gauge-container {
+            width: 90%;
+            height: 20px;
+            background: #333;
+            border-radius: 10px;
+            overflow: hidden;
+            margin-bottom: 10px;
+            border: 1px solid #555;
+            z-index: 2;
+        }
+        .heat-gauge {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, #ffcc00, #ff4500, #ff0000);
+            transition: width 0.3s ease-out;
+        }
+        .sparks-container {
+            position: absolute;
+            bottom: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            overflow: hidden;
+            z-index: 1;
+        }
+        .spark {
+            position: absolute;
+            bottom: 40px;
+            font-size: 1.2rem;
+            animation: rise 1s forwards ease-out;
+            font-weight: bold;
+        }
+        @keyframes rise {
+            0% { transform: translateY(0) scale(0.5); opacity: 1; }
+            100% { transform: translateY(-120px) scale(1.5) rotate(20deg); opacity: 0; }
+        }
+        .drawing-section {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            width: 100%;
+        }
+        .canvas-wrapper {
+            position: relative;
+            background: #fff;
+            border-radius: 8px;
+            overflow: hidden;
+            border: 3px solid #666;
+            touch-action: none;
+        }
+        canvas {
+            display: block;
+            cursor: crosshair;
+        }
+        .btn-group {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button {
+            flex: 1;
+            padding: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s, transform 0.1s;
+        }
+        button:active {
+            transform: scale(0.95);
+        }
+        #clear-btn {
+            background: #555;
+            color: #fff;
+        }
+        #clear-btn:hover {
+            background: #666;
+        }
+        #submit-btn {
+            background: #ff4500;
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(255,69,0,0.4);
+        }
+        #submit-btn:hover {
+            background: #ff5722;
+        }
+        .message-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            border-radius: 12px;
+            text-align: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        .message-overlay h2 {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            color: #ff4500;
+        }
+        .message-overlay p {
+            font-size: 1.1rem;
+            margin-bottom: 20px;
+            color: #ddd;
+        }
+        .start-btn {
+            background: #ff4500;
+            color: white;
+            font-size: 1.2rem;
+            padding: 15px 30px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            box-shadow: 0 0 15px rgba(255,69,0,0.6);
+        }
+        .start-btn:hover {
+            background: #ff5722;
+        }
+        .kanji-guide {
+            display: flex;
+            justify-content: space-around;
+            width: 100%;
+            margin-bottom: 10px;
+            background: rgba(0,0,0,0.2);
+            padding: 8px;
+            border-radius: 6px;
+            font-size: 0.85rem;
+        }
+        .kanji-item {
+            text-align: center;
+        }
+        .kanji-item span {
+            display: block;
+            font-weight: bold;
+            color: #ffaa00;
+        }
+        #feedback-text {
+            height: 24px;
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #ffcc00;
+            margin-bottom: 5px;
+            text-align: center;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <h1>🔥 炎上を狙え！ 🔥</h1>
+        <div class="instructions">素早く燃える漢字を書いて投下し、炎を大きくしよう！</div>
+    </header>
+
+    <div class="game-container">
+        <!-- スタート＆リザルト画面オーバーレイ -->
+        <div id="overlay" class="message-overlay">
+            <h2 id="overlay-title">炎上を狙えゲーム</h2>
+            <p id="overlay-desc">制限時間30秒で漢字を書いて投下！<br>書ける漢字：<strong>木、炭、油、煽</strong>（それ以外は判別不可）<br>より燃えやすい漢字を連続で書きまくれ！</p>
+            <button id="start-btn" class="start-btn" onclick="startGame()">ゲームスタート</button>
+        </div>
+
+        <div class="status-bar">
+            <div>残り時間: <span id="time-left">30</span>秒</div>
+            <div>熱量 (HEAT): <span id="heat-score">0</span></div>
+        </div>
+
+        <div class="fire-stage" id="fire-stage">
+            <div class="heat-gauge-container">
+                <div id="heat-gauge" class="heat-gauge"></div>
+            </div>
+            <div class="bonfire" id="bonfire">🔥</div>
+            <div class="sparks-container" id="sparks-container"></div>
+        </div>
+
+        <div class="kanji-guide">
+            <div class="kanji-item"><span>木</span>+10 pt</div>
+            <div class="kanji-item"><span>炭</span>+30 pt</div>
+            <div class="kanji-item"><span>油</span>+60 pt</div>
+            <div class="kanji-item"><span>煽</span>+100 pt</div>
+        </div>
+
+        <div id="feedback-text"></div>
+
+        <div class="drawing-section">
+            <div class="canvas-wrapper">
+                <canvas id="draw-canvas" width="280" height="140"></canvas>
+            </div>
+            <div class="btn-group">
+                <button id="clear-btn" onclick="clearCanvas()">クリア</button>
+                <button id="submit-btn" onclick="submitKanji()">投下！</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('draw-canvas');
+        const ctx = canvas.getContext('2d');
+        let isDrawing = false;
+        let hasDrawn = false;
+
+        let timeLeft = 30;
+        let heatScore = 0;
+        let gameInterval = null;
+        let isPlaying = false;
+
+        // ペンの設定
+        ctx.strokeStyle = '#000000';
+        ctx.lineWidth = 12;
+        ctx.lineCap = 'round';
+        ctx.lineJoin = 'round';
+
+        // キャンバスのクリア（白背景）
+        function resetCanvasBackground() {
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+        resetCanvasBackground();
+
+        // 描画イベント
+        function getPos(e) {
+            const rect = canvas.getBoundingClientRect();
+            const clientX = e.clientX || (e.touches && e.touches[0].clientX);
+            const clientY = e.clientY || (e.touches && e.touches[0].clientY);
+            return {
+                x: clientX - rect.left,
+                y: clientY - rect.top
+            };
+        }
+
+        canvas.addEventListener('mousedown', startDraw);
+        canvas.addEventListener('mousemove', draw);
+        canvas.addEventListener('mouseup', stopDraw);
+        canvas.addEventListener('mouseleave', stopDraw);
+
+        canvas.addEventListener('touchstart', (e) => { e.preventDefault(); startDraw(e); });
+        canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e); });
+        canvas.addEventListener('touchend', (e) => { e.preventDefault(); stopDraw(); });
+
+        function startDraw(e) {
+            if (!isPlaying) return;
+            isDrawing = true;
+            hasDrawn = true;
+            const pos = getPos(e);
+            ctx.beginPath();
+            ctx.moveTo(pos.x, pos.y);
+        }
+
+        function draw(e) {
+            if (!isDrawing || !isPlaying) return;
+            const pos = getPos(e);
+            ctx.lineTo(pos.x, pos.y);
+            ctx.stroke();
+        }
+
+        function stopDraw() {
+            isDrawing = false;
+        }
+
+        function clearCanvas() {
+            resetCanvasBackground();
+            hasDrawn = false;
+        }
+
+        function startGame() {
+            const overlay = document.getElementById('overlay');
+            overlay.style.display = 'none';
+
+            timeLeft = 30;
+            heatScore = 0;
+            isPlaying = true;
+            clearCanvas();
+            updateDisplay();
+
+            document.getElementById('feedback-text').innerText = '';
+
+            if (gameInterval) clearInterval(gameInterval);
+            gameInterval = setInterval(() => {
+                timeLeft--;
+                updateDisplay();
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function updateDisplay() {
+            document.getElementById('time-left').innerText = timeLeft;
+            document.getElementById('heat-score').innerText = heatScore;
+            
+            // ゲージの更新 (最大500ptでMAXとする)
+            const percentage = Math.min(100, (heatScore / 500) * 100);
+            document.getElementById('heat-gauge').style.width = percentage + '%';
+
+            // 炎の大きさ調整
+            const bonfire = document.getElementById('bonfire');
+            let scale = 1 + (heatScore / 500) * 1.5;
+            bonfire.style.transform = `scale(${scale})`;
+        }
+
+        // 簡易的な漢字判定（手書きキャンバスのピクセル黒密度・重心・特徴量による擬似判定 + お楽しみランダム判定）
+        function submitKanji() {
+            if (!isPlaying) return;
+            if (!hasDrawn) {
+                showFeedback("何も描かれていません！", "#ff6b6b");
+                return;
+            }
+
+            // キャンバスのピクセルデータを分析してそれっぽい漢字を判定する
+            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+            const data = imgData.data;
+            let blackPixels = 0;
+            let sumX = 0, sumY = 0;
+
+            for (let y = 0; y < canvas.height; y++) {
+                for (let x = 0; x < canvas.width; x++) {
+                    const idx = (y * canvas.width + x) * 4;
+                    // 黒に近いピクセルをカウント
+                    if (data[idx] < 100 && data[idx+1] < 100 && data[idx+2] < 100) {
+                        blackPixels++;
+                        sumX += x;
+                        sumY += y;
+                    }
+                }
+            }
+
+            // 描画量が少なすぎる場合
+            if (blackPixels < 30) {
+                showFeedback("判別不可（線が少なすぎます）", "#ff6b6b");
+                clearCanvas();
+                return;
+            }
+
+            // 4文字（木、炭、油、煽）のいずれかに割り振る（黒ピクセル数やストロークのバランス、もしくはランダム要素＋書き込み特徴）
+            // プレイヤーが楽しく遊べるよう、描かれたストローク量やランダム性をミックスして4種のいずれかに決定
+            const kanjiList = [
+                { name: '木', score: 10, msg: '「木」を投下！ ボワッ (+10)' },
+                { name: '炭', score: 30, msg: '「炭」を投下！ ゴゥッ (+30)' },
+                { name: '油', score: 60, msg: '「油」を投下！ ドカーン (+60)' },
+                { name: '煽', score: 100, msg: '「煽」を投下！ 大炎上！！ (+100)' }
+            ];
+
+            // ピクセル量に応じて確率を重み付け
+            let selected;
+            if (blackPixels < 150) {
+                selected = kanjiList[0]; // 木
+            } else if (blackPixels < 350) {
+                selected = Math.random() < 0.6 ? kanjiList[1] : kanjiList[0]; // 炭 or 木
+            } else if (blackPixels < 600) {
+                selected = Math.random() < 0.5 ? kanjiList[2] : kanjiList[1]; // 油 or 炭
+            } else {
+                // 大きく描かれている場合は高得点が出やすい
+                const rand = Math.random();
+                if (rand < 0.4) selected = kanjiList[3]; // 煽
+                else if (rand < 0.7) selected = kanjiList[2]; // 油
+                else selected = kanjiList[1]; // 炭
+            }
+
+            // まれに判別不可にする（ゴミクズ判定）
+            if (blackPixels > 1200 || blackPixels < 40 && Math.random() < 0.5) {
+                showFeedback("判別不可！文字として認識できません", "#ff6b6b");
+                clearCanvas();
+                return;
+            }
+
+            heatScore += selected.score;
+            showFeedback(selected.msg, selected.name === '煽' ? '#ff0000' : '#ffcc00');
+            createSparks(selected.name);
+            updateDisplay();
+            clearCanvas();
+        }
+
+        function showFeedback(text, color) {
+            const fb = document.getElementById('feedback-text');
+            fb.innerText = text;
+            fb.style.color = color;
+            setTimeout(() => {
+                if (fb.innerText === text) {
+                    fb.innerText = '';
+                }
+            }, 1200);
+        }
+
+        function createSparks(kanji) {
+            const container = document.getElementById('sparks-container');
+            const spark = document.createElement('div');
+            spark.className = 'spark';
+            spark.innerText = kanji;
+            spark.style.left = (20 + Math.random() * 60) + '%';
+            spark.style.color = kanji === '煽' ? '#ff0055' : (kanji === '油' ? '#ff5500' : '#ffaa00');
+            container.appendChild(spark);
+
+            setTimeout(() => {
+                spark.remove();
+            }, 1000);
+        }
+
+        function endGame() {
+            isPlaying = false;
+            clearInterval(gameInterval);
+
+            let rank = "";
+            let color = "#fff";
+            if (heatScore >= 600) {
+                rank = "🔥【ネットニュース特大トップニュース級大炎上】🔥";
+                color = "#ff0000";
+            } else if (heatScore >= 400) {
+                rank = "🔥【バズりまくりインフルエンサー級炎上】🔥";
+                color = "#ff5500";
+            } else if (heatScore >= 200) {
+                rank = "🔥【ちょっとした小炎上】🔥";
+                color = "#ffaa00";
+            } else {
+                rank = "❄️【鎮火・無風状態】❄️";
+                color = "#88ccff";
+            }
+
+            const overlay = document.getElementById('overlay');
+            document.getElementById('overlay-title').innerText = "タイムアップ！";
+            document.getElementById('overlay-desc').innerHTML = `最終熱量: <strong>${heatScore} pt</strong><br><br><span style="color:${color}; font-size:1.2rem;">${rank}</span><br><br>もう一度炎上を狙いますか？`;
+            document.getElementById('start-btn').innerText = "もう一度プレイ";
+            overlay.style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
