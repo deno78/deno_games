@@ -428,7 +428,7 @@
                 return;
             }
 
-            // 描いた線の量やランダム性で4文字に割り振る（ストレスなく必ずどれかに決まる）
+            // 何かしら描かれていれば、認識できない場合はすべて「木」にする
             const kanjiList = [
                 { name: '木', score: 10, msg: '「木」を投下！ ボワッ (+10)' },
                 { name: '炭', score: 30, msg: '「炭」を投下！ ゴゥッ (+30)' },
@@ -437,14 +437,25 @@
             ];
 
             let selected;
-            if (blackPixels < 80) {
-                selected = kanjiList[0]; // 木
-            } else if (blackPixels < 200) {
-                selected = Math.random() < 0.6 ? kanjiList[0] : kanjiList[1]; // 木 or 炭
-            } else if (blackPixels < 400) {
-                selected = Math.random() < 0.6 ? kanjiList[1] : kanjiList[2]; // 炭 or 油
+            if (blackPixels < 15) {
+                // 線が少しだけの場合は確実に「木」扱いにする
+                selected = kanjiList[0];
+            } else if (blackPixels < 120) {
+                // 30%の確率で「炭」や「油」、それ以外は「木」
+                const r = Math.random();
+                if (r < 0.7) selected = kanjiList[0];
+                else if (r < 0.9) selected = kanjiList[1];
+                else selected = kanjiList[2];
+            } else if (blackPixels < 300) {
+                const r = Math.random();
+                if (r < 0.4) selected = kanjiList[0];
+                else if (r < 0.8) selected = kanjiList[1];
+                else selected = kanjiList[2];
             } else {
-                selected = Math.random() < 0.5 ? kanjiList[2] : kanjiList[3]; // 油 or 煽
+                const rand = Math.random();
+                if (rand < 0.3) selected = kanjiList[1];
+                else if (rand < 0.7) selected = kanjiList[2];
+                else selected = kanjiList[3];
             }
 
             heatScore += selected.score;
