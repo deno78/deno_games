@@ -51,10 +51,10 @@
         }
         .dictionary-header h1 {
             margin: 0;
-            font-size: 20px;
+            font-size: 18px;
             color: #d4af37;
             text-shadow: 2px 2px #000;
-            letter-spacing: 2px;
+            letter-spacing: 1px;
         }
         .stats-bar {
             display: flex;
@@ -83,15 +83,15 @@
             top: 15px;
             background: #fff8dc;
             color: #333;
-            padding: 12px 18px;
+            padding: 10px 15px;
             border-radius: 16px;
             border: 3px solid #8b4513;
             box-shadow: 0 4px 12px rgba(0,0,0,0.5);
-            font-size: 15px;
+            font-size: 14px;
             font-weight: bold;
             text-align: center;
             z-index: 10;
-            max-width: 90%;
+            max-width: 92%;
             animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         .speech-bubble::after {
@@ -128,15 +128,15 @@
         /* タイマーバー */
         .timer-container {
             width: 80%;
-            height: 8px;
-            background: rgba(255,255,255,0.2);
-            border-radius: 4px;
-            margin-top: 6px;
+            height: 6px;
+            background: rgba(0,0,0,0.15);
+            border-radius: 3px;
+            margin: 6px auto 0 auto;
             overflow: hidden;
         }
         .timer-fill {
             height: 100%;
-            background: #ffcc00;
+            background: #e67e22;
             width: 100%;
             transition: width 0.1s linear;
         }
@@ -145,9 +145,9 @@
         .wood-blocks-area {
             display: flex;
             flex-direction: column;
-            gap: 12px;
-            width: 85%;
-            margin-bottom: 20px;
+            gap: 10px;
+            width: 88%;
+            margin-bottom: 15px;
         }
 
         /* 木片のスタイル */
@@ -155,7 +155,7 @@
             background: linear-gradient(90deg, #d2a679 0%, #deb887 50%, #c49a6c 100%);
             border: 3px solid #8b5a2b;
             border-radius: 8px;
-            padding: 16px 20px;
+            padding: 12px 16px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -192,24 +192,26 @@
         }
 
         .word-main {
-            font-size: 22px;
+            font-size: 20px;
             font-weight: bold;
             color: #2b1d0c;
             text-shadow: 1px 1px rgba(255,255,255,0.4);
         }
         .word-sub {
-            font-size: 13px;
+            font-size: 12px;
             color: #5c3a21;
             background: rgba(255,255,255,0.4);
-            padding: 3px 8px;
+            padding: 2px 6px;
             border-radius: 4px;
             font-weight: bold;
+            margin-top: 2px;
+            display: inline-block;
         }
-        .drag-handle {
-            font-size: 20px;
-            color: #5c3a21;
-            margin-left: 10px;
-            cursor: pointer;
+        .ruby-text {
+            font-size: 11px;
+            color: #7c4a1e;
+            margin-left: 6px;
+            font-weight: bold;
         }
 
         /* 落下アニメーション用 */
@@ -225,7 +227,7 @@
 
         /* コントロールボタン */
         .action-area {
-            padding: 15px;
+            padding: 10px;
             display: flex;
             justify-content: center;
             background: #211308;
@@ -266,14 +268,14 @@
         }
         .screen h2 {
             color: #d4af37;
-            font-size: 28px;
+            font-size: 26px;
             margin-bottom: 10px;
             text-shadow: 2px 2px #000;
         }
         .screen p {
-            font-size: 15px;
+            font-size: 14px;
             line-height: 1.6;
-            margin-bottom: 25px;
+            margin-bottom: 20px;
             color: #f4e8d0;
         }
         .hidden {
@@ -282,7 +284,7 @@
 
         .rule-badge {
             display: inline-block;
-            padding: 4px 10px;
+            padding: 3px 8px;
             border-radius: 6px;
             font-weight: bold;
             margin: 2px;
@@ -292,7 +294,7 @@
         .badge-eiei { background: #1e663a; color: #fff; }
         .badge-kokugo { background: #66501e; color: #fff; }
 
-        /* スワイプ・上下入れ替えボタン（スマホ・PC両対応用） */
+        /* 上下入れ替えボタン */
         .move-btns {
             display: flex;
             flex-direction: column;
@@ -358,8 +360,7 @@
         <p>
             上から3つの木片が降ってくる！<br>
             表示される辞書の種類（吹き出し）に合わせて<br>
-            <strong>正しい辞書順（アルファベット順 / 五十音順）</strong>に<br>
-            ドラッグやボタンで並び替えよう！<br><br>
+            <strong>正しい辞書順（アルファベット順 / 五十音順）</strong>に並び替えよう！<br><br>
             <span class="rule-badge badge-eiwa">英和</span> 英単語のアルファベット順<br>
             <span class="rule-badge badge-wakoku">和英</span> 日本語の辞書順（五十音）<br>
             <span class="rule-badge badge-eiei">英英</span> 英単語のアルファベット順<br>
@@ -378,52 +379,51 @@
 </div>
 
 <script>
-    // 辞書データセット
-    // 形式: { en: "apple", ja: "リンゴ" }
+    // 辞書データセット（読み仮名付き）
     const dictionaryData = [
-        { en: "apple", ja: "りんご" },
-        { en: "banana", ja: "ばなな" },
-        { en: "cat", ja: "ねこ" },
-        { en: "dog", ja: "いぬ" },
-        { en: "elephant", ja: "ぞう" },
-        { en: "fish", ja: "さかな" },
-        { en: "grape", ja: "ぶどう" },
-        { en: "house", ja: "いえ" },
-        { en: "ice", ja: "こおり" },
-        { en: "juice", ja: "じゅーす" },
-        { en: "kangaroo", ja: "かんがるー" },
-        { en: "lion", ja: "らいおん" },
-        { en: "monkey", ja: "さる" },
-        { en: "notebook", ja: "のーと" },
-        { en: "orange", ja: "みかん" },
-        { en: "pencil", ja: "えんぴつ" },
-        { en: "queen", ja: "女王" },
-        { en: "rabbit", ja: "うさぎ" },
-        { en: "sun", ja: "たいよう" },
-        { en: "tiger", ja: "とら" },
-        { en: "umbrella", ja: "かさ" },
-        { en: "violin", ja: "ばいおりん" },
-        { en: "water", ja: "みず" },
-        { en: "xylophone", ja: "木琴" },
-        { en: "yellow", ja: "きいろ" },
-        { en: "zebra", ja: "しまうま" },
-        { en: "book", ja: "本" },
-        { en: "computer", ja: "コンピュータ" },
-        { en: "desk", ja: "机" },
-        { en: "flower", ja: "花" },
-        { en: "guitar", ja: "ギター" },
-        { en: "mountain", ja: "山" },
-        { en: "river", ja: "川" },
-        { en: "sky", ja: "空" },
-        { en: "train", ja: "電車" },
-        { en: "wind", ja: "風" }
+        { en: "apple", ja: "りんご", yomi: "りんご" },
+        { en: "banana", ja: "ばなな", yomi: "ばなな" },
+        { en: "cat", ja: "ねこ", yomi: "ねこ" },
+        { en: "dog", ja: "いぬ", yomi: "いぬ" },
+        { en: "elephant", ja: "ぞう", yomi: "ぞう" },
+        { en: "fish", ja: "さかな", yomi: "さかな" },
+        { en: "grape", ja: "ぶどう", yomi: "ぶどう" },
+        { en: "house", ja: "いえ", yomi: "いえ" },
+        { en: "ice", ja: "こおり", yomi: "こおり" },
+        { en: "juice", ja: "ジュース", yomi: "じゅーす" },
+        { en: "kangaroo", ja: "カンガルー", yomi: "かんがるー" },
+        { en: "lion", ja: "ライオン", yomi: "らいおん" },
+        { en: "monkey", ja: "さる", yomi: "さる" },
+        { en: "notebook", ja: "ノート", yomi: "のーと" },
+        { en: "orange", ja: "みかん", yomi: "みかん" },
+        { en: "pencil", ja: "えんぴつ", yomi: "えんぴつ" },
+        { en: "queen", ja: "女王", yomi: "じょおう" },
+        { en: "rabbit", ja: "うさぎ", yomi: "うさぎ" },
+        { en: "sun", ja: "太陽", yomi: "たいよう" },
+        { en: "tiger", ja: "とら", yomi: "とら" },
+        { en: "umbrella", ja: "かさ", yomi: "かさ" },
+        { en: "violin", ja: "バイオリン", yomi: "ばいおりん" },
+        { en: "water", ja: "みず", yomi: "みず" },
+        { en: "xylophone", ja: "木琴", yomi: "もっきん" },
+        { en: "yellow", ja: "黄色", yomi: "きいろ" },
+        { en: "zebra", ja: "しまうま", yomi: "しまうま" },
+        { en: "book", ja: "本", yomi: "ほん" },
+        { en: "computer", ja: "コンピュータ", yomi: "こんぴゅーた" },
+        { en: "desk", ja: "机", yomi: "つくえ" },
+        { en: "flower", ja: "花", yomi: "はな" },
+        { en: "guitar", ja: "ギター", yomi: "ぎたー" },
+        { en: "mountain", ja: "山", yomi: "やま" },
+        { en: "river", ja: "川", yomi: "かわ" },
+        { en: "sky", ja: "空", yomi: "そら" },
+        { en: "train", ja: "電車", yomi: "でんしゃ" },
+        { en: "wind", ja: "風", yomi: "かぜ" }
     ];
 
     const modeTypes = [
-        { type: 'eiwa', name: '英和辞典（英単語の辞書順・英語表示）', lang: 'en', sortKey: 'en' },
-        { type: 'wakoku', name: '和英辞典（日本語の五十音順・日本語表示）', lang: 'ja', sortKey: 'ja' },
-        { type: 'eiei', name: '英英辞典（英単語の辞書順・英語表示）', lang: 'en', sortKey: 'en' },
-        { type: 'kokugo', name: '国語辞典（日本語の五十音順・日本語表示）', lang: 'ja', sortKey: 'ja' }
+        { type: 'eiwa', name: '英和辞典（英単語の辞書順）', lang: 'en', sortKey: 'en' },
+        { type: 'wakoku', name: '和英辞典（日本語の五十音順）', lang: 'ja', sortKey: 'yomi' },
+        { type: 'eiei', name: '英英辞典（英単語の辞書順）', lang: 'en', sortKey: 'en' },
+        { type: 'kokugo', name: '国語辞典（日本語の五十音順）', lang: 'ja', sortKey: 'yomi' }
     ];
 
     let score = 0;
@@ -432,11 +432,10 @@
     let gameTimer = null;
     let bubbleTimer = null;
     let bubbleIntervalTimer = null;
-    let currentBlocks = []; // 現在の3つの単語オブジェクト
+    let currentBlocks = []; 
     let currentMode = null;
     let isPlaying = false;
 
-    // DOM要素
     const startScreen = document.getElementById('start-screen');
     const gameoverScreen = document.getElementById('gameover-screen');
     const startBtn = document.getElementById('start-btn');
@@ -494,28 +493,33 @@
     function nextRound() {
         if (!isPlaying) return;
 
-        // モードをランダム決定
         currentMode = modeTypes[Math.floor(Math.random() * modeTypes.length)];
 
-        // ランダムに3つ選ぶ
         let shuffled = [...dictionaryData].sort(() => 0.5 - Math.random());
         currentBlocks = shuffled.slice(0, 3);
 
-        // 正解の並びを作成
-        // 日本語ソート用（簡易五十音順比較：localeCompare('ja')）
+        // 正しい並びを作成
         let sorted = [...currentBlocks].sort((a, b) => {
             if (currentMode.sortKey === 'en') {
-                return a.en.localeCompare(b.en);
+                return a.en.toLowerCase().localeCompare(b.en.toLowerCase());
             } else {
-                return a.ja.localeCompare(b.ja);
+                return a.yomi.localeCompare(b.yomi, 'ja');
             }
         });
 
-        // もし最初から正解と同じ並びだったらシャッフルし直す（1回くらいずらす）
-        if (currentBlocks[0] === sorted[0] && currentBlocks[1] === sorted[1] && currentBlocks[2] === sorted[2]) {
-            let temp = currentBlocks[0];
-            currentBlocks[0] = currentBlocks[1];
-            currentBlocks[1] = temp;
+        // 重複や最初から完全一致を防ぐため、必要に応じてシャッフルし直す
+        let attempts = 0;
+        while (currentBlocks[0] === sorted[0] && currentBlocks[1] === sorted[1] && currentBlocks[2] === sorted[2] && attempts < 5) {
+            shuffled = [...dictionaryData].sort(() => 0.5 - Math.random());
+            currentBlocks = shuffled.slice(0, 3);
+            sorted = [...currentBlocks].sort((a, b) => {
+                if (currentMode.sortKey === 'en') {
+                    return a.en.toLowerCase().localeCompare(b.en.toLowerCase());
+                } else {
+                    return a.yomi.localeCompare(b.yomi, 'ja');
+                }
+            });
+            attempts++;
         }
 
         renderBlocks();
@@ -526,7 +530,6 @@
         speechBubble.classList.remove('hidden');
         bubbleText.innerHTML = `【${currentMode.name}】`;
         
-        // 5秒タイマー演出
         let startTime = Date.now();
         let duration = 5000;
         
@@ -557,23 +560,27 @@
             div.dataset.index = index;
 
             let displayText = currentMode.lang === 'en' ? item.en : item.ja;
-            let subText = currentMode.lang === 'en' ? `(訳: ${item.ja})` : `(英: ${item.en})`;
+            let subInfo = '';
+            if (currentMode.lang === 'en') {
+                subInfo = `<div class="word-sub">(訳: ${item.ja})</div>`;
+            } else {
+                subInfo = `<div class="word-sub">(読み: ${item.yomi}) <span style="font-size:11px; color:#3a2010;">[英: ${item.en}]</span></div>`;
+            }
 
             div.innerHTML = `
-                <div style="display: flex; align-items: center; gap: 10px;">
-                    <span style="font-size: 14px; background: #8b5a2b; color: #fff; padding: 2px 6px; border-radius: 4px;">${index + 1}</span>
-                    <div>
+                <div style="display: flex; align-items: center; gap: 10px; width: 100%; overflow: hidden;">
+                    <span style="font-size: 13px; background: #8b5a2b; color: #fff; padding: 2px 6px; border-radius: 4px; flex-shrink: 0;">${index + 1}</span>
+                    <div style="overflow: hidden;">
                         <div class="word-main">${displayText}</div>
-                        <div class="word-sub">${subText}</div>
+                        ${subInfo}
                     </div>
                 </div>
-                <div class="move-btns">
+                <div class="move-btns" style="flex-shrink: 0; margin-left: 8px;">
                     <button class="move-btn" onclick="moveBlock(${index}, -1)">▲</button>
                     <button class="move-btn" onclick="moveBlock(${index}, 1)">▼</button>
                 </div>
             `;
 
-            // ドラッグ＆ドロップ対応（PC・スマホタッチ簡易対応）
             div.addEventListener('dragstart', handleDragStart);
             div.addEventListener('dragover', handleDragOver);
             div.addEventListener('drop', handleDrop);
@@ -598,7 +605,6 @@
         e.preventDefault();
         const targetIndex = parseInt(this.dataset.index);
         if (draggedIndex !== null && draggedIndex !== targetIndex) {
-            // 配列の要素を入れ替え
             let movedItem = currentBlocks.splice(draggedIndex, 1)[0];
             currentBlocks.splice(targetIndex, 0, movedItem);
             renderBlocks();
@@ -610,7 +616,6 @@
         draggedIndex = null;
     }
 
-    // ボタンによる並び替え用グローバル関数
     window.moveBlock = function(index, direction) {
         let newIndex = index + direction;
         if (newIndex < 0 || newIndex >= currentBlocks.length) return;
@@ -627,9 +632,9 @@
         // 正解の配列を作成
         let sorted = [...currentBlocks].sort((a, b) => {
             if (currentMode.sortKey === 'en') {
-                return a.en.localeCompare(b.en);
+                return a.en.toLowerCase().localeCompare(b.en.toLowerCase());
             } else {
-                return a.ja.localeCompare(b.ja);
+                return a.yomi.localeCompare(b.yomi, 'ja');
             }
         });
 
