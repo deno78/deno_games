@@ -73,8 +73,8 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-end;
-            padding-bottom: 30px;
+            justify-content: center;
+            padding-bottom: 20px;
         }
 
         /* 吹き出し（お題・ルール） */
@@ -145,9 +145,8 @@
         .wood-blocks-area {
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 12px;
             width: 88%;
-            margin-bottom: 15px;
         }
 
         /* 木片のスタイル */
@@ -155,7 +154,7 @@
             background: linear-gradient(90deg, #d2a679 0%, #deb887 50%, #c49a6c 100%);
             border: 3px solid #8b5a2b;
             border-radius: 8px;
-            padding: 12px 16px;
+            padding: 14px 18px;
             display: flex;
             justify-content: space-between;
             align-items: center;
@@ -178,17 +177,10 @@
         .wood-block.correct-flash {
             animation: flashGreen 0.5s;
         }
-        .wood-block.wrong-flash {
-            animation: flashRed 0.5s;
-        }
 
         @keyframes flashGreen {
-            0% { background: #88ff88; }
-            100% { background: linear-gradient(90deg, #d2a679 0%, #deb887 50%, #c49a6c 100%); }
-        }
-        @keyframes flashRed {
-            0% { background: #ff8888; }
-            100% { background: linear-gradient(90deg, #d2a679 0%, #deb887 50%, #c49a6c 100%); }
+            0% { background: #88ff88; transform: scale(1.03); }
+            100% { background: linear-gradient(90deg, #d2a679 0%, #deb887 50%, #c49a6c 100%); transform: scale(1); }
         }
 
         .word-main {
@@ -207,12 +199,6 @@
             margin-top: 2px;
             display: inline-block;
         }
-        .ruby-text {
-            font-size: 11px;
-            color: #7c4a1e;
-            margin-left: 6px;
-            font-weight: bold;
-        }
 
         /* 落下アニメーション用 */
         @keyframes dropIn {
@@ -223,31 +209,6 @@
         }
         .drop-animation {
             animation: dropIn 0.5s cubic-bezier(0.25, 1, 0.5, 1);
-        }
-
-        /* コントロールボタン */
-        .action-area {
-            padding: 10px;
-            display: flex;
-            justify-content: center;
-            background: #211308;
-            border-top: 3px solid #1a1006;
-        }
-        .btn {
-            background: linear-gradient(135deg, #d4af37 0%, #aa8c2c 100%);
-            color: #1a1006;
-            border: none;
-            padding: 12px 30px;
-            font-size: 18px;
-            font-weight: bold;
-            border-radius: 8px;
-            cursor: pointer;
-            box-shadow: 0 4px 0 #6e591c, 0 6px 10px rgba(0,0,0,0.4);
-            transition: all 0.1s;
-        }
-        .btn:active {
-            transform: translateY(4px);
-            box-shadow: 0 0 0 #6e591c, 0 2px 5px rgba(0,0,0,0.4);
         }
 
         /* モーダル・画面切り替え */
@@ -294,6 +255,23 @@
         .badge-eiei { background: #1e663a; color: #fff; }
         .badge-kokugo { background: #66501e; color: #fff; }
 
+        .btn {
+            background: linear-gradient(135deg, #d4af37 0%, #aa8c2c 100%);
+            color: #1a1006;
+            border: none;
+            padding: 12px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #6e591c, 0 6px 10px rgba(0,0,0,0.4);
+            transition: all 0.1s;
+        }
+        .btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #6e591c, 0 2px 5px rgba(0,0,0,0.4);
+        }
+
         /* 上下入れ替えボタン */
         .move-btns {
             display: flex;
@@ -305,9 +283,9 @@
             color: #fff;
             border: 1px solid #d4af37;
             border-radius: 4px;
-            width: 28px;
-            height: 28px;
-            font-size: 14px;
+            width: 32px;
+            height: 32px;
+            font-size: 15px;
             cursor: pointer;
             display: flex;
             align-items: center;
@@ -347,11 +325,6 @@
         <div class="wood-blocks-area" id="blocks-area">
             <!-- JSで動的生成 -->
         </div>
-
-        <!-- 決定ボタン -->
-        <div class="action-area" style="width: 100%;">
-            <button class="btn" id="submit-btn">これで決定！</button>
-        </div>
     </div>
 
     <!-- スタート画面 -->
@@ -360,7 +333,7 @@
         <p>
             上から3つの木片が降ってくる！<br>
             表示される辞書の種類（吹き出し）に合わせて<br>
-            <strong>正しい辞書順（アルファベット順 / 五十音順）</strong>に並び替えよう！<br><br>
+            <strong>正しい辞書順</strong>に並べると<strong>自動で正解！</strong><br><br>
             <span class="rule-badge badge-eiwa">英和</span> 英単語のアルファベット順<br>
             <span class="rule-badge badge-wakoku">和英</span> 日本語の辞書順（五十音）<br>
             <span class="rule-badge badge-eiei">英英</span> 英単語のアルファベット順<br>
@@ -379,7 +352,6 @@
 </div>
 
 <script>
-    // 辞書データセット（読み仮名付き）
     const dictionaryData = [
         { en: "apple", ja: "りんご", yomi: "りんご" },
         { en: "banana", ja: "ばなな", yomi: "ばなな" },
@@ -440,7 +412,6 @@
     const gameoverScreen = document.getElementById('gameover-screen');
     const startBtn = document.getElementById('start-btn');
     const restartBtn = document.getElementById('restart-btn');
-    const submitBtn = document.getElementById('submit-btn');
     const blocksArea = document.getElementById('blocks-area');
     const speechBubble = document.getElementById('speech-bubble');
     const bubbleText = document.getElementById('bubble-text');
@@ -451,7 +422,6 @@
 
     startBtn.addEventListener('click', startGame);
     restartBtn.addEventListener('click', startGame);
-    submitBtn.addEventListener('click', checkAnswer);
 
     function startGame() {
         startScreen.classList.add('hidden');
@@ -499,31 +469,33 @@
         currentBlocks = shuffled.slice(0, 3);
 
         // 正しい並びを作成
-        let sorted = [...currentBlocks].sort((a, b) => {
+        let sorted = getSortedBlocks(currentBlocks);
+
+        // 最初から完全一致を防ぐ
+        let attempts = 0;
+        while (isEqualBlocks(currentBlocks, sorted) && attempts < 5) {
+            shuffled = [...dictionaryData].sort(() => 0.5 - Math.random());
+            currentBlocks = shuffled.slice(0, 3);
+            sorted = getSortedBlocks(currentBlocks);
+            attempts++;
+        }
+
+        renderBlocks();
+        showBubble();
+    }
+
+    function getSortedBlocks(blocks) {
+        return [...blocks].sort((a, b) => {
             if (currentMode.sortKey === 'en') {
                 return a.en.toLowerCase().localeCompare(b.en.toLowerCase());
             } else {
                 return a.yomi.localeCompare(b.yomi, 'ja');
             }
         });
+    }
 
-        // 重複や最初から完全一致を防ぐため、必要に応じてシャッフルし直す
-        let attempts = 0;
-        while (currentBlocks[0] === sorted[0] && currentBlocks[1] === sorted[1] && currentBlocks[2] === sorted[2] && attempts < 5) {
-            shuffled = [...dictionaryData].sort(() => 0.5 - Math.random());
-            currentBlocks = shuffled.slice(0, 3);
-            sorted = [...currentBlocks].sort((a, b) => {
-                if (currentMode.sortKey === 'en') {
-                    return a.en.toLowerCase().localeCompare(b.en.toLowerCase());
-                } else {
-                    return a.yomi.localeCompare(b.yomi, 'ja');
-                }
-            });
-            attempts++;
-        }
-
-        renderBlocks();
-        showBubble();
+    function isEqualBlocks(arr1, arr2) {
+        return arr1[0] === arr2[0] && arr1[1] === arr2[1] && arr1[2] === arr2[2];
     }
 
     function showBubble() {
@@ -608,6 +580,7 @@
             let movedItem = currentBlocks.splice(draggedIndex, 1)[0];
             currentBlocks.splice(targetIndex, 0, movedItem);
             renderBlocks();
+            checkAutoAnswer();
         }
     }
 
@@ -624,48 +597,28 @@
         currentBlocks[index] = currentBlocks[newIndex];
         currentBlocks[newIndex] = temp;
         renderBlocks();
+        checkAutoAnswer();
     };
 
-    function checkAnswer() {
+    function checkAutoAnswer() {
         if (!isPlaying) return;
 
-        // 正解の配列を作成
-        let sorted = [...currentBlocks].sort((a, b) => {
-            if (currentMode.sortKey === 'en') {
-                return a.en.toLowerCase().localeCompare(b.en.toLowerCase());
-            } else {
-                return a.yomi.localeCompare(b.yomi, 'ja');
-            }
-        });
+        let sorted = getSortedBlocks(currentBlocks);
 
-        // 比較
-        let isCorrect = true;
-        for (let i = 0; i < 3; i++) {
-            if (currentBlocks[i] !== sorted[i]) {
-                isCorrect = false;
-                break;
-            }
-        }
-
-        const blocks = document.querySelectorAll('.wood-block');
-
-        if (isCorrect) {
+        if (isEqualBlocks(currentBlocks, sorted)) {
             score += 100 + (streak * 20);
             streak++;
             updateStats();
+
+            const blocks = document.querySelectorAll('.wood-block');
             blocks.forEach(b => b.classList.add('correct-flash'));
+
+            // 操作不能にして次へ
+            isPlaying = false;
             setTimeout(() => {
+                isPlaying = true;
                 nextRound();
-            }, 400);
-        } else {
-            streak = 0;
-            updateStats();
-            score = Math.max(0, score - 50);
-            updateStats();
-            blocks.forEach(b => b.classList.add('wrong-flash'));
-            setTimeout(() => {
-                // 不正解時はそのままリトライ可能
-            }, 400);
+            }, 500);
         }
     }
 </script>
