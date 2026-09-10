@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>辞書順に並べろ！大辞典ゲーム</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: #2b1d0c;
+            font-family: 'Courier New', Courier, monospace, "MS Gothic", sans-serif;
+            color: #f4e8d0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            touch-action: manipulation;
+        }
+
+        #game-container {
+            width: 100%;
+            max-width: 450px;
+            height: 100vh;
+            max-height: 800px;
+            background: linear-gradient(135deg, #4a2e18 0%, #2b1d0c 100%);
+            border: 8px solid #1a1006;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8), inset 0 0 50px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* 辞書表紙風ヘッダー */
+        .dictionary-header {
+            background: #8b0000;
+            border-bottom: 4px solid #d4af37;
+            padding: 12px;
+            text-align: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.4);
+            position: relative;
+        }
+        .dictionary-header h1 {
+            margin: 0;
+            font-size: 20px;
+            color: #d4af37;
+            text-shadow: 2px 2px #000;
+            letter-spacing: 2px;
+        }
+        .stats-bar {
+            display: flex;
+            justify-content: space-around;
+            font-size: 14px;
+            color: #fff;
+            margin-top: 6px;
+            font-weight: bold;
+        }
+
+        /* メインプレイエリア */
+        .play-area {
+            flex: 1;
+            position: relative;
+            background: radial-gradient(circle, #3d2613 0%, #211308 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding-bottom: 30px;
+        }
+
+        /* 吹き出し（お題・ルール） */
+        .speech-bubble {
+            position: absolute;
+            top: 15px;
+            background: #fff8dc;
+            color: #333;
+            padding: 12px 18px;
+            border-radius: 16px;
+            border: 3px solid #8b4513;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+            font-size: 15px;
+            font-weight: bold;
+            text-align: center;
+            z-index: 10;
+            max-width: 90%;
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            bottom: -12px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 12px 10px 0;
+            border-style: solid;
+            border-color: #fff8dc transparent;
+            display: block;
+            width: 0;
+        }
+        .speech-bubble::before {
+            content: '';
+            position: absolute;
+            bottom: -16px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 14px 11px 0;
+            border-style: solid;
+            border-color: #8b4513 transparent;
+            display: block;
+            width: 0;
+            z-index: -1;
+        }
+
+        @keyframes popIn {
+            0% { transform: scale(0); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        /* タイマーバー */
+        .timer-container {
+            width: 80%;
+            height: 8px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 4px;
+            margin-top: 6px;
+            overflow: hidden;
+        }
+        .timer-fill {
+            height: 100%;
+            background: #ffcc00;
+            width: 100%;
+            transition: width 0.1s linear;
+        }
+
+        /* 木片（辞書の言葉）コンテナ */
+        .wood-blocks-area {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            width: 85%;
+            margin-bottom: 20px;
+        }
+
+        /* 木片のスタイル */
+        .wood-block {
+            background: linear-gradient(90deg, #d2a679 0%, #deb887 50%, #c49a6c 100%);
+            border: 3px solid #8b5a2b;
+            border-radius: 8px;
+            padding: 16px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 6px 0 #5c3a21, 0 8px 15px rgba(0,0,0,0.4);
+            cursor: grab;
+            transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s;
+            position: relative;
+            touch-action: none;
+        }
+        .wood-block:active {
+            cursor: grabbing;
+        }
+        .wood-block.dragging {
+            opacity: 0.85;
+            transform: scale(1.05);
+            box-shadow: 0 12px 25px rgba(0,0,0,0.6);
+            z-index: 100;
+            background: linear-gradient(90deg, #e0b88c 0%, #f0c898 50%, #d4aa7c 100%);
+        }
+        .wood-block.correct-flash {
+            animation: flashGreen 0.5s;
+        }
+        .wood-block.wrong-flash {
+            animation: flashRed 0.5s;
+        }
+
+        @keyframes flashGreen {
+            0% { background: #88ff88; }
+            100% { background: linear-gradient(90deg, #d2a679 0%, #deb887 50%, #c49a6c 100%); }
+        }
+        @keyframes flashRed {
+            0% { background: #ff8888; }
+            100% { background: linear-gradient(90deg, #d2a679 0%, #deb887 50%, #c49a6c 100%); }
+        }
+
+        .word-main {
+            font-size: 22px;
+            font-weight: bold;
+            color: #2b1d0c;
+            text-shadow: 1px 1px rgba(255,255,255,0.4);
+        }
+        .word-sub {
+            font-size: 13px;
+            color: #5c3a21;
+            background: rgba(255,255,255,0.4);
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .drag-handle {
+            font-size: 20px;
+            color: #5c3a21;
+            margin-left: 10px;
+            cursor: pointer;
+        }
+
+        /* 落下アニメーション用 */
+        @keyframes dropIn {
+            0% { transform: translateY(-300px) rotate(-10deg); opacity: 0; }
+            60% { transform: translateY(15px) rotate(2deg); opacity: 1; }
+            80% { transform: translateY(-5px) rotate(-1deg); }
+            100% { transform: translateY(0) rotate(0); }
+        }
+        .drop-animation {
+            animation: dropIn 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* コントロールボタン */
+        .action-area {
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            background: #211308;
+            border-top: 3px solid #1a1006;
+        }
+        .btn {
+            background: linear-gradient(135deg, #d4af37 0%, #aa8c2c 100%);
+            color: #1a1006;
+            border: none;
+            padding: 12px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            box-shadow: 0 4px 0 #6e591c, 0 6px 10px rgba(0,0,0,0.4);
+            transition: all 0.1s;
+        }
+        .btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #6e591c, 0 2px 5px rgba(0,0,0,0.4);
+        }
+
+        /* モーダル・画面切り替え */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(26, 16, 6, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            padding: 20px;
+            text-align: center;
+        }
+        .screen h2 {
+            color: #d4af37;
+            font-size: 28px;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px #000;
+        }
+        .screen p {
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 25px;
+            color: #f4e8d0;
+        }
+        .hidden {
+            display: none !important;
+        }
+
+        .rule-badge {
+            display: inline-block;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-weight: bold;
+            margin: 2px;
+        }
+        .badge-eiwa { background: #1e3f66; color: #fff; }
+        .badge-wakoku { background: #661e1e; color: #fff; }
+        .badge-eiei { background: #1e663a; color: #fff; }
+        .badge-kokugo { background: #66501e; color: #fff; }
+
+        /* スワイプ・上下入れ替えボタン（スマホ・PC両対応用） */
+        .move-btns {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+        }
+        .move-btn {
+            background: #8b5a2b;
+            color: #fff;
+            border: 1px solid #d4af37;
+            border-radius: 4px;
+            width: 28px;
+            height: 28px;
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+        .move-btn:active {
+            background: #d4af37;
+            color: #2b1d0c;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <!-- ヘッダー -->
+    <div class="dictionary-header">
+        <h1>大辞典パズル 〜 辞書順に並べろ！ 〜</h1>
+        <div class="stats-bar">
+            <span id="score-display">スコア: 0</span>
+            <span id="streak-display">コンボ: 0</span>
+            <span id="time-display">残り時間: 60秒</span>
+        </div>
+    </div>
+
+    <!-- プレイエリア -->
+    <div class="play-area" id="play-area">
+        <!-- 吹き出し -->
+        <div id="speech-bubble" class="speech-bubble hidden">
+            <div id="bubble-text">ルール：英和辞典（英単語の辞書順）</div>
+            <div class="timer-container">
+                <div id="timer-fill" class="timer-fill"></div>
+            </div>
+        </div>
+
+        <!-- 木片エリア -->
+        <div class="wood-blocks-area" id="blocks-area">
+            <!-- JSで動的生成 -->
+        </div>
+
+        <!-- 決定ボタン -->
+        <div class="action-area" style="width: 100%;">
+            <button class="btn" id="submit-btn">これで決定！</button>
+        </div>
+    </div>
+
+    <!-- スタート画面 -->
+    <div id="start-screen" class="screen">
+        <h2>大辞典パズル</h2>
+        <p>
+            上から3つの木片が降ってくる！<br>
+            表示される辞書の種類（吹き出し）に合わせて<br>
+            <strong>正しい辞書順（アルファベット順 / 五十音順）</strong>に<br>
+            ドラッグやボタンで並び替えよう！<br><br>
+            <span class="rule-badge badge-eiwa">英和</span> 英単語のアルファベット順<br>
+            <span class="rule-badge badge-wakoku">和英</span> 日本語の辞書順（五十音）<br>
+            <span class="rule-badge badge-eiei">英英</span> 英単語のアルファベット順<br>
+            <span class="rule-badge badge-kokugo">国語</span> 日本語の辞書順（五十音）<br><br>
+            ※吹き出しは<strong>5秒</strong>で消えるから注意！
+        </p>
+        <button class="btn" id="start-btn">ゲームスタート</button>
+    </div>
+
+    <!-- ゲームオーバー画面 -->
+    <div id="gameover-screen" class="screen hidden">
+        <h2>タイムアップ！</h2>
+        <p id="final-stats">スコア: 0<br>正解数: 0</p>
+        <button class="btn" id="restart-btn">もう一度プレイ</button>
+    </div>
+</div>
+
+<script>
+    // 辞書データセット
+    // 形式: { en: "apple", ja: "リンゴ" }
+    const dictionaryData = [
+        { en: "apple", ja: "りんご" },
+        { en: "banana", ja: "ばなな" },
+        { en: "cat", ja: "ねこ" },
+        { en: "dog", ja: "いぬ" },
+        { en: "elephant", ja: "ぞう" },
+        { en: "fish", ja: "さかな" },
+        { en: "grape", ja: "ぶどう" },
+        { en: "house", ja: "いえ" },
+        { en: "ice", ja: "こおり" },
+        { en: "juice", ja: "じゅーす" },
+        { en: "kangaroo", ja: "かんがるー" },
+        { en: "lion", ja: "らいおん" },
+        { en: "monkey", ja: "さる" },
+        { en: "notebook", ja: "のーと" },
+        { en: "orange", ja: "みかん" },
+        { en: "pencil", ja: "えんぴつ" },
+        { en: "queen", ja: "女王" },
+        { en: "rabbit", ja: "うさぎ" },
+        { en: "sun", ja: "たいよう" },
+        { en: "tiger", ja: "とら" },
+        { en: "umbrella", ja: "かさ" },
+        { en: "violin", ja: "ばいおりん" },
+        { en: "water", ja: "みず" },
+        { en: "xylophone", ja: "木琴" },
+        { en: "yellow", ja: "きいろ" },
+        { en: "zebra", ja: "しまうま" },
+        { en: "book", ja: "本" },
+        { en: "computer", ja: "コンピュータ" },
+        { en: "desk", ja: "机" },
+        { en: "flower", ja: "花" },
+        { en: "guitar", ja: "ギター" },
+        { en: "mountain", ja: "山" },
+        { en: "river", ja: "川" },
+        { en: "sky", ja: "空" },
+        { en: "train", ja: "電車" },
+        { en: "wind", ja: "風" }
+    ];
+
+    const modeTypes = [
+        { type: 'eiwa', name: '英和辞典（英単語の辞書順・英語表示）', lang: 'en', sortKey: 'en' },
+        { type: 'wakoku', name: '和英辞典（日本語の五十音順・日本語表示）', lang: 'ja', sortKey: 'ja' },
+        { type: 'eiei', name: '英英辞典（英単語の辞書順・英語表示）', lang: 'en', sortKey: 'en' },
+        { type: 'kokugo', name: '国語辞典（日本語の五十音順・日本語表示）', lang: 'ja', sortKey: 'ja' }
+    ];
+
+    let score = 0;
+    let streak = 0;
+    let timeLeft = 60;
+    let gameTimer = null;
+    let bubbleTimer = null;
+    let bubbleIntervalTimer = null;
+    let currentBlocks = []; // 現在の3つの単語オブジェクト
+    let currentMode = null;
+    let isPlaying = false;
+
+    // DOM要素
+    const startScreen = document.getElementById('start-screen');
+    const gameoverScreen = document.getElementById('gameover-screen');
+    const startBtn = document.getElementById('start-btn');
+    const restartBtn = document.getElementById('restart-btn');
+    const submitBtn = document.getElementById('submit-btn');
+    const blocksArea = document.getElementById('blocks-area');
+    const speechBubble = document.getElementById('speech-bubble');
+    const bubbleText = document.getElementById('bubble-text');
+    const timerFill = document.getElementById('timer-fill');
+    const scoreDisplay = document.getElementById('score-display');
+    const streakDisplay = document.getElementById('streak-display');
+    const timeDisplay = document.getElementById('time-display');
+
+    startBtn.addEventListener('click', startGame);
+    restartBtn.addEventListener('click', startGame);
+    submitBtn.addEventListener('click', checkAnswer);
+
+    function startGame() {
+        startScreen.classList.add('hidden');
+        gameoverScreen.classList.add('hidden');
+        score = 0;
+        streak = 0;
+        timeLeft = 60;
+        isPlaying = true;
+        updateStats();
+
+        if (gameTimer) clearInterval(gameTimer);
+        gameTimer = setInterval(() => {
+            timeLeft--;
+            timeDisplay.textContent = `残り時間: ${timeLeft}秒`;
+            if (timeLeft <= 0) {
+                endGame();
+            }
+        }, 1000);
+
+        nextRound();
+    }
+
+    function endGame() {
+        isPlaying = false;
+        clearInterval(gameTimer);
+        clearTimeout(bubbleTimer);
+        clearInterval(bubbleIntervalTimer);
+        speechBubble.classList.add('hidden');
+
+        document.getElementById('final-stats').innerHTML = `スコア: <strong>${score}</strong><br>コンボ数: ${streak}`;
+        gameoverScreen.classList.remove('hidden');
+    }
+
+    function updateStats() {
+        scoreDisplay.textContent = `スコア: ${score}`;
+        streakDisplay.textContent = `コンボ: ${streak}`;
+    }
+
+    function nextRound() {
+        if (!isPlaying) return;
+
+        // モードをランダム決定
+        currentMode = modeTypes[Math.floor(Math.random() * modeTypes.length)];
+
+        // ランダムに3つ選ぶ
+        let shuffled = [...dictionaryData].sort(() => 0.5 - Math.random());
+        currentBlocks = shuffled.slice(0, 3);
+
+        // 正解の並びを作成
+        // 日本語ソート用（簡易五十音順比較：localeCompare('ja')）
+        let sorted = [...currentBlocks].sort((a, b) => {
+            if (currentMode.sortKey === 'en') {
+                return a.en.localeCompare(b.en);
+            } else {
+                return a.ja.localeCompare(b.ja);
+            }
+        });
+
+        // もし最初から正解と同じ並びだったらシャッフルし直す（1回くらいずらす）
+        if (currentBlocks[0] === sorted[0] && currentBlocks[1] === sorted[1] && currentBlocks[2] === sorted[2]) {
+            let temp = currentBlocks[0];
+            currentBlocks[0] = currentBlocks[1];
+            currentBlocks[1] = temp;
+        }
+
+        renderBlocks();
+        showBubble();
+    }
+
+    function showBubble() {
+        speechBubble.classList.remove('hidden');
+        bubbleText.innerHTML = `【${currentMode.name}】`;
+        
+        // 5秒タイマー演出
+        let startTime = Date.now();
+        let duration = 5000;
+        
+        if (bubbleIntervalTimer) clearInterval(bubbleIntervalTimer);
+        
+        timerFill.style.width = '100%';
+        bubbleIntervalTimer = setInterval(() => {
+            let elapsed = Date.now() - startTime;
+            let remaining = Math.max(0, 100 - (elapsed / duration) * 100);
+            timerFill.style.width = remaining + '%';
+            if (remaining <= 0) {
+                clearInterval(bubbleIntervalTimer);
+            }
+        }, 50);
+
+        if (bubbleTimer) clearTimeout(bubbleTimer);
+        bubbleTimer = setTimeout(() => {
+            speechBubble.classList.add('hidden');
+        }, 5000);
+    }
+
+    function renderBlocks() {
+        blocksArea.innerHTML = '';
+        currentBlocks.forEach((item, index) => {
+            const div = document.createElement('div');
+            div.className = 'wood-block drop-animation';
+            div.draggable = true;
+            div.dataset.index = index;
+
+            let displayText = currentMode.lang === 'en' ? item.en : item.ja;
+            let subText = currentMode.lang === 'en' ? `(訳: ${item.ja})` : `(英: ${item.en})`;
+
+            div.innerHTML = `
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <span style="font-size: 14px; background: #8b5a2b; color: #fff; padding: 2px 6px; border-radius: 4px;">${index + 1}</span>
+                    <div>
+                        <div class="word-main">${displayText}</div>
+                        <div class="word-sub">${subText}</div>
+                    </div>
+                </div>
+                <div class="move-btns">
+                    <button class="move-btn" onclick="moveBlock(${index}, -1)">▲</button>
+                    <button class="move-btn" onclick="moveBlock(${index}, 1)">▼</button>
+                </div>
+            `;
+
+            // ドラッグ＆ドロップ対応（PC・スマホタッチ簡易対応）
+            div.addEventListener('dragstart', handleDragStart);
+            div.addEventListener('dragover', handleDragOver);
+            div.addEventListener('drop', handleDrop);
+            div.addEventListener('dragend', handleDragEnd);
+
+            blocksArea.appendChild(div);
+        });
+    }
+
+    let draggedIndex = null;
+
+    function handleDragStart(e) {
+        draggedIndex = parseInt(this.dataset.index);
+        this.classList.add('dragging');
+    }
+
+    function handleDragOver(e) {
+        e.preventDefault();
+    }
+
+    function handleDrop(e) {
+        e.preventDefault();
+        const targetIndex = parseInt(this.dataset.index);
+        if (draggedIndex !== null && draggedIndex !== targetIndex) {
+            // 配列の要素を入れ替え
+            let movedItem = currentBlocks.splice(draggedIndex, 1)[0];
+            currentBlocks.splice(targetIndex, 0, movedItem);
+            renderBlocks();
+        }
+    }
+
+    function handleDragEnd(e) {
+        this.classList.remove('dragging');
+        draggedIndex = null;
+    }
+
+    // ボタンによる並び替え用グローバル関数
+    window.moveBlock = function(index, direction) {
+        let newIndex = index + direction;
+        if (newIndex < 0 || newIndex >= currentBlocks.length) return;
+        
+        let temp = currentBlocks[index];
+        currentBlocks[index] = currentBlocks[newIndex];
+        currentBlocks[newIndex] = temp;
+        renderBlocks();
+    };
+
+    function checkAnswer() {
+        if (!isPlaying) return;
+
+        // 正解の配列を作成
+        let sorted = [...currentBlocks].sort((a, b) => {
+            if (currentMode.sortKey === 'en') {
+                return a.en.localeCompare(b.en);
+            } else {
+                return a.ja.localeCompare(b.ja);
+            }
+        });
+
+        // 比較
+        let isCorrect = true;
+        for (let i = 0; i < 3; i++) {
+            if (currentBlocks[i] !== sorted[i]) {
+                isCorrect = false;
+                break;
+            }
+        }
+
+        const blocks = document.querySelectorAll('.wood-block');
+
+        if (isCorrect) {
+            score += 100 + (streak * 20);
+            streak++;
+            updateStats();
+            blocks.forEach(b => b.classList.add('correct-flash'));
+            setTimeout(() => {
+                nextRound();
+            }, 400);
+        } else {
+            streak = 0;
+            updateStats();
+            score = Math.max(0, score - 50);
+            updateStats();
+            blocks.forEach(b => b.classList.add('wrong-flash'));
+            setTimeout(() => {
+                // 不正解時はそのままリトライ可能
+            }, 400);
+        }
+    }
+</script>
+
+</body>
+</html>
