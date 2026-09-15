@@ -62,7 +62,6 @@
             justify-content: center;
             position: relative;
         }
-        /* 美人眼鏡秘書のCSSアート・アバター表現 */
         .secretary-avatar {
             width: 220px;
             height: 320px;
@@ -249,6 +248,8 @@
         }
         .cell {
             background: #f0d9b5;
+            width: 60px;
+            height: 60px;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -420,9 +421,6 @@
 </div>
 
 <script>
-    // 詰め将棋ステージ定義 (3x3 ~ 5x5)
-    // 持ち駒：hand ({type: '歩', count: 1} など)
-    // 盤面：null または {player: 0(先手) or 1(後手), type: '王'|'金'|'銀'|'歩'|'角'|'飛'}
     const stages = [
         {
             size: 3,
@@ -434,10 +432,8 @@
                 [null, {p:0, t:'金'}, null]
             ],
             hand: [{p:0, t:'歩'}],
-            // 正解手順: 持駒の歩を打ち、王を詰ます (例: 2段目中央に歩を打つ、または先手の金を動かすなど)
-            // 簡単にするため、王の周りに打つ or 動かす一手詰
             solutions: [
-                {from: {hand: 0}, to: {r: 0, c: 1}} // 持駒の歩を (0,1)に打つと王手 -> 王は逃げ場なし
+                {from: {hand: 0}, to: {r: 0, c: 1}}
             ]
         },
         {
@@ -505,20 +501,23 @@
     let currentStageIndex = 0;
     let boardState = [];
     let handState = [];
-    let selectedCell = null; // {r, c}
+    let selectedCell = null;
     let selectedHandIndex = null;
     let timeLeft = 10.0;
     let timerInterval = null;
     let isGameActive = false;
+    let lastSpokenTime = 10.0;
 
     // ガン詰めセリフ集
     const scoldMessages = [
         "「……まだですか？ 早くしてくださいよ、遅すぎます。」",
         "「寝ているんですか？ 脳みそがフリーズしていませんか？」",
         "「私の時給が発生しているの分かってますよね？」",
-        "`「小学生でも1秒で解けますよ？ その手は何ですか。」`",
+        "「小学生でも1秒で解けますよ？ その手は何ですか。」",
         "「はあ……。ため息が出ますわ。早く指してください！」",
-        "「時間切れが近づいていますよ。無能を発揮しないでください！」"
+        "「時間切れが近づいていますよ。無能を発揮しないでください！」",
+        "「あなた、そろそろクビにしますよ？」",
+        "「盤面を凝視するだけで時間が過ぎていきますね……」"
     ];
 
     function initGame() {
@@ -532,17 +531,17 @@
             return;
         }
         const stage = stages[index];
-        document.getElementById("stage-infoinnerText" || "stage-info").innerText = `第 ${index + 1} 局 / 全 ${stages.length} 局（${stage.size}×` + `${stage.size} 詰将棋）`;
+        document.getElementById("stage-info").innerText = `第 ${index + 1} 局 / 全 ${stages.length} 局（${stage.size}×${stage.size} 詰将棋）`;
         
-        // 盤面のコピー
         boardState = JSON.parse(JSON.stringify(stage.board));
         handState = JSON.parse(JSON.stringify(stage.hand));
         timeLeft = stage.time;
+        lastSpokenTime = timeLeft;
         isGameActive = true;
         selectedCell = null;
         selectedHandIndex = null;
 
-        updateSpeech(scoldMessages[Math.floor(Math.random() * scoldMessages.length)]);
+        updateSpeech("「……まだですか？ 早くしてくださいよ、遅すぎます。」");
         renderBoard();
         renderHand();
         startTimer();
@@ -555,6 +554,14 @@
         timerInterval = setInterval(() => {
             if (!isGameActive) return;
             timeLeft -= 0.1;
+            
+            // 時間経過（約2.5秒ごと、または残り時間が減ったとき）にランダムでガン詰めセリフを更新
+            if (lastSpokenTime - timeLeft >= 2.5) {
+                lastSpokenTime = timeLeft;
+                const randomMsg = scoldMessages[Math.floor(Math.random() * scoldMessages.length)];
+                updateSpeech(randomMsg);
+            }
+
             if (timeLeft <= 0) {
                 timeLeft = 0;
                 isGameActive = false;
@@ -570,11 +577,6 @@
         const pct = (timeLeft / stage.time) * 100;
         document.getElementById("timer-bar").style.width = pct + "%";
         document.getElementById("time-text").innerText = timeLeft.toFixed(1) + "s";
-
-        // 時間が減ると秘書の表情やセリフが厳しくなる
-        if (pct < 30 && Math.random() < 0.1) {
-            updateSpeech("「残り時間わずかです！ 早く！ 早くしてください！！」");
-        }
     }
 
     function timeOutAction() {
@@ -583,7 +585,7 @@
     }
 
     function updateSpeech(text) {
-        document.getElementById("speech").innerText = text.replace(/`/g, '');
+        document.getElementById("speech").innerText = text;
     }
 
     function renderBoard() {
@@ -606,7 +608,6 @@
                     cell.classList.add(piece.p === 0 ? "sente" : "gote");
                 }
 
-                // 選択状態
                 if (selectedCell && selectedCell.r === r && selectedCell.c === c) {
                     cell.classList.add("selected");
                 }
@@ -641,10 +642,8 @@
     function onCellClick(r, c) {
         if (!isGameActive) return;
 
-        // 持ち駒が選択されている場合、空きマスに打つ
         if (selectedHandIndex !== null) {
             if (boardState[r][c] === null) {
-                // 駒を打つ
                 const piece = handState[selectedHandIndex];
                 boardState[r][c] = { p: piece.p, t: piece.t };
                 handState.splice(selectedHandIndex, 1);
@@ -659,7 +658,6 @@
             return;
         }
 
-        // 盤上の駒を選択
         const piece = boardState[r][c];
         if (selectedCell === null) {
             if (piece && piece.p === 0) {
@@ -667,11 +665,9 @@
                 renderBoard();
             }
         } else {
-            // 移動先が選択された場合
             const fromR = selectedCell.r;
             const fromC = selectedCell.c;
             
-            // 簡易移動処理
             boardState[r][c] = boardState[fromR][fromC];
             boardState[fromR][fromC] = null;
             selectedCell = null;
@@ -684,8 +680,6 @@
 
     function checkMove(r, c) {
         const stage = stages[currentStageIndex];
-        // 正解判定
-        // ここでは簡易的に、設定された正解の一手と一致するか判定
         let isCorrect = false;
         stage.solutions.forEach(sol => {
             if (sol.to.r === r && sol.to.c === c) {
@@ -730,7 +724,7 @@
         loadStage(currentStageIndex);
     }
 
-    function skipStage() {
+    function stage() {
         isGameActive = false;
         if (timerInterval) clearInterval(timerInterval);
         updateSpeech("「逃げ出しましたね……救いようがありません。」");
@@ -740,7 +734,6 @@
         });
     }
 
-    // 初期化実行
     window.onload = initGame;
 </script>
 
