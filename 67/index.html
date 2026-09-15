@@ -2,13 +2,12 @@
 <html lang="ja">
 <head>
     <meta charset="UTF-8">
-    <title>ガン詰め将棋</title>
+    <title>ガン詰めチェス</title>
     <style>
         :root {
             --primary: #8b0000;
             --accent: #ff4500;
             --bg: #1a1a1a;
-            --panel-bg: rgba(30, 30, 30, 0.95);
             --text: #f0f0f0;
         }
         * { box-sizing: border-box; }
@@ -24,7 +23,6 @@
             overflow: hidden;
         }
 
-        /* 上部・中央：メインゲームエリア（盤面を真ん中にでっかく） */
         .game-pane {
             flex: 1;
             background: #242424;
@@ -65,7 +63,7 @@
         }
 
         .board-container {
-            background: #dcb35c;
+            background: #b58863;
             padding: 16px;
             border-radius: 12px;
             box-shadow: 0 10px 30px rgba(0,0,0,0.7);
@@ -73,67 +71,36 @@
         }
         .board {
             display: grid;
-            gap: 3px;
+            gap: 2px;
             background: #8b5a2b;
-            border: 3px solid #8b5a2b;
+            border: 2px solid #8b5a2b;
         }
         .cell {
-            background: #f0d9b5;
-            width: 75px;
-            height: 75px;
+            width: 80px;
+            height: 80px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: bold;
-            font-size: 2.2rem;
+            font-size: 2.8rem;
             cursor: pointer;
             user-select: none;
             transition: background 0.2s;
             position: relative;
         }
+        .cell.light { background: #f0d9b5; color: #000; }
+        .cell.dark { background: #b58863; color: #000; }
         .cell:hover {
-            background: #e4c594;
+            filter: brightness(1.1);
         }
         .cell.selected {
-            background: #b58863 !important;
+            background: #7fbf7f !important;
         }
-        .sente {
-            color: #111;
-        }
-        .gote {
-            color: #111;
-            transform: rotate(180deg);
-        }
-
-        .hand-container {
-            margin-top: 15px;
-            background: #333;
-            padding: 8px 20px;
-            border-radius: 8px;
-            display: flex;
-            gap: 15px;
-            align-items: center;
-            border: 2px solid #555;
-        }
-        .hand-title { font-size: 0.95rem; color: #ccc; }
-        .hand-pieces { display: flex; gap: 10px; }
-        .hand-piece {
-            background: #f0d9b5;
-            color: #111;
-            padding: 6px 14px;
-            border-radius: 6px;
-            cursor: pointer;
-            font-weight: bold;
-            font-size: 1.2rem;
-            border: 2px solid #8b5a2b;
-        }
-        .hand-piece.selected {
-            background: #b58863;
-            color: #fff;
+        .cell.highlight {
+            background: #a9dfbf !important;
         }
 
         .controls {
-            margin-top: 15px;
+            margin-top: 20px;
             display: flex;
             gap: 15px;
         }
@@ -152,7 +119,7 @@
         button:hover { background: #a52a2a; transform: translateY(-2px); }
         button:active { transform: translateY(0); }
 
-        /* 下部：秘書エリア（小さく表示＆右側に吹き出し） */
+        /* 下部：秘書エリア */
         .secretary-footer {
             height: 120px;
             background: linear-gradient(180deg, #1f1113 0%, #0d0405 100%);
@@ -175,7 +142,6 @@
             overflow: hidden;
             flex-shrink: 0;
         }
-        /* ミニキャラクターSVG / CSS 表現 */
         .mini-face {
             position: absolute;
             width: 65px;
@@ -255,11 +221,10 @@
 </head>
 <body>
 
-<!-- メインゲームエリア（盤面を真ん中にでっかく） -->
 <div class="game-pane">
     <div class="header">
-        <h1>ガン詰め将棋</h1>
-        <div class="stage-info" id="stage-info">第 1 局 / 全 5 局（3×3 簡単詰将棋）</div>
+        <h1>ガン詰めチェス (Mate in 1)</h1>
+        <div class="stage-info" id="stage-info">第 1 局 / 全 5 局（1手メイト）</div>
     </div>
 
     <div class="timer-container">
@@ -276,18 +241,12 @@
         <div class="board" id="board"></div>
     </div>
 
-    <div class="hand-container" id="hand-container">
-        <div class="hand-title">持ち駒:</div>
-        <div class="hand-pieces" id="hand-pieces"></div>
-    </div>
-
     <div class="controls">
         <button onclick="resetStage()">盤面リセット</button>
-        <button onclick="skipStage()" style="background:#555;">ギブアップ（次の問題）</button>
+        <button onclick="skipStage()" style="background:#555;">ギブアップ</button>
     </div>
 </div>
 
-<!-- 下部：秘書エリア（小さく表示＆右側に吹き出し） -->
 <div class="secretary-footer">
     <div class="secretary-mini-avatar">
         <div class="mini-hair"></div>
@@ -295,11 +254,10 @@
         <div class="mini-glasses"></div>
     </div>
     <div class="speech-bubble" id="speech">
-        「……まだですか？ 早くしてくださいよ、遅すぎます。」
+        「……まだですか？ 早くチェックメイトしなさいよ！」
     </div>
 </div>
 
-<!-- モーダルウィンドウ -->
 <div class="modal" id="modal">
     <div class="modal-content" id="modal-content">
         <h2 id="modal-title">クリア！</h2>
@@ -309,100 +267,90 @@
 </div>
 
 <script>
+    // チェスのピース記号 (白: ♔♕♖♗♘♙, 黒: ♚♛♜♝♞♟)
+    // 3x3 ~ 4x4 のシンプル1手メイトパズル (Mate in 1)
     const stages = [
         {
             size: 3,
             time: 8.0,
-            title: "第 1 局（3×3 初歩の1手詰）",
+            title: "第 1 局（3×3 ルークで1手メイト）",
             board: [
-                [null, {p:1, t:'王'}, null],
+                ['♚', null, null],
                 [null, null, null],
-                [null, {p:0, t:'歩'}, null]
+                ['♖', null, '♔']
             ],
-            hand: [],
-            solutions: [
-                {from: {r: 2, c: 1}, to: {r: 1, c: 1}}
-            ]
+            // 白のルーク(♖)を (2,0) から (0,0) または (0,1) などへ動かして黒王(♚)をチェックメイト
+            // 3x3で、黒王が(0,0)、白王が(2,2)、白ルークが(2,0) -> ルークを (0,0)に移動すると王をキャプチャしつつメイト (または(0,2)等)
+            // 正解: (2,0) -> (0,0) で黒王を取る一手メイト
+            solution: { from: {r: 2, c: 0}, to: {r: 0, c: 0} }
         },
         {
             size: 3,
             time: 7.0,
-            title: "第 2 局（3×3 持ち駒の歩を打つ）",
+            title: "第 3 局（3×3 クイーンの圧倒的メイト）",
             board: [
-                [null, {p:1, t:'王'}, null],
+                [null, '♚', null],
                 [null, null, null],
-                [null, null, null]
+                [null, '♕', '♔']
             ],
-            hand: [{p:0, t:'歩'}],
-            solutions: [
-                {from: {hand: 0}, to: {r: 0, c: 1}}
-            ]
-        },
-        {
-            size: 4,
-            time: 9.0,
-            title: "第 3 局（4×4 秘書のイライラ増幅）",
-            board: [
-                [null, {p:1, t:'王'}, null, null],
-                [null, null, null, null],
-                [null, {p:0, t:'金'}, null, null],
-                [null, null, null, null]
-            ],
-            hand: [{p:0, t:'歩'}],
-            solutions: [
-                {from: {hand: 0}, to: {r: 0, c: 2}}
-            ]
+            // 白クイーン(♕)を (2,1) から (0,1) へ動かすと王の真上でチェックメイト
+            solution: { from: {r: 2, c: 1}, to: {r: 0, c: 1} }
         },
         {
             size: 4,
             time: 8.0,
-            title: "第 4 局（4×4 桂馬の跳躍）",
+            title: "第 3 局（4×4 ルークとキングの連携）",
             board: [
-                [null, null, {p:1, t:'王'}, null],
+                ['♚', null, null, null],
                 [null, null, null, null],
                 [null, null, null, null],
-                [null, null, null, null]
+                ['♖', null, '♔', null]
             ],
-            hand: [{p:0, t:'金'}],
-            solutions: [
-                {from: {hand: 0}, to: {r: 1, c: 2}}
-            ]
+            // ルーク(3,0)を(0,0)へ動かしてメイト
+            solution: { from: {r: 3, c: 0}, to: {r: 0, c: 0} }
         },
         {
-            size: 5,
-            time: 10.0,
-            title: "最終局（5×5 最終試練・完璧な詰め）",
+            size: 4,
+            time: 7.0,
+            title: "第 4 局（4×4 クイーンの急襲）",
             board: [
-                [null, null, {p:1, t:'王'}, null, null],
-                [null, null, null, null, null],
-                [null, null, {p:0, t:'金'}, null, null],
-                [null, null, null, null, null],
-                [null, null, null, null, null]
+                [null, '♚', null, null],
+                [null, null, null, null],
+                [null, null, null, null],
+                [null, '♕', null, '♔']
             ],
-            hand: [{p:0, t:'金'}],
-            solutions: [
-                {from: {hand: 0}, to: {r: 1, c: 2}}
-            ]
+            // クイーン(3,1)を(0,1)へ動かしてメイト
+            solution: { from: {r: 3, c: 1}, to: {r: 0, c: 1} }
+        },
+        {
+            size: 4,
+            time: 6.0,
+            title: "最終局（4×4 究極の1手メイト）",
+            board: [
+                [null, null, '♚', null],
+                [null, null, null, null],
+                [null, null, null, null],
+                [null, null, '♕', '♔']
+            ],
+            // クイーン(3,2)を(0,2)へ動かしてメイト
+            solution: { from: {r: 3, c: 2}, to: {r: 0, c: 2} }
         }
     ];
 
     let currentStageIndex = 0;
     let boardState = [];
-    let handState = [];
     let selectedCell = null;
-    let selectedHandIndex = null;
     let timeLeft = 10.0;
     let timerInterval = null;
     let isGameActive = false;
     let lastSpokenTime = 10.0;
 
-    // ガン詰めセリフ集
     const scoldMessages = [
-        "「……まだですか？ 早くしてくださいよ、遅すぎます。」",
-        "「寝ているんですか？ 脳みそがフリーズしていませんか？」",
+        "「……まだですか？ 早くチェックメイトしなさいよ！」",
+        "「チェスのルール分かってますよね？ 眠たくなりますわ。」",
         "「私の時給が発生しているの分かってますよね？」",
         "「小学生でも1秒で解けますよ？ その手は何ですか。」",
-        "「はあ……。ため息が出ますわ。早く指してください！」",
+        "「はあ……。ため息が出ますわ。早く動かしなさい！」",
         "「時間切れが近づいていますよ。無能を発揮しないでください！」",
         "「あなた、そろそろクビにしますよ？」",
         "「盤面を凝視するだけで時間が過ぎていきますね……」"
@@ -419,19 +367,16 @@
             return;
         }
         const stage = stages[index];
-        document.getElementById("stage-info").innerText = `第 ${index + 1} 局 / 全 ${stages.length} 局（${stage.size}×${stage.size} 詰将棋）`;
+        document.getElementById("stage-info").innerText = `第 ${index + 1} 局 / 全 ${stages.length} 局（${stage.size}×${stage.size} チェス1手メイト）`;
         
         boardState = JSON.parse(JSON.stringify(stage.board));
-        handState = JSON.parse(JSON.stringify(stage.hand));
         timeLeft = stage.time;
         lastSpokenTime = timeLeft;
         isGameActive = true;
         selectedCell = null;
-        selectedHandIndex = null;
 
-        updateSpeech("「……まだですか？ 早くしてくださいよ、遅すぎます。」");
+        updateSpeech("「……まだですか？ 早くチェックメイトしなさいよ！」");
         renderBoard();
-        renderHand();
         startTimer();
     }
 
@@ -475,24 +420,28 @@
         document.getElementById("speech").innerText = text;
     }
 
+    // 白のピース判定
+    function isWhitePiece(p) {
+        return ['♔', '♕', '♖', '♗', '♘', '♙'].includes(p);
+    }
+
     function renderBoard() {
         const stage = stages[currentStageIndex];
         const boardEl = document.getElementById("board");
-        boardEl.style.gridTemplateColumns = `repeat(${stage.size}, 75px)`;
-        boardEl.style.gridTemplateRows = `repeat(${stage.size}, 75px)`;
+        boardEl.style.gridTemplateColumns = `repeat(${stage.size}, 80px)`;
+        boardEl.style.gridTemplateRows = `repeat(${stage.size}, 80px)`;
         boardEl.innerHTML = "";
 
         for (let r = 0; r < stage.size; r++) {
             for (let c = 0; c < stage.size; c++) {
                 const cell = document.createElement("div");
-                cell.className = "cell";
+                cell.className = "cell " + ((r + c) % 2 === 0 ? "light" : "dark");
                 cell.dataset.r = r;
                 cell.dataset.c = c;
 
                 const piece = boardState[r][c];
                 if (piece) {
-                    cell.innerText = piece.t;
-                    cell.classList.add(piece.p === 0 ? "sente" : "gote");
+                    cell.innerText = piece;
                 }
 
                 if (selectedCell && selectedCell.r === r && selectedCell.c === c) {
@@ -505,49 +454,13 @@
         }
     }
 
-    function renderHand() {
-        const handEl = document.getElementById("hand-pieces");
-        handEl.innerHTML = "";
-        handState.forEach((item, idx) => {
-            const el = document.createElement("div");
-            el.className = "hand-piece";
-            if (selectedHandIndex === idx) el.classList.add("selected");
-            el.innerText = item.t;
-            el.onclick = () => onHandClick(idx);
-            handEl.appendChild(el);
-        });
-    }
-
-    function onHandClick(idx) {
-        if (!isGameActive) return;
-        selectedHandIndex = (selectedHandIndex === idx) ? null : idx;
-        selectedCell = null;
-        renderBoard();
-        renderHand();
-    }
-
     function onCellClick(r, c) {
         if (!isGameActive) return;
 
-        if (selectedHandIndex !== null) {
-            if (boardState[r][c] === null) {
-                const piece = handState[selectedHandIndex];
-                boardState[r][c] = { p: piece.p, t: piece.t };
-                handState.splice(selectedHandIndex, 1);
-                selectedHandIndex = null;
-                
-                renderBoard();
-                renderHand();
-                checkMove(null, null, r, c, true);
-            } else {
-                updateSpeech("「そこには既に駒があります！ 目がついてますか？」");
-            }
-            return;
-        }
-
         const piece = boardState[r][c];
         if (selectedCell === null) {
-            if (piece && piece.p === 0) {
+            // 白の駒のみ選択可能
+            if (piece && isWhitePiece(piece)) {
                 selectedCell = { r, c };
                 renderBoard();
             }
@@ -555,38 +468,33 @@
             const fromR = selectedCell.r;
             const fromC = selectedCell.c;
             
+            // 移動先が同じなら選択解除
+            if (fromR === r && fromC === c) {
+                selectedCell = null;
+                renderBoard();
+                return;
+            }
+
+            // 簡易チェス移動＆正解チェック
             boardState[r][c] = boardState[fromR][fromC];
             boardState[fromR][fromC] = null;
             selectedCell = null;
             
             renderBoard();
-            renderHand();
-            checkMove(fromR, fromC, r, c, false);
+            checkMove(fromR, fromC, r, c);
         }
     }
 
-    function checkMove(fromR, fromC, r, c, isHand) {
+    function checkMove(fromR, fromC, r, c) {
         const stage = stages[currentStageIndex];
-        let isCorrect = false;
+        const sol = stage.solution;
 
-        stage.solutions.forEach(sol => {
-            if (isHand) {
-                if (sol.from.hand !== undefined && sol.to.r === r && sol.to.c === c) {
-                    isCorrect = true;
-                }
-            } else {
-                if (sol.from.r === fromR && sol.from.c === fromC && sol.to.r === r && sol.to.c === c) {
-                    isCorrect = true;
-                }
-            }
-        });
-
-        if (isCorrect) {
+        if (sol.from.r === fromR && sol.from.c === fromC && sol.to.r === r && sol.to.c === c) {
             isGameActive = false;
             clearInterval(timerInterval);
             updateSpeech("「……ふん、まあまあですね。次もその調子でどうぞ。」");
             setTimeout(() => {
-                showModal("クリア！", "お見事です！ 完璧な一手でした。", "次の局へ", nextStage);
+                showModal("クリア！", "お見事です！ 完璧なチェックメイトでした。", "次の局へ", nextStage);
             }, 500);
         } else {
             updateSpeech("「は？ 何ですかそのお粗末な手は！ やり直しです！」");
