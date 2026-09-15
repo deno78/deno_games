@@ -19,34 +19,43 @@
             color: var(--text);
             font-family: 'Helvetica Neue', Arial, sans-serif;
             display: flex;
+            flex-direction: column;
             height: 100vh;
             overflow: hidden;
         }
-        .container {
-            display: flex;
-            width: 100%;
-            height: 100%;
-        }
-        /* 左側：キャラクターエリア（ジャパニメーション風美人眼鏡秘書） */
-        .secretary-pane {
+
+        /* 上部・中央：メインゲームエリア（盤面を真ん中にでっかく） */
+        .game-pane {
             flex: 1;
-            background: linear-gradient(135deg, #2c1a1d 0%, #0f0506 100%);
-            border-right: 4px solid var(--primary);
+            background: #242424;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: space-between;
-            padding: 20px;
+            justify-content: center;
+            padding: 10px;
             position: relative;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        h1 { margin: 0; font-size: 2rem; color: #ff7f50; text-shadow: 2px 2px #000; }
+        .stage-info { font-size: 1.1rem; color: #aaa; margin-top: 5px; }
+
+        .timer-container {
+            width: 400px;
+            max-width: 90%;
+            margin-bottom: 15px;
         }
         .timer-bar-container {
             width: 100%;
             background: #444;
-            height: 15px;
+            height: 14px;
             border-radius: 10px;
             overflow: hidden;
             border: 2px solid #555;
-            margin-bottom: 10px;
+            margin-top: 4px;
         }
         .timer-bar {
             width: 100%;
@@ -54,207 +63,29 @@
             background: linear-gradient(90deg, #ff4500, #ff0000);
             transition: width 0.1s linear;
         }
-        .character-art {
-            flex: 1;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            position: relative;
-        }
-        .secretary-avatar {
-            width: 220px;
-            height: 320px;
-            background: #331a1a;
-            border-radius: 110px 110px 20px 20px;
-            position: relative;
-            box-shadow: 0 0 30px rgba(255, 69, 0, 0.4);
-            border: 3px solid #ff7f50;
-            overflow: hidden;
-        }
-        .hair-back {
-            position: absolute;
-            width: 260px;
-            height: 300px;
-            background: #221100;
-            top: -20px;
-            left: -20px;
-            border-radius: 130px;
-            z-index: 1;
-        }
-        .face {
-            position: absolute;
-            width: 160px;
-            height: 180px;
-            background: #ffe0d0;
-            top: 60px;
-            left: 30px;
-            border-radius: 80px 80px 90px 90px;
-            z-index: 2;
-        }
-        .eyes {
-            position: absolute;
-            top: 110px;
-            width: 100%;
-            display: flex;
-            justify-content: space-around;
-            padding: 0 25px;
-            z-index: 3;
-        }
-        .eye {
-            width: 25px;
-            height: 18px;
-            background: #4a1500;
-            border-radius: 50%;
-            position: relative;
-        }
-        .eye::after {
-            content: '';
-            position: absolute;
-            width: 10px;
-            height: 10px;
-            background: #fff;
-            border-radius: 50%;
-            top: 2px;
-            right: 3px;
-        }
-        .glasses {
-            position: absolute;
-            top: 98px;
-            left: 17px;
-            width: 186px;
-            height: 45px;
-            border: 3px solid #d4af37;
-            border-radius: 10px;
-            z-index: 4;
-            pointer-events: none;
-        }
-        .glasses::before {
-            content: '';
-            position: absolute;
-            top: 20px;
-            left: 75px;
-            width: 36px;
-            height: 3px;
-            background: #d4af37;
-        }
-        .hair-front {
-            position: absolute;
-            width: 180px;
-            height: 100px;
-            background: #221100;
-            top: 40px;
-            left: 20px;
-            border-radius: 90px 90px 20px 20px;
-            z-index: 5;
-        }
-        .mouth {
-            position: absolute;
-            top: 155px;
-            left: 70px;
-            width: 20px;
-            height: 8px;
-            border-bottom: 3px solid #8b0000;
-            border-radius: 0 0 10px 10px;
-            z-index: 3;
-        }
-        .body-suit {
-            position: absolute;
-            bottom: 0;
-            width: 220px;
-            height: 120px;
-            background: #111;
-            border-radius: 50px 50px 0 0;
-            z-index: 1;
-        }
-        .blouse {
-            position: absolute;
-            bottom: 0;
-            left: 60px;
-            width: 100px;
-            height: 80px;
-            background: #fff;
-            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
-            z-index: 2;
-        }
-        .tie {
-            position: absolute;
-            bottom: 20px;
-            left: 103px;
-            width: 14px;
-            height: 50px;
-            background: #8b0000;
-            z-index: 3;
-        }
-
-        .speech-bubble {
-            background: #fff;
-            color: #000;
-            padding: 15px 20px;
-            border-radius: 15px;
-            font-weight: bold;
-            font-size: 1.1rem;
-            max-width: 90%;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
-            position: relative;
-            margin-top: 15px;
-            min-height: 60px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            text-align: center;
-            border: 3px solid var(--primary);
-        }
-        .speech-bubble::after {
-            content: '';
-            position: absolute;
-            top: -15px;
-            left: 50%;
-            transform: translateX(-50%);
-            border-width: 0 10px 15px 10px;
-            border-style: solid;
-            border-color: transparent transparent #fff transparent;
-        }
-
-        /* 右側：ゲーム盤面エリア */
-        .game-pane {
-            flex: 1.5;
-            background: #242424;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            padding: 20px;
-        }
-        .header {
-            text-align: center;
-            margin-bottom: 15px;
-        }
-        h1 { margin: 0; font-size: 1.8rem; color: #ff7f50; text-shadow: 2px 2px #000; }
-        .stage-info { font-size: 1rem; color: #aaa; margin-top: 5px; }
 
         .board-container {
             background: #dcb35c;
-            padding: 12px;
-            border-radius: 8px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
-            border: 4px solid #8b5a2b;
+            padding: 16px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            border: 5px solid #8b5a2b;
         }
         .board {
             display: grid;
-            gap: 2px;
+            gap: 3px;
             background: #8b5a2b;
-            border: 2px solid #8b5a2b;
+            border: 3px solid #8b5a2b;
         }
         .cell {
             background: #f0d9b5;
-            width: 60px;
-            height: 60px;
+            width: 75px;
+            height: 75px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: bold;
-            font-size: 1.8rem;
+            font-size: 2.2rem;
             cursor: pointer;
             user-select: none;
             transition: background 0.2s;
@@ -265,10 +96,6 @@
         }
         .cell.selected {
             background: #b58863 !important;
-        }
-        .cell.highlight {
-            background: #769656 !important;
-            color: #fff;
         }
         .sente {
             color: #111;
@@ -281,23 +108,24 @@
         .hand-container {
             margin-top: 15px;
             background: #333;
-            padding: 10px 20px;
-            border-radius: 6px;
+            padding: 8px 20px;
+            border-radius: 8px;
             display: flex;
             gap: 15px;
             align-items: center;
             border: 2px solid #555;
         }
-        .hand-title { font-size: 0.9rem; color: #ccc; }
-        .hand-pieces { display: flex; gap: 8px; }
+        .hand-title { font-size: 0.95rem; color: #ccc; }
+        .hand-pieces { display: flex; gap: 10px; }
         .hand-piece {
             background: #f0d9b5;
             color: #111;
-            padding: 5px 10px;
-            border-radius: 4px;
+            padding: 6px 14px;
+            border-radius: 6px;
             cursor: pointer;
             font-weight: bold;
-            border: 1px solid #8b5a2b;
+            font-size: 1.2rem;
+            border: 2px solid #8b5a2b;
         }
         .hand-piece.selected {
             background: #b58863;
@@ -305,7 +133,7 @@
         }
 
         .controls {
-            margin-top: 20px;
+            margin-top: 15px;
             display: flex;
             gap: 15px;
         }
@@ -313,8 +141,8 @@
             background: var(--primary);
             color: white;
             border: none;
-            padding: 10px 20px;
-            font-size: 1rem;
+            padding: 8px 18px;
+            font-size: 0.95rem;
             border-radius: 5px;
             cursor: pointer;
             font-weight: bold;
@@ -323,6 +151,83 @@
         }
         button:hover { background: #a52a2a; transform: translateY(-2px); }
         button:active { transform: translateY(0); }
+
+        /* 下部：秘書エリア（小さく表示＆右側に吹き出し） */
+        .secretary-footer {
+            height: 120px;
+            background: linear-gradient(180deg, #1f1113 0%, #0d0405 100%);
+            border-top: 4px solid var(--primary);
+            display: flex;
+            align-items: center;
+            padding: 0 30px;
+            gap: 25px;
+            position: relative;
+        }
+
+        .secretary-mini-avatar {
+            width: 85px;
+            height: 85px;
+            background: #331a1a;
+            border-radius: 50%;
+            position: relative;
+            box-shadow: 0 0 15px rgba(255, 69, 0, 0.4);
+            border: 2px solid #ff7f50;
+            overflow: hidden;
+            flex-shrink: 0;
+        }
+        /* ミニキャラクターSVG / CSS 表現 */
+        .mini-face {
+            position: absolute;
+            width: 65px;
+            height: 70px;
+            background: #ffe0d0;
+            top: 15px;
+            left: 10px;
+            border-radius: 32px;
+        }
+        .mini-hair {
+            position: absolute;
+            width: 75px;
+            height: 40px;
+            background: #221100;
+            top: 8px;
+            left: 5px;
+            border-radius: 35px 35px 10px 10px;
+        }
+        .mini-glasses {
+            position: absolute;
+            top: 35px;
+            left: 14px;
+            width: 57px;
+            height: 18px;
+            border: 2px solid #d4af37;
+            border-radius: 4px;
+        }
+
+        .speech-bubble {
+            background: #fff;
+            color: #000;
+            padding: 12px 20px;
+            border-radius: 12px;
+            font-weight: bold;
+            font-size: 1.15rem;
+            flex: 1;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.4);
+            position: relative;
+            border: 3px solid var(--primary);
+            display: flex;
+            align-items: center;
+        }
+        .speech-bubble::before {
+            content: '';
+            position: absolute;
+            left: -15px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-width: 10px 15px 10px 0;
+            border-style: solid;
+            border-color: transparent #fff transparent transparent;
+        }
 
         /* モーダル */
         .modal {
@@ -350,64 +255,47 @@
 </head>
 <body>
 
-<div class="container">
-    <!-- 左側：美人眼鏡秘書エリア -->
-    <div class="secretary-pane">
-        <div style="width: 100%;">
-            <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 5px; font-weight: bold;">
-                <span>残り時間</span>
-                <span id="time-text">10.0s</span>
-            </div>
-            <div class="timer-bar-container">
-                <div class="timer-bar" id="timer-bar"></div>
-            </div>
-        </div>
+<!-- メインゲームエリア（盤面を真ん中にでっかく） -->
+<div class="game-pane">
+    <div class="header">
+        <h1>ガン詰め将棋</h1>
+        <div class="stage-info" id="stage-info">第 1 局 / 全 5 局（3×3 簡単詰将棋）</div>
+    </div>
 
-        <div class="character-art">
-            <div class="secretary-avatar" id="avatar">
-                <div class="hair-back"></div>
-                <div class="body-suit"></div>
-                <div class="blouse"></div>
-                <div class="tie"></div>
-                <div class="face"></div>
-                <div class="eyes">
-                    <div class="eye"></div>
-                    <div class="eye"></div>
-                </div>
-                <div class="mouth"></div>
-                <div class="glasses"></div>
-                <div class="hair-front"></div>
-            </div>
-            <div class="speech-bubble" id="speech">
-                「……まだですか？ 早くしてくださいよ、遅すぎます。」
-            </div>
+    <div class="timer-container">
+        <div style="display: flex; justify-content: space-between; font-size: 0.9rem; font-weight: bold;">
+            <span>残り時間</span>
+            <span id="time-text">10.0s</span>
         </div>
-
-        <div style="font-size: 0.85rem; color: #888; text-align: center;">
-            ※制限時間内に最善手を指さないと容赦なくガン詰めされます
+        <div class="timer-bar-container">
+            <div class="timer-bar" id="timer-bar"></div>
         </div>
     </div>
 
-    <!-- 右側：将棋盤エリア -->
-    <div class="game-pane">
-        <div class="header">
-            <h1>ガン詰め将棋</h1>
-            <div class="stage-info" id="stage-info">第 1 局 / 全 5 局（3×3 簡単詰将棋）</div>
-        </div>
+    <div class="board-container">
+        <div class="board" id="board"></div>
+    </div>
 
-        <div class="board-container">
-            <div class="board" id="board"></div>
-        </div>
+    <div class="hand-container" id="hand-container">
+        <div class="hand-title">持ち駒:</div>
+        <div class="hand-pieces" id="hand-pieces"></div>
+    </div>
 
-        <div class="hand-container" id="hand-container">
-            <div class="hand-title">持ち駒:</div>
-            <div class="hand-pieces" id="hand-pieces"></div>
-        </div>
+    <div class="controls">
+        <button onclick="resetStage()">盤面リセット</button>
+        <button onclick="skipStage()" style="background:#555;">ギブアップ（次の問題）</button>
+    </div>
+</div>
 
-        <div class="controls">
-            <button onclick="resetStage()">盤面リセット</button>
-            <button onclick="skipStage()" style="background:#555;">ギブアップ（次の問題）</button>
-        </div>
+<!-- 下部：秘書エリア（小さく表示＆右側に吹き出し） -->
+<div class="secretary-footer">
+    <div class="secretary-mini-avatar">
+        <div class="mini-hair"></div>
+        <div class="mini-face"></div>
+        <div class="mini-glasses"></div>
+    </div>
+    <div class="speech-bubble" id="speech">
+        「……まだですか？ 早くしてくださいよ、遅すぎます。」
     </div>
 </div>
 
@@ -555,7 +443,6 @@
             if (!isGameActive) return;
             timeLeft -= 0.1;
             
-            // 時間経過（約2.5秒ごと、または残り時間が減ったとき）にランダムでガン詰めセリフを更新
             if (lastSpokenTime - timeLeft >= 2.5) {
                 lastSpokenTime = timeLeft;
                 const randomMsg = scoldMessages[Math.floor(Math.random() * scoldMessages.length)];
@@ -591,8 +478,8 @@
     function renderBoard() {
         const stage = stages[currentStageIndex];
         const boardEl = document.getElementById("board");
-        boardEl.style.gridTemplateColumns = `repeat(${stage.size}, 60px)`;
-        boardEl.style.gridTemplateRows = `repeat(${stage.size}, 60px)`;
+        boardEl.style.gridTemplateColumns = `repeat(${stage.size}, 75px)`;
+        boardEl.style.gridTemplateRows = `repeat(${stage.size}, 75px)`;
         boardEl.innerHTML = "";
 
         for (let r = 0; r < stage.size; r++) {
@@ -647,12 +534,11 @@
                 const piece = handState[selectedHandIndex];
                 boardState[r][c] = { p: piece.p, t: piece.t };
                 handState.splice(selectedHandIndex, 1);
-                const handIdx = selectedHandIndex;
                 selectedHandIndex = null;
                 
                 renderBoard();
                 renderHand();
-                checkMove(null, null, r, c, true, piece.t);
+                checkMove(null, null, r, c, true);
             } else {
                 updateSpeech("「そこには既に駒があります！ 目がついてますか？」");
             }
@@ -675,12 +561,11 @@
             
             renderBoard();
             renderHand();
-            checkMove(fromR, fromC, r, c, false, null);
+            checkMove(fromR, fromC, r, c, false);
         }
     }
 
-    // 正解判定ロジック強化: 持ち駒から打った場合、または盤上の駒を動かした両方に対応
-    function checkMove(fromR, fromC, r, c, isHand, handPieceType) {
+    function checkMove(fromR, fromC, r, c, isHand) {
         const stage = stages[currentStageIndex];
         let isCorrect = false;
 
@@ -733,7 +618,7 @@
         loadStage(currentStageIndex);
     }
 
-    function stage() {
+    function skipStage() {
         isGameActive = false;
         if (timerInterval) clearInterval(timerInterval);
         updateSpeech("「逃げ出しましたね……救いようがありません。」");
