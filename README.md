@@ -77,3 +77,4 @@ Deno/Web games collection.
 - [64. 炎上を狙え！ (Flame Baiting Drawing Game)](./64/index.html)
 - [65. 大辞典パズル ～ 辞書順に並べろ！ ～ (Dictionary Order Puzzle)](./65/index.html)
 - [66. 英単語作成シューティング、Engradius (Engradius - English Word Craft Shooter)](./66/index.html)
+- [67. ガン詰め将棋 (Ganzume Shogi)](./67/index.html)

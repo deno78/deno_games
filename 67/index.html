@@ -1,0 +1,748 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ガン詰め将棋</title>
+    <style>
+        :root {
+            --primary: #8b0000;
+            --accent: #ff4500;
+            --bg: #1a1a1a;
+            --panel-bg: rgba(30, 30, 30, 0.95);
+            --text: #f0f0f0;
+        }
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            padding: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+        /* 左側：キャラクターエリア（ジャパニメーション風美人眼鏡秘書） */
+        .secretary-pane {
+            flex: 1;
+            background: linear-gradient(135deg, #2c1a1d 0%, #0f0506 100%);
+            border-right: 4px solid var(--primary);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px;
+            position: relative;
+        }
+        .timer-bar-container {
+            width: 100%;
+            background: #444;
+            height: 15px;
+            border-radius: 10px;
+            overflow: hidden;
+            border: 2px solid #555;
+            margin-bottom: 10px;
+        }
+        .timer-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #ff4500, #ff0000);
+            transition: width 0.1s linear;
+        }
+        .character-art {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        /* 美人眼鏡秘書のCSSアート・アバター表現 */
+        .secretary-avatar {
+            width: 220px;
+            height: 320px;
+            background: #331a1a;
+            border-radius: 110px 110px 20px 20px;
+            position: relative;
+            box-shadow: 0 0 30px rgba(255, 69, 0, 0.4);
+            border: 3px solid #ff7f50;
+            overflow: hidden;
+        }
+        .hair-back {
+            position: absolute;
+            width: 260px;
+            height: 300px;
+            background: #221100;
+            top: -20px;
+            left: -20px;
+            border-radius: 130px;
+            z-index: 1;
+        }
+        .face {
+            position: absolute;
+            width: 160px;
+            height: 180px;
+            background: #ffe0d0;
+            top: 60px;
+            left: 30px;
+            border-radius: 80px 80px 90px 90px;
+            z-index: 2;
+        }
+        .eyes {
+            position: absolute;
+            top: 110px;
+            width: 100%;
+            display: flex;
+            justify-content: space-around;
+            padding: 0 25px;
+            z-index: 3;
+        }
+        .eye {
+            width: 25px;
+            height: 18px;
+            background: #4a1500;
+            border-radius: 50%;
+            position: relative;
+        }
+        .eye::after {
+            content: '';
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background: #fff;
+            border-radius: 50%;
+            top: 2px;
+            right: 3px;
+        }
+        .glasses {
+            position: absolute;
+            top: 98px;
+            left: 17px;
+            width: 186px;
+            height: 45px;
+            border: 3px solid #d4af37;
+            border-radius: 10px;
+            z-index: 4;
+            pointer-events: none;
+        }
+        .glasses::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 75px;
+            width: 36px;
+            height: 3px;
+            background: #d4af37;
+        }
+        .hair-front {
+            position: absolute;
+            width: 180px;
+            height: 100px;
+            background: #221100;
+            top: 40px;
+            left: 20px;
+            border-radius: 90px 90px 20px 20px;
+            z-index: 5;
+        }
+        .mouth {
+            position: absolute;
+            top: 155px;
+            left: 70px;
+            width: 20px;
+            height: 8px;
+            border-bottom: 3px solid #8b0000;
+            border-radius: 0 0 10px 10px;
+            z-index: 3;
+        }
+        .body-suit {
+            position: absolute;
+            bottom: 0;
+            width: 220px;
+            height: 120px;
+            background: #111;
+            border-radius: 50px 50px 0 0;
+            z-index: 1;
+        }
+        .blouse {
+            position: absolute;
+            bottom: 0;
+            left: 60px;
+            width: 100px;
+            height: 80px;
+            background: #fff;
+            clip-path: polygon(50% 0%, 0% 100%, 100% 100%);
+            z-index: 2;
+        }
+        .tie {
+            position: absolute;
+            bottom: 20px;
+            left: 103px;
+            width: 14px;
+            height: 50px;
+            background: #8b0000;
+            z-index: 3;
+        }
+
+        .speech-bubble {
+            background: #fff;
+            color: #000;
+            padding: 15px 20px;
+            border-radius: 15px;
+            font-weight: bold;
+            font-size: 1.1rem;
+            max-width: 90%;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            position: relative;
+            margin-top: 15px;
+            min-height: 60px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            border: 3px solid var(--primary);
+        }
+        .speech-bubble::after {
+            content: '';
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%);
+            border-width: 0 10px 15px 10px;
+            border-style: solid;
+            border-color: transparent transparent #fff transparent;
+        }
+
+        /* 右側：ゲーム盤面エリア */
+        .game-pane {
+            flex: 1.5;
+            background: #242424;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+        h1 { margin: 0; font-size: 1.8rem; color: #ff7f50; text-shadow: 2px 2px #000; }
+        .stage-info { font-size: 1rem; color: #aaa; margin-top: 5px; }
+
+        .board-container {
+            background: #dcb35c;
+            padding: 12px;
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.6);
+            border: 4px solid #8b5a2b;
+        }
+        .board {
+            display: grid;
+            gap: 2px;
+            background: #8b5a2b;
+            border: 2px solid #8b5a2b;
+        }
+        .cell {
+            background: #f0d9b5;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 1.8rem;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+            position: relative;
+        }
+        .cell:hover {
+            background: #e4c594;
+        }
+        .cell.selected {
+            background: #b58863 !important;
+        }
+        .cell.highlight {
+            background: #769656 !important;
+            color: #fff;
+        }
+        .sente {
+            color: #111;
+        }
+        .gote {
+            color: #111;
+            transform: rotate(180deg);
+        }
+
+        .hand-container {
+            margin-top: 15px;
+            background: #333;
+            padding: 10px 20px;
+            border-radius: 6px;
+            display: flex;
+            gap: 15px;
+            align-items: center;
+            border: 2px solid #555;
+        }
+        .hand-title { font-size: 0.9rem; color: #ccc; }
+        .hand-pieces { display: flex; gap: 8px; }
+        .hand-piece {
+            background: #f0d9b5;
+            color: #111;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            border: 1px solid #8b5a2b;
+        }
+        .hand-piece.selected {
+            background: #b58863;
+            color: #fff;
+        }
+
+        .controls {
+            margin-top: 20px;
+            display: flex;
+            gap: 15px;
+        }
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 1rem;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            transition: background 0.2s, transform 0.1s;
+        }
+        button:hover { background: #a52a2a; transform: translateY(-2px); }
+        button:active { transform: translateY(0); }
+
+        /* モーダル */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            display: none;
+        }
+        .modal-content {
+            background: #2a2a2a;
+            padding: 30px;
+            border-radius: 10px;
+            text-align: center;
+            border: 3px solid var(--primary);
+            max-width: 400px;
+            width: 90%;
+        }
+        .modal-content h2 { margin-top: 0; color: #ff7f50; }
+        .modal-content p { font-size: 1.1rem; line-height: 1.5; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- 左側：美人眼鏡秘書エリア -->
+    <div class="secretary-pane">
+        <div style="width: 100%;">
+            <div style="display: flex; justify-content: space-between; font-size: 0.9rem; margin-bottom: 5px; font-weight: bold;">
+                <span>残り時間</span>
+                <span id="time-text">10.0s</span>
+            </div>
+            <div class="timer-bar-container">
+                <div class="timer-bar" id="timer-bar"></div>
+            </div>
+        </div>
+
+        <div class="character-art">
+            <div class="secretary-avatar" id="avatar">
+                <div class="hair-back"></div>
+                <div class="body-suit"></div>
+                <div class="blouse"></div>
+                <div class="tie"></div>
+                <div class="face"></div>
+                <div class="eyes">
+                    <div class="eye"></div>
+                    <div class="eye"></div>
+                </div>
+                <div class="mouth"></div>
+                <div class="glasses"></div>
+                <div class="hair-front"></div>
+            </div>
+            <div class="speech-bubble" id="speech">
+                「……まだですか？ 早くしてくださいよ、遅すぎます。」
+            </div>
+        </div>
+
+        <div style="font-size: 0.85rem; color: #888; text-align: center;">
+            ※制限時間内に最善手を指さないと容赦なくガン詰めされます
+        </div>
+    </div>
+
+    <!-- 右側：将棋盤エリア -->
+    <div class="game-pane">
+        <div class="header">
+            <h1>ガン詰め将棋</h1>
+            <div class="stage-info" id="stage-info">第 1 局 / 全 5 局（3×3 簡単詰将棋）</div>
+        </div>
+
+        <div class="board-container">
+            <div class="board" id="board"></div>
+        </div>
+
+        <div class="hand-container" id="hand-container">
+            <div class="hand-title">持ち駒:</div>
+            <div class="hand-pieces" id="hand-pieces"></div>
+        </div>
+
+        <div class="controls">
+            <button onclick="resetStage()">盤面リセット</button>
+            <button onclick="skipStage()" style="background:#555;">ギブアップ（次の問題）</button>
+        </div>
+    </div>
+</div>
+
+<!-- モーダルウィンドウ -->
+<div class="modal" id="modal">
+    <div class="modal-content" id="modal-content">
+        <h2 id="modal-title">クリア！</h2>
+        <p id="modal-text">お見事です。</p>
+        <button onclick="nextStage()" id="modal-btn" style="margin-top: 15px;">次の局へ</button>
+    </div>
+</div>
+
+<script>
+    // 詰め将棋ステージ定義 (3x3 ~ 5x5)
+    // 持ち駒：hand ({type: '歩', count: 1} など)
+    // 盤面：null または {player: 0(先手) or 1(後手), type: '王'|'金'|'銀'|'歩'|'角'|'飛'}
+    const stages = [
+        {
+            size: 3,
+            time: 8.0,
+            title: "第 1 局（3×3 初歩の1手詰）",
+            board: [
+                [null, {p:1, t:'王'}, null],
+                [null, null, null],
+                [null, {p:0, t:'金'}, null]
+            ],
+            hand: [{p:0, t:'歩'}],
+            // 正解手順: 持駒の歩を打ち、王を詰ます (例: 2段目中央に歩を打つ、または先手の金を動かすなど)
+            // 簡単にするため、王の周りに打つ or 動かす一手詰
+            solutions: [
+                {from: {hand: 0}, to: {r: 0, c: 1}} // 持駒の歩を (0,1)に打つと王手 -> 王は逃げ場なし
+            ]
+        },
+        {
+            size: 3,
+            time: 7.0,
+            title: "第 2 局（3×3 金の直撃）",
+            board: [
+                [{p:1, t:'王'}, null, null],
+                [null, null, null],
+                [null, null, null]
+            ],
+            hand: [{p:0, t:'金'}],
+            solutions: [
+                {from: {hand: 0}, to: {r: 0, c: 1}}
+            ]
+        },
+        {
+            size: 4,
+            time: 9.0,
+            title: "第 3 局（4×4 秘書のイライラ増幅）",
+            board: [
+                [null, {p:1, t:'王'}, null, null],
+                [null, null, null, null],
+                [null, {p:0, t:'金'}, null, null],
+                [null, null, null, null]
+            ],
+            hand: [{p:0, t:'歩'}],
+            solutions: [
+                {from: {hand: 0}, to: {r: 0, c: 2}}
+            ]
+        },
+        {
+            size: 4,
+            time: 8.0,
+            title: "第 4 局（4×4 桂馬の跳躍）",
+            board: [
+                [null, null, {p:1, t:'王'}, null],
+                [null, null, null, null],
+                [null, null, null, null],
+                [null, null, null, null]
+            ],
+            hand: [{p:0, t:'金'}],
+            solutions: [
+                {from: {hand: 0}, to: {r: 1, c: 2}}
+            ]
+        },
+        {
+            size: 5,
+            time: 10.0,
+            title: "最終局（5×5 最終試練・完璧な詰め）",
+            board: [
+                [null, null, {p:1, t:'王'}, null, null],
+                [null, null, null, null, null],
+                [null, null, {p:0, t:'金'}, null, null],
+                [null, null, null, null, null],
+                [null, null, null, null, null]
+            ],
+            hand: [{p:0, t:'金'}],
+            solutions: [
+                {from: {hand: 0}, to: {r: 1, c: 2}}
+            ]
+        }
+    ];
+
+    let currentStageIndex = 0;
+    let boardState = [];
+    let handState = [];
+    let selectedCell = null; // {r, c}
+    let selectedHandIndex = null;
+    let timeLeft = 10.0;
+    let timerInterval = null;
+    let isGameActive = false;
+
+    // ガン詰めセリフ集
+    const scoldMessages = [
+        "「……まだですか？ 早くしてくださいよ、遅すぎます。」",
+        "「寝ているんですか？ 脳みそがフリーズしていませんか？」",
+        "「私の時給が発生しているの分かってますよね？」",
+        "`「小学生でも1秒で解けますよ？ その手は何ですか。」`",
+        "「はあ……。ため息が出ますわ。早く指してください！」",
+        "「時間切れが近づいていますよ。無能を発揮しないでください！」"
+    ];
+
+    function initGame() {
+        currentStageIndex = 0;
+        loadStage(currentStageIndex);
+    }
+
+    function loadStage(index) {
+        if (index >= stages.length) {
+            showModal("全ステージクリア！", "お見事です……！ 秘書もあなたを見直したようです（少しだけ）。", "最初から", initGame);
+            return;
+        }
+        const stage = stages[index];
+        document.getElementById("stage-infoinnerText" || "stage-info").innerText = `第 ${index + 1} 局 / 全 ${stages.length} 局（${stage.size}×` + `${stage.size} 詰将棋）`;
+        
+        // 盤面のコピー
+        boardState = JSON.parse(JSON.stringify(stage.board));
+        handState = JSON.parse(JSON.stringify(stage.hand));
+        timeLeft = stage.time;
+        isGameActive = true;
+        selectedCell = null;
+        selectedHandIndex = null;
+
+        updateSpeech(scoldMessages[Math.floor(Math.random() * scoldMessages.length)]);
+        renderBoard();
+        renderHand();
+        startTimer();
+    }
+
+    function startTimer() {
+        if (timerInterval) clearInterval(timerInterval);
+        const stage = stages[currentStageIndex];
+        
+        timerInterval = setInterval(() => {
+            if (!isGameActive) return;
+            timeLeft -= 0.1;
+            if (timeLeft <= 0) {
+                timeLeft = 0;
+                isGameActive = false;
+                clearInterval(timerInterval);
+                timeOutAction();
+            }
+            updateTimerUI();
+        }, 100);
+    }
+
+    function updateTimerUI() {
+        const stage = stages[currentStageIndex];
+        const pct = (timeLeft / stage.time) * 100;
+        document.getElementById("timer-bar").style.width = pct + "%";
+        document.getElementById("time-text").innerText = timeLeft.toFixed(1) + "s";
+
+        // 時間が減ると秘書の表情やセリフが厳しくなる
+        if (pct < 30 && Math.random() < 0.1) {
+            updateSpeech("「残り時間わずかです！ 早く！ 早くしてください！！」");
+        }
+    }
+
+    function timeOutAction() {
+        updateSpeech("「時間切れです！ 役立たずですね！！」");
+        showModal("時間切れ（ガン詰め）", "秘書に冷たく見放されてしまいました……。<br>もう一度挑戦してください！", "再挑戦", () => loadStage(currentStageIndex));
+    }
+
+    function updateSpeech(text) {
+        document.getElementById("speech").innerText = text.replace(/`/g, '');
+    }
+
+    function renderBoard() {
+        const stage = stages[currentStageIndex];
+        const boardEl = document.getElementById("board");
+        boardEl.style.gridTemplateColumns = `repeat(${stage.size}, 60px)`;
+        boardEl.style.gridTemplateRows = `repeat(${stage.size}, 60px)`;
+        boardEl.innerHTML = "";
+
+        for (let r = 0; r < stage.size; r++) {
+            for (let c = 0; c < stage.size; c++) {
+                const cell = document.createElement("div");
+                cell.className = "cell";
+                cell.dataset.r = r;
+                cell.dataset.c = c;
+
+                const piece = boardState[r][c];
+                if (piece) {
+                    cell.innerText = piece.t;
+                    cell.classList.add(piece.p === 0 ? "sente" : "gote");
+                }
+
+                // 選択状態
+                if (selectedCell && selectedCell.r === r && selectedCell.c === c) {
+                    cell.classList.add("selected");
+                }
+
+                cell.onclick = () => onCellClick(r, c);
+                boardEl.appendChild(cell);
+            }
+        }
+    }
+
+    function renderHand() {
+        const handEl = document.getElementById("hand-pieces");
+        handEl.innerHTML = "";
+        handState.forEach((item, idx) => {
+            const el = document.createElement("div");
+            el.className = "hand-piece";
+            if (selectedHandIndex === idx) el.classList.add("selected");
+            el.innerText = item.t;
+            el.onclick = () => onHandClick(idx);
+            handEl.appendChild(el);
+        });
+    }
+
+    function onHandClick(idx) {
+        if (!isGameActive) return;
+        selectedHandIndex = (selectedHandIndex === idx) ? null : idx;
+        selectedCell = null;
+        renderBoard();
+        renderHand();
+    }
+
+    function onCellClick(r, c) {
+        if (!isGameActive) return;
+
+        // 持ち駒が選択されている場合、空きマスに打つ
+        if (selectedHandIndex !== null) {
+            if (boardState[r][c] === null) {
+                // 駒を打つ
+                const piece = handState[selectedHandIndex];
+                boardState[r][c] = { p: piece.p, t: piece.t };
+                handState.splice(selectedHandIndex, 1);
+                selectedHandIndex = null;
+                
+                renderBoard();
+                renderHand();
+                checkMove(r, c);
+            } else {
+                updateSpeech("「そこには既に駒があります！ 目がついてますか？」");
+            }
+            return;
+        }
+
+        // 盤上の駒を選択
+        const piece = boardState[r][c];
+        if (selectedCell === null) {
+            if (piece && piece.p === 0) {
+                selectedCell = { r, c };
+                renderBoard();
+            }
+        } else {
+            // 移動先が選択された場合
+            const fromR = selectedCell.r;
+            const fromC = selectedCell.c;
+            
+            // 簡易移動処理
+            boardState[r][c] = boardState[fromR][fromC];
+            boardState[fromR][fromC] = null;
+            selectedCell = null;
+            
+            renderBoard();
+            renderHand();
+            checkMove(r, c);
+        }
+    }
+
+    function checkMove(r, c) {
+        const stage = stages[currentStageIndex];
+        // 正解判定
+        // ここでは簡易的に、設定された正解の一手と一致するか判定
+        let isCorrect = false;
+        stage.solutions.forEach(sol => {
+            if (sol.to.r === r && sol.to.c === c) {
+                isCorrect = true;
+            }
+        });
+
+        if (isCorrect) {
+            isGameActive = false;
+            clearInterval(timerInterval);
+            updateSpeech("「……ふん、まあまあですね。次もその調子でどうぞ。」");
+            setTimeout(() => {
+                showModal("クリア！", "お見事です！ 完璧な一手でした。", "次の局へ", nextStage);
+            }, 500);
+        } else {
+            updateSpeech("「は？ 何ですかそのお粗末な手は！ やり直しです！」");
+            setTimeout(() => {
+                loadStage(currentStageIndex);
+            }, 800);
+        }
+    }
+
+    function showModal(title, text, btnText, callback) {
+        document.getElementById("modal-title").innerText = title;
+        document.getElementById("modal-text").innerHTML = text;
+        const btn = document.getElementById("modal-btn");
+        btn.innerText = btnText;
+        btn.onclick = () => {
+            document.getElementById("modal").style.display = "none";
+            callback();
+        };
+        document.getElementById("modal").style.display = "flex";
+    }
+
+    function nextStage() {
+        document.getElementById("modal").style.display = "none";
+        currentStageIndex++;
+        loadStage(currentStageIndex);
+    }
+
+    function resetStage() {
+        loadStage(currentStageIndex);
+    }
+
+    function skipStage() {
+        isGameActive = false;
+        if (timerInterval) clearInterval(timerInterval);
+        updateSpeech("「逃げ出しましたね……救いようがありません。」");
+        showModal("ギブアップ", "次の問題に進みます。", "次へ", () => {
+            currentStageIndex++;
+            loadStage(currentStageIndex);
+        });
+    }
+
+    // 初期化実行
+    window.onload = initGame;
+</script>
+
+</body>
+</html>
