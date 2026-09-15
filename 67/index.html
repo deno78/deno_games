@@ -429,23 +429,23 @@
             board: [
                 [null, {p:1, t:'王'}, null],
                 [null, null, null],
-                [null, {p:0, t:'金'}, null]
+                [null, {p:0, t:'歩'}, null]
             ],
-            hand: [{p:0, t:'歩'}],
+            hand: [],
             solutions: [
-                {from: {hand: 0}, to: {r: 0, c: 1}}
+                {from: {r: 2, c: 1}, to: {r: 1, c: 1}}
             ]
         },
         {
             size: 3,
             time: 7.0,
-            title: "第 2 局（3×3 金の直撃）",
+            title: "第 2 局（3×3 持ち駒の歩を打つ）",
             board: [
-                [{p:1, t:'王'}, null, null],
+                [null, {p:1, t:'王'}, null],
                 [null, null, null],
                 [null, null, null]
             ],
-            hand: [{p:0, t:'金'}],
+            hand: [{p:0, t:'歩'}],
             solutions: [
                 {from: {hand: 0}, to: {r: 0, c: 1}}
             ]
@@ -647,11 +647,12 @@
                 const piece = handState[selectedHandIndex];
                 boardState[r][c] = { p: piece.p, t: piece.t };
                 handState.splice(selectedHandIndex, 1);
+                const handIdx = selectedHandIndex;
                 selectedHandIndex = null;
                 
                 renderBoard();
                 renderHand();
-                checkMove(r, c);
+                checkMove(null, null, r, c, true, piece.t);
             } else {
                 updateSpeech("「そこには既に駒があります！ 目がついてますか？」");
             }
@@ -674,16 +675,24 @@
             
             renderBoard();
             renderHand();
-            checkMove(r, c);
+            checkMove(fromR, fromC, r, c, false, null);
         }
     }
 
-    function checkMove(r, c) {
+    // 正解判定ロジック強化: 持ち駒から打った場合、または盤上の駒を動かした両方に対応
+    function checkMove(fromR, fromC, r, c, isHand, handPieceType) {
         const stage = stages[currentStageIndex];
         let isCorrect = false;
+
         stage.solutions.forEach(sol => {
-            if (sol.to.r === r && sol.to.c === c) {
-                isCorrect = true;
+            if (isHand) {
+                if (sol.from.hand !== undefined && sol.to.r === r && sol.to.c === c) {
+                    isCorrect = true;
+                }
+            } else {
+                if (sol.from.r === fromR && sol.from.c === fromC && sol.to.r === r && sol.to.c === c) {
+                    isCorrect = true;
+                }
             }
         });
 
