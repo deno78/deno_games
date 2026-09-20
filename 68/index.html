@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>昭和・平成・令和特撮アニメ世代当てゲーム ～あなたは何歳？～</title>
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --card-bg: #1e293b;
+            --accent-primary: #3b82f6;
+            --accent-secondary: #ec4899;
+            --accent-success: #10b981;
+            --accent-danger: #ef4444;
+            --text-main: #f8fafc;
+            --text-muted: #94a3b8;
+            --border-color: #334155;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            height: 100vh;
+            height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 8px;
+            overflow: hidden;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 520px;
+            max-height: 100vh;
+            max-height: 100dvh;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+
+        header {
+            background: linear-gradient(135deg, #1e3a8a, #831843);
+            padding: 10px 14px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+            flex-shrink: 0;
+        }
+
+        header h1 {
+            font-size: 1.1rem;
+            margin-bottom: 2px;
+            background: linear-gradient(90deg, #60a5fa, #f472b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        header p {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+        }
+
+        .main-content {
+            padding: 12px;
+            overflow-y: auto;
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+
+        /* Screen States */
+        .screen {
+            display: none;
+            flex-direction: column;
+            height: 100%;
+            justify-content: center;
+        }
+        .screen.active {
+            display: flex;
+        }
+
+        /* Title Screen */
+        .title-screen {
+            text-align: center;
+            padding: 10px 0;
+        }
+        .title-screen h2 {
+            font-size: 1.3rem;
+            margin-bottom: 10px;
+            color: #60a5fa;
+        }
+        .title-screen p {
+            font-size: 0.85rem;
+            margin-bottom: 20px;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+        .btn {
+            background: linear-gradient(135deg, #3b82f6, #2563eb);
+            color: white;
+            border: none;
+            padding: 10px 24px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
+        }
+        .btn:hover {
+            filter: brightness(1.1);
+        }
+
+        /* Game Screen */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 8px;
+            font-size: 0.85rem;
+            color: var(--text-muted);
+        }
+        .score-board span {
+            color: var(--text-main);
+            font-weight: bold;
+        }
+
+        .character-card {
+            background: #0f172a;
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 10px;
+            margin-bottom: 12px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .colleague-avatar {
+            font-size: 2.5rem;
+            background: #1e293b;
+            width: 56px;
+            height: 56px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            border: 2px solid var(--accent-primary);
+            flex-shrink: 0;
+        }
+
+        .colleague-speech {
+            flex-grow: 1;
+        }
+
+        .colleague-name {
+            font-size: 0.95rem;
+            font-weight: bold;
+            color: #f472b6;
+            margin-bottom: 4px;
+        }
+
+        .speech-bubble {
+            background: #334155;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            line-height: 1.4;
+            position: relative;
+        }
+
+        .speech-bubble::before {
+            content: '';
+            position: absolute;
+            left: -8px;
+            top: 50%;
+            transform: translateY(-50%);
+            border-width: 6px 8px 6px 0;
+            border-style: solid;
+            border-color: transparent #334155 transparent transparent;
+        }
+
+        .shows-list {
+            display: flex;
+            gap: 6px;
+            margin-top: 6px;
+            flex-wrap: wrap;
+        }
+
+        .show-tag {
+            background: #1e3a8a;
+            color: #93c5fd;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 0.75rem;
+            font-weight: bold;
+        }
+
+        .question-title {
+            text-align: center;
+            font-size: 0.95rem;
+            margin-bottom: 10px;
+            color: #e2e8f0;
+            font-weight: bold;
+        }
+
+        /* 6 options grid: 3 columns x 2 rows for compact view */
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 8px;
+        }
+
+        @media(max-width: 400px) {
+            .options-grid {
+                grid-template-columns: 1fr;
+                gap: 6px;
+            }
+        }
+
+        .option-btn {
+            background: #334155;
+            color: var(--text-main);
+            border: 1px solid #475569;
+            padding: 10px 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
+            font-weight: bold;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.15s;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background: #475569;
+            border-color: var(--accent-primary);
+        }
+
+        .option-btn.correct {
+            background: rgba(16, 185, 129, 0.25);
+            border-color: var(--accent-success);
+            color: #6ee7b7;
+        }
+
+        .option-btn.incorrect {
+            background: rgba(239, 68, 68, 0.25);
+            border-color: var(--accent-danger);
+            color: #fca5a5;
+        }
+
+        /* Result feedback box */
+        .feedback-box {
+            margin-top: 10px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            text-align: center;
+            display: none;
+        }
+        .feedback-box.show {
+            display: block;
+        }
+        .feedback-box.correct {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid var(--accent-success);
+            color: #6ee7b7;
+        }
+        .feedback-box.incorrect {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid var(--accent-danger);
+            color: #fca5a5;
+        }
+
+        .next-btn {
+            display: block;
+            width: 100%;
+            margin-top: 8px;
+            background: var(--accent-primary);
+            color: white;
+            border: none;
+            padding: 10px;
+            font-size: 0.95rem;
+            font-weight: bold;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        /* Game Over Screen */
+        .gameover-screen {
+            text-align: center;
+            padding: 10px 0;
+        }
+        .gameover-screen h2 {
+            font-size: 1.5rem;
+            margin-bottom: 6px;
+            color: #f472b6;
+        }
+        .final-score {
+            font-size: 1.2rem;
+            margin: 10px 0;
+            color: #60a5fa;
+            font-weight: bold;
+        }
+        .commentary {
+            background: #0f172a;
+            border: 1px solid var(--border-color);
+            padding: 10px 12px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+            color: var(--text-muted);
+            font-size: 0.82rem;
+            line-height: 1.4;
+            text-align: left;
+        }
+
+        footer {
+            margin-top: 8px;
+            text-align: center;
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            flex-shrink: 0;
+            padding-bottom: 4px;
+        }
+        footer a {
+            color: #60a5fa;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <header>
+            <h1>特撮・アニメ世代当てゲーム</h1>
+            <p>「幼稚園の頃、何見てた？」から会社の人の年齢を推理せよ！</p>
+        </header>
+
+        <div class="main-content">
+            <!-- TITLE SCREEN -->
+            <div id="titleScreen" class="screen active title-screen">
+                <h2>会社の人の年齢、わかる？</h2>
+                <p>
+                    同僚が幼稚園の頃（満4〜5歳頃）に見ていた<br>
+                    戦隊・ライダー・プリキュア等の思い出をもとに、<br>
+                    正確な年齢を6つの選択肢から当てよう！
+                </p>
+                <button class="btn" onclick="startGame()">ゲームスタート</button>
+            </div>
+
+            <!-- GAME SCREEN -->
+            <div id="gameScreen" class="screen">
+                <div class="game-header">
+                    <div class="progress">第 <span id="currentQ">1</span> / 5 問</div>
+                    <div class="score-board">スコア: <span id="currentScore">0</span> pt</div>
+                </div>
+
+                <div class="character-card">
+                    <div class="colleague-avatar" id="colleagueAvatar">👨‍💼</div>
+                    <div class="colleague-speech">
+                        <div class="colleague-name" id="colleagueName">佐藤さん (営業部)</div>
+                        <div class="speech-bubble">
+                            「幼稚園の頃、よく見てました！」
+                            <div class="shows-list" id="showsList">
+                                <!-- Dynamically filled -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="question-title">この同僚は何歳でしょう？</div>
+
+                <div class="options-grid" id="optionsGrid">
+                    <!-- Options generated by JS -->
+                </div>
+
+                <div class="feedback-box" id="feedbackBox">
+                    <div id="feedbackText" style="font-weight: bold; margin-bottom: 4px; font-size: 0.9rem;"></div>
+                    <div id="feedbackDetail" style="font-size: 0.78rem; margin-bottom: 8px; line-height: 1.3;"></div>
+                    <button class="next-btn" id="nextBtn" onclick="nextQuestion()">次の問題へ</button>
+                </div>
+            </div>
+
+            <!-- GAMEOVER SCREEN -->
+            <div id="gameoverScreen" class="screen gameover-screen">
+                <h2>全ステージクリア！</h2>
+                <div class="final-score" id="finalScoreText">スコア: 0 / 500 pt</div>
+                <div class="commentary" id="finalCommentary">
+                    <!-- Evaluation commentary -->
+                </div>
+                <button class="btn" onclick="startGame()">もう一度遊ぶ</button>
+            </div>
+        </div>
+    </div>
+
+    <footer>
+        <a href="../README.md">← ゲーム一覧に戻る</a>
+    </footer>
+
+    <script>
+        const CURRENT_YEAR = 2026;
+        const KINDERGARTEN_AGE = 4;
+
+        const masterShows = {
+            kamenRider: [
+                { name: "仮面ライダー(初代)", startYear: 1971, endYear: 1973 },
+                { name: "仮面ライダーV3", startYear: 1973, endYear: 1974 },
+                { name: "仮面ライダーX/アマゾン", startYear: 1974, endYear: 1976 },
+                { name: "スカイライダー/スーパー1", startYear: 1979, endYear: 1981 },
+                { name: "仮面ライダーBLACK/RX", startYear: 1987, endYear: 1989 },
+                { name: "仮面ライダークウガ", startYear: 2000, endYear: 2000 },
+                { name: "仮面ライダーアギト", startYear: 2001, endYear: 2001 },
+                { name: "仮面ライダー龍騎", startYear: 2002, endYear: 2002 },
+                { name: "仮面ライダー555", startYear: 2003, endYear: 2003 },
+                { name: "仮面ライダーカブト", startYear: 2006, endYear: 2006 },
+                { name: "仮面ライダーW", startYear: 2009, endYear: 2010 },
+                { name: "仮面ライダーオーズ", startYear: 2010, endYear: 2011 },
+                { name: "仮面ライダー鎧武", startYear: 2013, endYear: 2014 },
+                { name: "仮面ライダーエグゼイド", startYear: 2016, endYear: 2017 },
+                { name: "仮面ライダーゼロワン", startYear: 2019, endYear: 2020 },
+                { name: "仮面ライダーギーツ", startYear: 2022, endYear: 2023 }
+            ],
+            sentai: [
+                { name: "秘密戦隊ゴレンジャー", startYear: 1975, endYear: 1977 },
+                { name: "バトルフィーバーJ/デンジマン", startYear: 1979, endYear: 1981 },
+                { name: "太陽戦隊サンバルカン", startYear: 1981, endYear: 1982 },
+                { name: "超獣戦隊ライブマン", startYear: 1988, endYear: 1989 },
+                { name: "高速戦隊ターボレンジャー", startYear: 1989, endYear: 1990 },
+                { name: "鳥人戦隊ジェットマン", startYear: 1991, endYear: 1992 },
+                { name: "恐竜戦隊ジュウレンジャー", startYear: 1992, endYear: 1993 },
+                { name: "忍風戦隊ハリケンジャー", startYear: 2002, endYear: 2003 },
+                { name: "特捜戦隊デカレンジャー", startYear: 2004, endYear: 2005 },
+                { name: "海賊戦隊ゴーカイジャー", startYear: 2011, endYear: 2012 },
+                { name: "獣電戦隊キョウリュウジャー", startYear: 2013, endYear: 2014 },
+                { name: "魔進戦隊キラメイジャー", startYear: 2020, endYear: 2021 }
+            ],
+            precure: [
+                { name: "ふたりはプリキュア", startYear: 2004, endYear: 2005 },
+                { name: "フレッシュプリキュア！", startYear: 2009, endYear: 2010 },
+                { name: "ハートキャッチプリキュア！", startYear: 2010, endYear: 2011 },
+                { name: "スマイルプリキュア！", startYear: 2012, endYear: 2013 },
+                { name: "Go!プリンセスプリキュア", startYear: 2015, endYear: 2016 },
+                { name: "HUGっと！プリキュア", startYear: 2018, endYear: 2019 },
+                { name: "ひろがるスカイ！プリキュア", startYear: 2023, endYear: 2024 }
+            ],
+            ultraman: [
+                { name: "ウルトラマン(初代)", startYear: 1966, endYear: 1967 },
+                { name: "ウルトラセブン", startYear: 1967, endYear: 1968 },
+                { name: "帰ってきたウルトラマン", startYear: 1971, endYear: 1972 },
+                { name: "ウルトラマンタロウ", startYear: 1973, endYear: 1974 },
+                { name: "ウルトラマンティガ", startYear: 1996, endYear: 1997 },
+                { name: "ウルトラマンダイナ", startYear: 1997, endYear: 1998 },
+                { name: "ウルトラマンガイア", startYear: 1998, endYear: 1999 },
+                { name: "ウルトラマンメビウス", startYear: 2006, endYear: 2007 },
+                { name: "ウルトラマンZ", startYear: 2020, endYear: 2020 },
+                { name: "ウルトラマンブレーザー", startYear: 2023, endYear: 2024 }
+            ],
+            gundam: [
+                { name: "機動戦士ガンダム", startYear: 1979, endYear: 1980 },
+                { name: "機動戦士Zガンダム", startYear: 1985, endYear: 1986 },
+                { name: "機動戦士ガンダムZZ", startYear: 1986, endYear: 1987 },
+                { name: "機動戦士Vガンダム", startYear: 1993, endYear: 1994 },
+                { name: "機動武闘伝Gガンダム", startYear: 1994, endYear: 1995 },
+                { name: "新機動戦記ガンダムW", startYear: 1995, endYear: 1996 },
+                { name: "機動戦士ガンダムSEED", startYear: 2002, endYear: 2003 },
+                { name: "機動戦士ガンダム00", startYear: 2007, endYear: 2008 },
+                { name: "機動戦士ガンダム 鉄血のオルフェンズ", startYear: 2015, endYear: 2016 },
+                { name: "機動戦士ガンダム 水星の魔女", startYear: 2022, endYear: 2023 }
+            ]
+        };
+
+        const colleagueTemplates = [
+            { name: "佐藤さん", dept: "営業部", avatar: "👨‍💼" },
+            { name: "鈴木さん", dept: "開発部", avatar: "👩‍💻" },
+            { name: "高橋課長", dept: "総務部", avatar: "🧑‍💼" },
+            { name: "田中さん", dept: "マーケ部", avatar: "👩‍💼" },
+            { name: "渡辺部長", dept: "経営企画", avatar: "👨‍🦳" },
+            { name: "伊藤さん", dept: "サポート", avatar: "👩‍🦰" },
+            { name: "小林さん", dept: "デザイン", avatar: "👨‍🎨" },
+            { name: "加藤さん", dept: "法務部", avatar: "🧑‍⚖️" }
+        ];
+
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let questions = [];
+        const totalQuestions = 5;
+
+        function startGame() {
+            currentQuestionIndex = 0;
+            score = 0;
+            generateQuestions();
+            document.getElementById('titleScreen').classList.remove('active');
+            document.getElementById('gameoverScreen').classList.remove('active');
+            document.getElementById('gameScreen').classList.add('active');
+            loadQuestion();
+        }
+
+        function generateQuestions() {
+            questions = [];
+            let possibleAges = [21, 24, 27, 31, 34, 38, 43, 47, 52, 57];
+            possibleAges.sort(() => Math.random() - 0.5);
+            
+            for (let i = 0; i < totalQuestions; i++) {
+                let age = possibleAges[i % possibleAges.length];
+                let birthYear = CURRENT_YEAR - age;
+                let kinderYear = birthYear + KINDERGARTEN_AGE;
+
+                let matchingShows = [];
+                for (let category in masterShows) {
+                    let showsInCat = masterShows[category].filter(s => s.startYear <= kinderYear && s.endYear >= kinderYear - 1);
+                    if (showsInCat.length > 0) {
+                        let selectedShow = showsInCat[Math.floor(Math.random() * showsInCat.length)];
+                        matchingShows.push(selectedShow.name);
+                    }
+                }
+
+                if (matchingShows.length < 3) {
+                    let allShowsFlattened = [];
+                    for (let cat in masterShows) {
+                        masterShows[cat].forEach(s => allShowsFlattened.push(s.name));
+                    }
+                    while (matchingShows.length < 3) {
+                        let randShow = allShowsFlattened[Math.floor(Math.random() * allShowsFlattened.length)];
+                        if (!matchingShows.includes(randShow)) {
+                            matchingShows.push(randShow);
+                        }
+                    }
+                }
+
+                let selectedShows = matchingShows.slice(0, 3);
+                let colleague = colleagueTemplates[Math.floor(Math.random() * colleagueTemplates.length)];
+
+                let options = [age];
+                while (options.length < 6) {
+                    let offset = (Math.floor(Math.random() * 9) - 4);
+                    let fakeAge = age + offset;
+                    if (fakeAge >= 20 && fakeAge <= 62 && !options.includes(fakeAge)) {
+                        options.push(fakeAge);
+                    }
+                }
+                while (options.length < 6) {
+                    let fakeAge = 20 + Math.floor(Math.random() * 40);
+                    if (!options.includes(fakeAge)) {
+                        options.push(fakeAge);
+                    }
+                }
+
+                options.sort((a, b) => a - b);
+
+                questions.push({
+                    colleague: colleague,
+                    shows: selectedShows,
+                    correctAge: age,
+                    birthYear: birthYear,
+                    kinderYear: kinderYear,
+                    options: options
+                });
+            }
+        }
+
+        function loadQuestion() {
+            const q = questions[currentQuestionIndex];
+            document.getElementById('currentQ').textContent = currentQuestionIndex + 1;
+            document.getElementById('currentScore').textContent = score;
+
+            document.getElementById('colleagueAvatar').textContent = q.colleague.avatar;
+            document.getElementById('colleagueName').textContent = `${q.colleague.name} (${q.colleague.dept})`;
+
+            const showsListEl = document.getElementById('showsList');
+            showsListEl.innerHTML = '';
+            q.shows.forEach(show => {
+                const tag = document.createElement('span');
+                tag.className = 'show-tag';
+                tag.textContent = show;
+                showsListEl.appendChild(tag);
+            });
+
+            document.getElementById('feedbackBox').classList.remove('show', 'correct', 'incorrect');
+
+            const grid = document.getElementById('optionsGrid');
+            grid.innerHTML = '';
+            q.options.forEach(optAge => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = `${optAge}歳 (${CURRENT_YEAR - optAge}年)`;
+                btn.onclick = () => selectAnswer(optAge, btn);
+                grid.appendChild(btn);
+            });
+        }
+
+        function selectAnswer(selectedAge, clickedBtn) {
+            const q = questions[currentQuestionIndex];
+            const isCorrect = (selectedAge === q.correctAge);
+
+            const buttons = document.querySelectorAll('.option-btn');
+            buttons.forEach(btn => {
+                btn.disabled = true;
+                if (parseInt(btn.textContent) === q.correctAge) {
+                    btn.classList.add('correct');
+                } else if (btn === clickedBtn && !isCorrect) {
+                    btn.classList.add('incorrect');
+                }
+            });
+
+            const feedbackBox = document.getElementById('feedbackBox');
+            const feedbackText = document.getElementById('feedbackText');
+            const feedbackDetail = document.getElementById('feedbackDetail');
+
+            feedbackBox.classList.remove('correct', 'incorrect');
+
+            if (isCorrect) {
+                score += 100;
+                feedbackBox.classList.add('correct');
+                feedbackText.textContent = "正解！";
+                feedbackDetail.innerHTML = `${q.colleague.name}は<strong>${q.correctAge}歳</strong>（${q.birthYear}年生まれ）です。<br>幼稚園の頃（${q.kinderYear}年頃）に見ていた作品でした！`;
+            } else {
+                feedbackBox.classList.add('incorrect');
+                feedbackText.textContent = "不正解！";
+                feedbackDetail.innerHTML = `${q.colleague.name}の年齢は<strong>${q.correctAge}歳</strong>（${q.birthYear}年生まれ）でした。<br>幼稚園の頃（${q.kinderYear}年頃）のラインナップです！`;
+            }
+
+            feedbackBox.classList.add('show');
+            document.getElementById('currentScore').textContent = score;
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < totalQuestions) {
+                loadQuestion();
+            } else {
+                showGameOver();
+            }
+        }
+
+        function showGameOver() {
+            document.getElementById('gameScreen').classList.remove('active');
+            document.getElementById('gameoverScreen').classList.add('active');
+            document.getElementById('finalScoreText').textContent = `スコア: ${score} / ${totalQuestions * 100} pt`;
+
+            let commentary = "";
+            if (score === 500) {
+                commentary = "【特撮・アニメ人事マスター】お見事！同僚の子供時代のカルチャーを完璧に把握しています！";
+            } else if (score >= 300) {
+                commentary = "【世代勘定エコノミスト】なかなかの洞察力！大体の年代感はバッチリですね。";
+            } else {
+                commentary = "【カルチャー浦島太郎】意外と世代のズレに苦戦したようです。もう一度チャレンジしてみましょう！";
+            }
+            document.getElementById('finalCommentary').textContent = commentary;
+        }
+    </script>
+</body>
+</html>

@@ -78,3 +78,4 @@ Deno/Web games collection.
 - [65. 大辞典パズル ～ 辞書順に並べろ！ ～ (Dictionary Order Puzzle)](./65/index.html)
 - [66. 英単語作成シューティング、Engradius (Engradius - English Word Craft Shooter)](./66/index.html)
 - [67. ガン詰め将棋 (Ganzume Shogi)](./67/index.html)
+- [68. 会社の人の年齢当てゲーム ～あなたは何歳？～ (Colleague Age Guessing Game)](./68/index.html)
