@@ -218,7 +218,6 @@
             font-weight: bold;
         }
 
-        /* 6 options grid: 3 columns x 2 rows for compact view */
         .options-grid {
             display: grid;
             grid-template-columns: repeat(2, 1fr);
@@ -262,7 +261,6 @@
             color: #fca5a5;
         }
 
-        /* Result feedback box */
         .feedback-box {
             margin-top: 10px;
             padding: 10px 12px;
@@ -298,7 +296,6 @@
             cursor: pointer;
         }
 
-        /* Game Over Screen */
         .gameover-screen {
             text-align: center;
             padding: 10px 0;
@@ -406,77 +403,171 @@
     </div>
 
     <footer>
+        <script>
+            // 完全に正確な放送年データに基づくマスターリスト
+            // 各作品の「放映開始年〜終了年」を正確に定義。
+            // 幼稚園の頃（満4〜5歳）に視聴していた＝放映年が (誕生年 + 4) または (誕生年 + 5) の時期と一致する作品を紐づける。
+            // よって、作品の放映開始年〜終了年の範囲に「kinderYear（誕生年 + 4）」が含まれるように逆引きする。
+        </script>
         <a href="../README.md">← ゲーム一覧に戻る</a>
     </footer>
 
     <script>
         const CURRENT_YEAR = 2026;
-        const KINDERGARTEN_AGE = 4;
+        const KINDERGARTEN_AGE = 4; // 満4歳時点を基準
 
+        // 正確な放送年データデータベース
         const masterShows = {
             kamenRider: [
-                { name: "仮面ライダー(初代)", startYear: 1971, endYear: 1973 },
+                { name: "仮面ライダー（初代）", startYear: 1971, endYear: 1973 },
                 { name: "仮面ライダーV3", startYear: 1973, endYear: 1974 },
-                { name: "仮面ライダーX/アマゾン", startYear: 1974, endYear: 1976 },
-                { name: "スカイライダー/スーパー1", startYear: 1979, endYear: 1981 },
-                { name: "仮面ライダーBLACK/RX", startYear: 1987, endYear: 1989 },
-                { name: "仮面ライダークウガ", startYear: 2000, endYear: 2000 },
-                { name: "仮面ライダーアギト", startYear: 2001, endYear: 2001 },
-                { name: "仮面ライダー龍騎", startYear: 2002, endYear: 2002 },
-                { name: "仮面ライダー555", startYear: 2003, endYear: 2003 },
-                { name: "仮面ライダーカブト", startYear: 2006, endYear: 2006 },
-                { name: "仮面ライダーW", startYear: 2009, endYear: 2010 },
-                { name: "仮面ライダーオーズ", startYear: 2010, endYear: 2011 },
+                { name: "仮面ライダーX", startYear: 1974, endYear: 1974 },
+                { name: "仮面ライダーアマゾン", startYear: 1974, endYear: 1975 },
+                { name: "仮面ライダーストロンガー", startYear: 1975, endYear: 1975 },
+                { name: "スカイライダー", startYear: 1979, endYear: 1980 },
+                { name: "仮面ライダースーパー1", startYear: 1980, endYear: 1981 },
+                { name: "仮面ライダーBLACK", startYear: 1987, endYear: 1988 },
+                { name: "仮面ライダーBLACK RX", startYear: 1988, endYear: 1989 },
+                { name: "仮面ライダークウガ", startYear: 2000, endYear: 2001 },
+                { name: "仮面ライダーアギト", startYear: 2001, endYear: 2002 },
+                { name: "仮面ライダー龍騎", startYear: 2002, endYear: 2003 },
+                { name: "仮面ライダー555（ファイズ）", startYear: 2003, endYear: 2004 },
+                { name: "仮面ライダー剣（ブレイド）", startYear: 2004, endYear: 2005 },
+                { name: "仮面ライダー響鬼", startYear: 2005, endYear: 2006 },
+                { name: "仮面ライダーカブト", startYear: 2006, endYear: 2007 },
+                { name: "仮面ライダー電王", startYear: 2007, endYear: 2008 },
+                { name: "仮面ライダーキバ", startYear: 2008, endYear: 2009 },
+                { name: "仮面ライダーディケイド", startYear: 2009, endYear: 2009 },
+                { name: "仮面ライダーW（ダブル）", startYear: 2009, endYear: 2010 },
+                { name: "仮面ライダーオーズ/OOO", startYear: 2010, endYear: 2011 },
+                { name: "仮面ライダーフォーゼ", startYear: 2011, endYear: 2012 },
+                { name: "仮面ライダーウィザード", startYear: 2012, endYear: 2013 },
                 { name: "仮面ライダー鎧武", startYear: 2013, endYear: 2014 },
+                { name: "仮面ライダードライブ", startYear: 2014, endYear: 2015 },
+                { name: "仮面ライダーゴースト", startYear: 2015, endYear: 2016 },
                 { name: "仮面ライダーエグゼイド", startYear: 2016, endYear: 2017 },
+                { name: "仮面ライダービルド", startYear: 2017, endYear: 2018 },
+                { name: "仮面ライダージオウ", startYear: 2018, endYear: 2019 },
                 { name: "仮面ライダーゼロワン", startYear: 2019, endYear: 2020 },
-                { name: "仮面ライダーギーツ", startYear: 2022, endYear: 2023 }
+                { name: "仮面ライダーセイバー", startYear: 2020, endYear: 2021 },
+                { name: "仮面ライダーリバイス", startYear: 2021, endYear: 2022 },
+                { name: "仮面ライダーギーツ", startYear: 2022, endYear: 2023 },
+                { name: "仮面ライダーガッチャード", startYear: 2023, endYear: 2024 },
+                { name: "仮面ライダーガヴ", startYear: 2024, endYear: 2025 }
             ],
             sentai: [
                 { name: "秘密戦隊ゴレンジャー", startYear: 1975, endYear: 1977 },
-                { name: "バトルフィーバーJ/デンジマン", startYear: 1979, endYear: 1981 },
+                { name: "ジャッカー電撃隊", startYear: 1977, endYear: 1977 },
+                { name: "バトルフィーバーJ", startYear: 1979, endYear: 1980 },
+                { name: "電子戦隊デンジマン", startYear: 1980, endYear: 1981 },
                 { name: "太陽戦隊サンバルカン", startYear: 1981, endYear: 1982 },
+                { name: "大戦隊ゴーグルファイブ", startYear: 1982, endYear: 1983 },
+                { name: "科学戦隊ダイナマン", startYear: 1983, endYear: 1984 },
+                { name: "超電子バイオマン", startYear: 1984, endYear: 1985 },
+                { name: "電撃戦隊チェンジマン", startYear: 1985, endYear: 1986 },
+                { name: "超新星フラッシュマン", startYear: 1986, endYear: 1987 },
+                { name: "光戦隊マスクマン", startYear: 1987, endYear: 1988 },
                 { name: "超獣戦隊ライブマン", startYear: 1988, endYear: 1989 },
                 { name: "高速戦隊ターボレンジャー", startYear: 1989, endYear: 1990 },
+                { name: "地球戦隊ファイブマン", startYear: 1990, endYear: 1991 },
                 { name: "鳥人戦隊ジェットマン", startYear: 1991, endYear: 1992 },
                 { name: "恐竜戦隊ジュウレンジャー", startYear: 1992, endYear: 1993 },
+                { name: "五星戦隊ダイレンジャー", startYear: 1993, endYear: 1994 },
+                { name: "忍者戦隊カクレンジャー", startYear: 1994, endYear: 1995 },
+                { name: "超力戦隊オーレンジャー", startYear: 1995, endYear: 1996 },
+                { name: "激走戦隊カーレンジャー", startYear: 1996, endYear: 1997 },
+                { name: "電磁戦隊メガレンジャー", startYear: 1997, endYear: 1998 },
+                { name: "星獣戦隊ギンガマン", startYear: 1998, endYear: 1999 },
+                { name: "救急戦隊ゴーゴーファイブ", startYear: 1999, endYear: 2000 },
+                { name: "未来戦隊タイムレンジャー", startYear: 2000, endYear: 2001 },
+                { name: "百獣戦隊ガオレンジャー", startYear: 2001, endYear: 2002 },
                 { name: "忍風戦隊ハリケンジャー", startYear: 2002, endYear: 2003 },
+                { name: "爆竜戦隊アバレンジャー", startYear: 2003, endYear: 2004 },
                 { name: "特捜戦隊デカレンジャー", startYear: 2004, endYear: 2005 },
+                { name: "魔法戦隊マジレンジャー", startYear: 2005, endYear: 2006 },
+                { name: "轟轟戦隊ボウケンジャー", startYear: 2006, endYear: 2007 },
+                { name: "獣拳戦隊ゲキレンジャー", startYear: 2007, endYear: 2008 },
+                { name: "炎神戦隊ゴーオンジャー", startYear: 2008, endYear: 2009 },
+                { name: "侍戦隊シンケンジャー", startYear: 2009, endYear: 2010 },
+                { name: "天装戦隊ゴセイジャー", startYear: 2010, endYear: 2011 },
                 { name: "海賊戦隊ゴーカイジャー", startYear: 2011, endYear: 2012 },
+                { name: "特命戦隊ゴーバスターズ", startYear: 2012, endYear: 2013 },
                 { name: "獣電戦隊キョウリュウジャー", startYear: 2013, endYear: 2014 },
-                { name: "魔進戦隊キラメイジャー", startYear: 2020, endYear: 2021 }
+                { name: "烈車戦隊トッキュウジャー", startYear: 2014, endYear: 2015 },
+                { name: "手裏剣戦隊ニンニンジャー", startYear: 2015, endYear: 2016 },
+                { name: "動物戦隊ジュウオウジャー", startYear: 2016, endYear: 2017 },
+                { name: "宇宙戦隊キュウレンジャー", startYear: 2017, endYear: 2018 },
+                { name: "快盗戦隊ルパンレンジャーVS警察戦隊パトレンジャー", startYear: 2018, endYear: 2019 },
+                { name: "騎士竜戦隊リュウソウジャー", startYear: 2019, endYear: 2020 },
+                { name: "魔進戦隊キラメイジャー", startYear: 2020, endYear: 2021 },
+                { name: "機界戦隊ゼンカイジャー", startYear: 2021, endYear: 2022 },
+                { name: "暴太郎戦隊ドンブラザーズ", startYear: 2022, endYear: 2023 },
+                { name: "王様戦隊キングオージャー", startYear: 2023, endYear: 2024 },
+                { name: "爆上戦隊ブンブンジャー", startYear: 2024, endYear: 2025 }
             ],
             precure: [
                 { name: "ふたりはプリキュア", startYear: 2004, endYear: 2005 },
+                { name: "ふたりはプリキュア Max Heart", startYear: 2005, endYear: 2006 },
+                { name: "ふたりはプリキュア Splash Star", startYear: 2006, endYear: 2007 },
+                { name: "Yes! プリキュア5", startYear: 2007, endYear: 2008 },
+                { name: "Yes! プリキュア5 GoGo!", startYear: 2008, endYear: 2009 },
                 { name: "フレッシュプリキュア！", startYear: 2009, endYear: 2010 },
                 { name: "ハートキャッチプリキュア！", startYear: 2010, endYear: 2011 },
+                { name: "スイートプリキュア♪", startYear: 2011, endYear: 2012 },
                 { name: "スマイルプリキュア！", startYear: 2012, endYear: 2013 },
+                { name: "ドキドキ！プリキュア", startYear: 2013, endYear: 2014 },
+                { name: "ハピネスチャージプリキュア！", startYear: 2014, endYear: 2015 },
                 { name: "Go!プリンセスプリキュア", startYear: 2015, endYear: 2016 },
+                { name: "魔法つかいプリキュア！", startYear: 2016, endYear: 2017 },
+                { name: "キラキラ☆プリキュアアラモード", startYear: 2017, endYear: 2018 },
                 { name: "HUGっと！プリキュア", startYear: 2018, endYear: 2019 },
-                { name: "ひろがるスカイ！プリキュア", startYear: 2023, endYear: 2024 }
+                { name: "スター☆トゥインクルプリキュア", startYear: 2019, endYear: 2020 },
+                { name: "ヒーリングっど♥プリキュア", startYear: 2020, endYear: 2021 },
+                { name: "トロピカル～ジュ！プリキュア", startYear: 2021, endYear: 2022 },
+                { name: "デリシャスパーティ♡プリキュア", startYear: 2022, endYear: 2023 },
+                { name: "ひろがるスカイ！プリキュア", startYear: 2023, endYear: 2024 },
+                { name: "わんだふるぷりきゅあ！", startYear: 2024, endYear: 2025 }
             ],
             ultraman: [
-                { name: "ウルトラマン(初代)", startYear: 1966, endYear: 1967 },
+                { name: "ウルトラマン", startYear: 1966, endYear: 1967 },
                 { name: "ウルトラセブン", startYear: 1967, endYear: 1968 },
                 { name: "帰ってきたウルトラマン", startYear: 1971, endYear: 1972 },
+                { name: "ウルトラマンA", startYear: 1972, endYear: 1973 },
                 { name: "ウルトラマンタロウ", startYear: 1973, endYear: 1974 },
+                { name: "ウルトラマンレオ", startYear: 1974, endYear: 1975 },
+                { name: "ウルトラマン80", startYear: 1980, endYear: 1981 },
                 { name: "ウルトラマンティガ", startYear: 1996, endYear: 1997 },
                 { name: "ウルトラマンダイナ", startYear: 1997, endYear: 1998 },
                 { name: "ウルトラマンガイア", startYear: 1998, endYear: 1999 },
+                { name: "ウルトラマンコスモス", startYear: 2001, endYear: 2002 },
+                { name: "ウルトラマンネクサス", startYear: 2004, endYear: 2005 },
+                { name: "ウルトラマンマックス", startYear: 2005, endYear: 2006 },
                 { name: "ウルトラマンメビウス", startYear: 2006, endYear: 2007 },
+                { name: "ウルトラマンR/B", startYear: 2018, endYear: 2018 },
+                { name: "ウルトラマンタイガ", startYear: 2019, endYear: 2019 },
                 { name: "ウルトラマンZ", startYear: 2020, endYear: 2020 },
-                { name: "ウルトラマンブレーザー", startYear: 2023, endYear: 2024 }
+                { name: "ウルトラマントリガー", startYear: 2021, endYear: 2022 },
+                { name: "ウルトラマンデッカー", startYear: 2022, endYear: 2023 },
+                { name: "ウルトラマンブレーザー", startYear: 2023, endYear: 2024 },
+                { name: "ウルトラマンアーク", startYear: 2024, endYear: 2025 }
             ],
             gundam: [
                 { name: "機動戦士ガンダム", startYear: 1979, endYear: 1980 },
                 { name: "機動戦士Zガンダム", startYear: 1985, endYear: 1986 },
                 { name: "機動戦士ガンダムZZ", startYear: 1986, endYear: 1987 },
+                { name: "機動戦士ガンダムF91", startYear: 1991, endYear: 1991 },
                 { name: "機動戦士Vガンダム", startYear: 1993, endYear: 1994 },
                 { name: "機動武闘伝Gガンダム", startYear: 1994, endYear: 1995 },
                 { name: "新機動戦記ガンダムW", startYear: 1995, endYear: 1996 },
+                { name: "機動新世紀ガンダムX", startYear: 1996, endYear: 1996 },
+                { name: "∀ガンダム", startYear: 1999, endYear: 2000 },
                 { name: "機動戦士ガンダムSEED", startYear: 2002, endYear: 2003 },
-                { name: "機動戦士ガンダム00", startYear: 2007, endYear: 2008 },
-                { name: "機動戦士ガンダム 鉄血のオルフェンズ", startYear: 2015, endYear: 2016 },
+                { name: "機動戦士ガンダムSEED DESTINY", startYear: 2004, endYear: 2005 },
+                { name: "機動戦士ガンダム00", startYear: 2007, endYear: 2009 },
+                { name: "機動戦士ガンダムUC", startYear: 2010, endYear: 2014 },
+                { name: "機動戦士ガンダムAGE", startYear: 2011, endYear: 2012 },
+                { name: "ガンダムビルドファイターズ", startYear: 2013, endYear: 2014 },
+                { name: "機動戦士ガンダム 鉄血のオルフェンズ", startYear: 2015, endYear: 2017 },
                 { name: "機動戦士ガンダム 水星の魔女", startYear: 2022, endYear: 2023 }
             ]
         };
@@ -509,23 +600,36 @@
 
         function generateQuestions() {
             questions = [];
-            let possibleAges = [21, 24, 27, 31, 34, 38, 43, 47, 52, 57];
+            // 対象とする年齢のプール (21歳〜58歳。各世代からバランスよく選出)
+            let possibleAges = [21, 23, 26, 29, 32, 35, 39, 43, 48, 53, 57];
             possibleAges.sort(() => Math.random() - 0.5);
             
             for (let i = 0; i < totalQuestions; i++) {
                 let age = possibleAges[i % possibleAges.length];
                 let birthYear = CURRENT_YEAR - age;
-                let kinderYear = birthYear + KINDERGARTEN_AGE;
+                let kinderYear = birthYear + KINDERGARTEN_AGE; // 幼稚園の頃の年 (例: 2000年生まれなら2004年)
 
+                // その幼稚園の年に合致する作品を各カテゴリから検索
                 let matchingShows = [];
                 for (let category in masterShows) {
-                    let showsInCat = masterShows[category].filter(s => s.startYear <= kinderYear && s.endYear >= kinderYear - 1);
+                    let showsInCat = masterShows[category].filter(s => s.startYear <= kinderYear && s.endYear >= kinderYear);
                     if (showsInCat.length > 0) {
                         let selectedShow = showsInCat[Math.floor(Math.random() * showsInCat.length)];
                         matchingShows.push(selectedShow.name);
                     }
                 }
 
+                // もし合致する作品が3つ未満の場合、前後1年の幅を持たせて再検索
+                if (matchingShows.length < 3) {
+                    for (let category in masterShows) {
+                        let showsInCat = masterShows[category].filter(s => s.startYear <= kinderYear + 1 && s.endYear >= kinderYear - 1);
+                        showsInCat.forEach(s => {
+                            if (!matchingShows.includes(s.name)) matchingShows.push(s.name);
+                        });
+                    }
+                }
+
+                // それでも足りない場合のフェイルセーフ（全リストからランダム）
                 if (matchingShows.length < 3) {
                     let allShowsFlattened = [];
                     for (let cat in masterShows) {
@@ -539,9 +643,12 @@
                     }
                 }
 
+                // ランダムに3つ選出
+                matchingShows.sort(() => Math.random() - 0.5);
                 let selectedShows = matchingShows.slice(0, 3);
                 let colleague = colleagueTemplates[Math.floor(Math.random() * colleagueTemplates.length)];
 
+                // 6つの選択肢を生成 (正解の年齢を中心に ±4歳の範囲でフェイクを混ぜる)
                 let options = [age];
                 while (options.length < 6) {
                     let offset = (Math.floor(Math.random() * 9) - 4);
@@ -624,11 +731,11 @@
                 score += 100;
                 feedbackBox.classList.add('correct');
                 feedbackText.textContent = "正解！";
-                feedbackDetail.innerHTML = `${q.colleague.name}は<strong>${q.correctAge}歳</strong>（${q.birthYear}年生まれ）です。<br>幼稚園の頃（${q.kinderYear}年頃）に見ていた作品でした！`;
+                feedbackDetail.innerHTML = `${q.colleague.name}は<strong>${q.correctAge}歳</strong>（${q.birthYear}年生まれ）です。<br>幼稚園の頃（${q.kinderYear}年頃）にリアルタイムで見ていた作品です！`;
             } else {
                 feedbackBox.classList.add('incorrect');
                 feedbackText.textContent = "不正解！";
-                feedbackDetail.innerHTML = `${q.colleague.name}の年齢は<strong>${q.correctAge}歳</strong>（${q.birthYear}年生まれ）でした。<br>幼稚園の頃（${q.kinderYear}年頃）のラインナップです！`;
+                feedbackDetail.innerHTML = `${q.colleague.name}の年齢は<strong>${q.correctAge}歳</strong>（${q.birthYear}年生まれ）でした。<br>幼稚園の頃（${q.kinderYear}年頃）に放映されていた作品です！`;
             }
 
             feedbackBox.classList.add('show');
