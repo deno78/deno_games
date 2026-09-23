@@ -536,16 +536,19 @@
                 for (let r = 0; r < ROWS; r++) {
                     for (let c = 0; c < COLS; c++) {
                         if (grid[r][c] === 1) {
-                            // 壁
-                            ctx.fillStyle = '#1c1c33';
+                            // 壁（高コントラスト化：明るいメタリックグレー＆ボーダー）
+                            ctx.fillStyle = '#4a4a75';
                             ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-                            // 立体感
-                            ctx.fillStyle = '#121222';
+                            ctx.fillStyle = '#2d2d4f';
                             ctx.fillRect(c * CELL_SIZE + 2, r * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4);
                         } else {
-                            // 通路
-                            ctx.fillStyle = '#16162a';
+                            // 通路（見やすい明るいダークブルー）
+                            ctx.fillStyle = '#1c1c38';
                             ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                            // 薄いグリッド線
+                            ctx.strokeStyle = '#282850';
+                            ctx.lineWidth = 1;
+                            ctx.strokeRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
                         }
                     }
                 }
