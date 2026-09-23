@@ -80,3 +80,4 @@ Deno/Web games collection.
 - [67. ガン詰め将棋 (Ganzume Shogi)](./67/index.html)
 - [68. 会社の人の年齢当てゲーム ～あなたは何歳？～ (Colleague Age Guessing Game)](./68/index.html)
 - [69. 三色団子串刺しゲーム (Three-Color Dango Skewer Game)](./69/index.html)
+- [70. 焼肉早食いバトル (Yakiniku Speed Eating Battle)](./70/index.html)

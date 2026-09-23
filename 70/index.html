@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>焼肉早食いバトル - 焼けたら食え！</title>
+    <style>
+        :root {
+            --bg-color: #1a1512;
+            --table-color: #5c3a21;
+            --table-rim: #3d2413;
+            --text-color: #f3f4f6;
+            --accent-color: #ef4444;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            user-select: none;
+        }
+        #game-container {
+            width: 900px;
+            max-width: 100%;
+            background: #261f1b;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.8);
+            border: 4px solid #4a3525;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+        header {
+            padding: 15px 25px;
+            background: #1f1815;
+            border-top-left-radius: 12px;
+            border-top-right-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #3d2413;
+        }
+        h1 {
+            margin: 0;
+            font-size: 22px;
+            color: #f87171;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.5);
+        }
+        .stats {
+            display: flex;
+            gap: 20px;
+            font-size: 18px;
+            font-weight: bold;
+        }
+        .stat-item span {
+            color: #fbbf24;
+        }
+        main {
+            padding: 25px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        /* 卓とライバル */
+        #arena {
+            position: relative;
+            width: 100%;
+            height: 420px;
+            background: radial-gradient(circle, #78482a 0%, var(--table-color) 70%, var(--table-rim) 100%);
+            border-radius: 200px;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.6), 0 8px 16px rgba(0,0,0,0.4);
+            border: 12px solid #3d2413;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        /* 七輪（中央の網） */
+        #grill {
+            width: 320px;
+            height: 320px;
+            background: #111;
+            border-radius: 50%;
+            border: 8px solid #333;
+            box-shadow: inset 0 0 25px #000, 0 4px 10px rgba(0,0,0,0.5);
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(2, 1fr);
+            gap: 12px;
+            padding: 24px;
+            position: relative;
+        }
+        /* 網の模様 */
+        #grill::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: 
+                linear-gradient(rgba(255,255,255,0.07) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.07) 1px, transparent 1px);
+            background-size: 20px 20px;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        /* 炭火エフェクト */
+        #grill::after {
+            content: '';
+            position: absolute;
+            inset: 15px;
+            background: radial-gradient(circle, rgba(239, 68, 68, 0.25) 0%, rgba(220, 38, 38, 0.05) 70%, transparent 100%);
+            border-radius: 50%;
+            z-index: 0;
+            animation: pulse-fire 2s infinite alternate;
+            pointer-events: none;
+        }
+        @keyframes pulse-fire {
+            0% { opacity: 0.6; transform: scale(0.95); }
+            100% { opacity: 1; transform: scale(1.05); }
+        }
+
+        /* 肉スロット */
+        .meat-slot {
+            background: rgba(40, 40, 40, 0.8);
+            border-radius: 12px;
+            border: 2px dashed #555;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            position: relative;
+            z-index: 2;
+            transition: transform 0.1s, background-color 0.2s;
+        }
+        .meat-slot:hover {
+            border-color: #fbbf24;
+            background: rgba(60, 60, 60, 0.9);
+        }
+        .meat-slot.has-meat {
+            border: 2px solid #888;
+            cursor: pointer;
+            animation: pop-in 0.2s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes pop-in {
+            0% { transform: scale(0.5); opacity: 0; }
+            100% { transform: scale(1); opacity: 1; }
+        }
+
+        .meat-piece {
+            width: 75px;
+            height: 60px;
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+            text-align: center;
+            padding: 2px;
+            position: relative;
+        }
+        /* 焼き加減ごとの色 */
+        .stage-0 { background: #ff9999; color: #500; border: 2px solid #ff6666; } /* 生 */
+        .stage-1 { background: #e08282; color: #400; border: 2px solid #cc5555; } /* 半生 */
+        .stage-2 { background: #b85c37; color: #fff; border: 2px solid #9c4422; } /* レア */
+        .stage-3 { background: #8a3b14; color: #fff; border: 2px solid #6b2b0c; } /* ミディアム */
+        .stage-4 { background: #5c240a; color: #fff; border: 2px solid #3d1705; } /* ウェルダン */
+        .stage-5 { background: #1a1a1a; color: #ef4444; border: 2px solid #000; text-shadow: 0 0 2px #ff0000; } /* 炭 */
+
+        .meat-name {
+            font-size: 11px;
+            background: rgba(0,0,0,0.6);
+            padding: 1px 6px;
+            border-radius: 4px;
+            margin-bottom: 2px;
+            color: #fff;
+        }
+        .meat-status {
+            font-size: 13px;
+            font-weight: bold;
+        }
+
+        /* ライバルキャラ (周囲に配置) */
+        .rival {
+            position: absolute;
+            background: #2b231f;
+            border: 3px solid #554033;
+            padding: 8px 14px;
+            border-radius: 12px;
+            font-size: 13px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.5);
+            z-index: 5;
+            transition: opacity 0.3s;
+        }
+        .rival.down {
+            filter: grayscale(1);
+            opacity: 0.6;
+            border-color: #ef4444;
+        }
+        .rival-avatar {
+            font-size: 20px;
+            margin-bottom: 2px;
+        }
+        .rival-name {
+            font-weight: bold;
+            color: #fbbf24;
+            font-size: 11px;
+        }
+        .rival-status {
+            font-size: 10px;
+            color: #aaa;
+        }
+        
+        #rival-top { top: 15px; left: 50%; transform: translateX(-50%); }
+        #rival-left { left: 15px; top: 50%; transform: translateY(-50%); }
+        #rival-right { right: 15px; top: 50%; transform: translateY(-50%); }
+
+        /* 奉行のコール吹き出し */
+        #bugyo-speech {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: #fff;
+            color: #111;
+            padding: 6px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            z-index: 10;
+            border: 2px solid #f59e0b;
+            animation: bounce 1.5s infinite;
+        }
+        @keyframes bounce {
+            0%, 100% { transform: translateX(-50%) translateY(0); }
+            50% { transform: translateX(-50%) translateY(-4px); }
+        }
+
+        /* フッター情報 */
+        footer {
+            padding: 15px 25px;
+            background: #1f1815;
+            border-bottom-left-radius: 12px;
+            border-bottom-right-radius: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 2px solid #3d2413;
+        }
+        .info-panel {
+            font-size: 13px;
+            color: #d1d5db;
+            line-height: 1.4;
+        }
+        .info-panel b {
+            color: #f87171;
+        }
+
+        /* モーダル・オーバーレイ */
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.85);
+            backdrop-filter: blur(4px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            border-radius: 16px;
+            text-align: center;
+            padding: 30px;
+        }
+        .overlay h2 {
+            font-size: 32px;
+            color: #f87171;
+            margin-bottom: 10px;
+        }
+        .overlay p {
+            font-size: 15px;
+            color: #d1d5db;
+            max-width: 500px;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+        .btn {
+            background: linear-gradient(to bottom, #ef4444, #dc2626);
+            color: #fff;
+            border: none;
+            padding: 12px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(239, 68, 68, 0.4);
+            transition: transform 0.1s, background 0.2s;
+        }
+        .btn:hover {
+            background: linear-gradient(to bottom, #f87171, #ef4444);
+            transform: scale(1.05);
+        }
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        /* アクションエフェクト */
+        .float-text {
+            position: absolute;
+            font-weight: bold;
+            font-size: 16px;
+            pointer-events: none;
+            animation: float-up 0.8s forwards;
+            z-index: 50;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8);
+        }
+        @keyframes float-up {
+            0% { transform: translateY(0) scale(0.8); opacity: 1; }
+            100% { transform: translateY(-40px) scale(1.2); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <header>
+            <h1>🔥 焼肉早食いバトル 🔥</h1>
+            <div class="stats">
+                <div class="stat-item">残り時間: <span id="time-left">30</span>秒</div>
+                <div class="stat-item">食べた肉: <span id="score">0</span>枚</div>
+                <div class="stat-item">腹痛カウンター: <span id="pain-count" style="color:#f87171">0</span>/3</div>
+            </div>
+        </header>
+
+        <main>
+            <div id="arena">
+                <!-- ライバルたち -->
+                <div id="rival-top" class="rival">
+                    <div class="rival-avatar">🥩</div>
+                    <div class="rival-name">肉食系タカシ</div>
+                    <div class="rival-status" id="rival-top-status">闘志満々</div>
+                </div>
+                <div id="rival-left" class="rival">
+                    <div class="rival-avatar">🍻</div>
+                    <div class="rival-name">飲兵衛ケンジ</div>
+                    <div class="rival-status" id="rival-left-status">闘志満々</div>
+                </div>
+                <div id="rival-right" class="rival">
+                    <div class="rival-avatar">🔥</div>
+                    <div class="rival-name">早食いマサル</div>
+                    <div class="rival-status" id="rival-right-status">闘志満々</div>
+                </div>
+
+                <!-- 中央の七輪・網 -->
+                <div id="grill">
+                    <div class="meat-slot" data-index="0"></div>
+                    <div class="meat-slot" data-index="1"></div>
+                    <div class="meat-slot" data-index="2"></div>
+                    <div class="meat-slot" data-index="3"></div>
+                    <div class="meat-slot" data-index="4"></div>
+                    <div class="meat-slot" data-index="5"></div>
+                </div>
+
+                <!-- 奉行のコール -->
+                <div id="bugyo-speech">焼肉奉行: 「さあ、どんどん焼くぞ！」</div>
+            </div>
+        </main>
+
+        <footer>
+            <div class="info-panel">
+                <b>【焼き加減ルール】</b> 生 → 半生 → レア → ミディアム → ウェルダン → 炭<br>
+                <b>【可食判定】</b> 牛肉: <b>レア以上</b>可 | 鶏豚: <b>ミディアム以上</b>可 | ハンバーグ: <b>ウェルダンのみ</b>可<br>
+                ※ 不可な肉または「炭」を3回食べると腹痛でゲームオーバー！ライバルもお腹を壊して自滅します。
+            </div>
+        </footer>
+
+        <!-- 開始・終了画面オーバーレイ -->
+        <div id="start-screen" class="overlay">
+            <h2>焼肉早食いバトル</h2>
+            <p>
+                奉行が次々と肉を網に放り込みます！<br>
+                見た目では種類が判別できない肉の焼き加減を見極めてクリックで食べまくれ！<br>
+                ライバルたちに負けるな！不適切な肉を食べると腹痛でダウンするぞ！
+            </p>
+            <button class="btn" id="start-btn">ゲームスタート</button>
+        </div>
+
+        <div id="gameover-screen" class="overlay" style="display: none;">
+            <h2 id="result-title">ゲーム終了！</h2>
+            <p id="result-desc">スコア: 0枚</p>
+            <button class="btn" id="restart-btn">もう一度プレイ</button>
+        </div>
+    </div>
+
+    <script>
+        // 定数・設定
+        const STAGES = ['生', '半生', 'レア', 'ミディアム', 'ウェルダン', '炭'];
+        const MEAT_TYPES = ['beef', 'pork', 'chicken', 'hamburg'];
+        const MEAT_LABELS = { beef: '肉', pork: '肉', chicken: '肉', hamburg: '肉' }; // 見た目同じ
+        
+        let timeLeft = 30;
+        let score = 0;
+        let painCount = 0;
+        let gameActive = false;
+        let timerInterval = null;
+        let spawnInterval = null;
+        let stageInterval = null;
+        let rivalInterval = null;
+
+        let grillSlots = [null, null, null, null, null, null]; // 各スロットの肉オブジェクト
+
+        let rivals = [
+            { id: 'top', name: '肉食系タカシ', statusEl: document.getElementById('rival-top-status'), el: document.getElementById('rival-top'), active: true },
+            { id: 'left', name: '飲兵衛ケンジ', statusEl: document.getElementById('rival-left-status'), el: document.getElementById('rival-left'), active: true },
+            { id: 'right', name: '早食いマサル', statusEl: document.getElementById('rival-right-status'), el: document.getElementById('rival-right'), active: true }
+        ];
+
+        const bugyoSpeechEl = document.getElementById('bugyo-speech');
+        const bugyoPhrases = [
+            "「おらおら、どんどん肉を置くぞ！」",
+            "「焼き加減には気をつけろよ！」",
+            "「牛か？鶏豚か？それともハンバーグか？」",
+            "「焦がすんじゃねぇぞ！」",
+            "「ドンドン食え！どんどん焼く！」"
+        ];
+
+        //DOM要素
+        const timeLeftEl = document.getElementById('time-left');
+        const scoreEl = document.getElementById('score');
+        const painCountEl = document.getElementById('pain-count');
+        const startScreen = document.getElementById('start-screen');
+        const gameoverScreen = document.getElementById('gameover-screen');
+        const resultTitle = document.getElementById('result-title');
+        const resultDesc = document.getElementById('result-desc');
+        const startBtn = document.getElementById('start-btn');
+        const restartBtn = document.getElementById('restart-btn');
+        const slotsEls = document.querySelectorAll('.meat-slot');
+
+        startBtn.addEventListener('click', startGame);
+        restartBtn.addEventListener('click', startGame);
+
+        slotsEls.forEach((slot, index) => {
+            slot.addEventListener('click', () => {
+                if (!gameActive) return;
+                eatMeat(index, 'player');
+            });
+        });
+
+        function startGame() {
+            startScreen.style.display = 'none';
+            gameoverScreen.style.display = 'none';
+            
+            timeLeft = 30;
+            score = 0;
+            painCount = 0;
+            gameActive = true;
+            grillSlots = [null, null, null, null, null, null];
+
+            rivals.forEach(r => {
+                r.active = true;
+                r.el.classList.remove('down');
+                r.statusEl.textContent = '闘志満々';
+            });
+
+            updateUI();
+            renderGrill();
+
+            // タイマー開始
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                updateUI();
+                if (timeLeft <= 0) {
+                    endGame(false, 'タイムアップ！');
+                }
+            }, 1000);
+
+            // 奉行の肉置き (3秒ごと)
+            clearInterval(spawnInterval);
+            spawnInterval = setInterval(() => {
+                if (!gameActive) return;
+                spawnMeat();
+                changeBugyoSpeech();
+            }, 3000);
+
+            // 焼き加減進行 (2秒ごと)
+            clearInterval(stageInterval);
+            stageInterval = setInterval(() => {
+                if (!gameActive) return;
+                progressMeatStages();
+            }, 2000);
+
+            // ライバルの食事行動 (1.5秒〜2.5秒ごとにランダム)
+            clearInterval(rivalInterval);
+            rivalInterval = setInterval(() => {
+                if (!gameActive) return;
+                rivalAction();
+            }, 1800);
+
+            // 初回に2枚ほど置く
+            spawnMeat();
+            spawnMeat();
+        }
+
+        function updateUI() {
+            timeLeftEl.textContent = timeLeft;
+            scoreEl.textContent = score;
+            painCountEl.textContent = painCount;
+        }
+
+        function changeBugyoSpeech() {
+            const phrase = bugyoPhrases[Math.floor(Math.random() * bugyoPhrases.length)];
+            bugyoSpeechEl.textContent = `焼肉奉行: ${phrase}`;
+        }
+
+        function spawnMeat() {
+            // 空きスロットを探す
+            let emptyIndices = [];
+            grillSlots.forEach((meat, idx) => {
+                if (meat === null) emptyIndices.push(idx);
+            });
+
+            if (emptyIndices.length === 0) return; // 満杯なら置けない
+
+            let targetIdx = emptyIndices[Math.floor(Math.random() * emptyIndices.length)];
+            let type = MEAT_TYPES[Math.floor(Math.random() * MEAT_TYPES.length)];
+
+            grillSlots[targetIdx] = {
+                type: type, // 内部的な種類（プレイヤーには隠す）
+                stage: 0    // 0: 生
+            };
+
+            renderGrill();
+        }
+
+        function progressMeatStages() {
+            let changed = false;
+            grillSlots.forEach((meat, idx) => {
+                if (meat !== null) {
+                    if (meat.stage < 5) {
+                        meat.stage++;
+                        changed = true;
+                    }
+                }
+            });
+            if (changed) {
+                renderGrill();
+            }
+        }
+
+        function renderGrill() {
+            slotsEls.forEach((slot, idx) => {
+                slot.innerHTML = '';
+                let meat = grillSlots[idx];
+                if (meat !== null) {
+                    slot.classList.add('has-meat');
+                    let piece = document.createElement('div');
+                    piece.className = `meat-piece stage-${meat.stage}`;
+                    piece.innerHTML = `
+                        <div class="meat-name">焼肉</div>
+                        <div class="meat-status">${STAGES[meat.stage]}</div>
+                    `;
+                    slot.appendChild(piece);
+                } else {
+                    slot.classList.remove('has-meat');
+                }
+            });
+        }
+
+        function eatMeat(index, eater) {
+            let meat = grillSlots[index];
+            if (!meat) return; // 肉がない
+
+            // 食べる処理
+            grillSlots[index] = null;
+            renderGrill();
+
+            let stage = meat.stage;
+            let type = meat.type;
+            let isValid = checkEatValidity(type, stage);
+
+            if (eater === 'player') {
+                if (isValid) {
+                    score++;
+                    showFloatText(slotsEls[index], '美味い！+1', '#10b981');
+                } else {
+                    painCount++;
+                    showFloatText(slotsEls[index], 'お腹痛っ…!', '#ef4444');
+                    if (painCount >= 3) {
+                        endGame(true, '腹痛で倒れてしまった…！');
+                        return;
+                    }
+                }
+                updateUI();
+            } else {
+                // ライバルの場合 (半生以降を食べ、ルール通り判定)
+                // ライバルは半生(1)以降で見境なく食べる設定
+                if (!isValid) {
+                    // お腹を壊して退場
+                    eater.active = false;
+                    eater.el.classList.add('down');
+                    eater.statusEl.textContent = '腹痛でリタイア';
+                    showFloatText(eater.el, 'うぎゃー!', '#ef4444');
+                } else {
+                    showFloatText(eater.el, '美味い!', '#3b82f6');
+                }
+            }
+        }
+
+        // 可食判定ルール
+        // 牛肉(beef): レア(2)以上可 (レア, ミディアム, ウェルダン) ※炭は不可
+        // 鶏豚(chicken/pork): ミディアム(3)以上可 (ミディアム, ウェルダン) ※炭は不可
+        // ハンバーグ(hamburg): ウェルダン(4)のみ可 ※炭は不可
+        function checkEatValidity(type, stage) {
+            if (stage === 0 || stage === 1 || stage === 5) {
+                // 生、半生、炭はすべてNG
+                return false;
+            }
+            if (type === 'beef') {
+                return stage >= 2 && stage <= 4;
+            } else if (type === 'chicken' || type === 'pork') {
+                return stage >= 3 && stage <= 4;
+            } else if (type === 'hamburg') {
+                return stage === 4;
+            }
+            return false;
+        }
+
+        function rivalAction() {
+            // アクティブなライバルがランダムに網の上の肉を食べる
+            let activeRivals = rivals.filter(r => r.active);
+            if (activeRivals.length === 0) return;
+
+            let availableMeatIndices = [];
+            grillSlots.forEach((meat, idx) => {
+                // ライバルは半生(1)以降の肉を狙う
+                if (meat !== null && meat.stage >= 1) {
+                    availableMeatIndices.push(idx);
+                }
+            });
+
+            if (availableMeatIndices.length === 0) return;
+
+            // ランダムなライバルがランダムな肉を選ぶ
+            let rival = activeRivals[Math.floor(Math.random() * activeRivals.length)];
+            let targetMeatIdx = availableMeatIndices[Math.floor(Math.random() * availableMeatIndices.length)];
+
+            eatMeat(targetMeatIdx, rival);
+        }
+
+        function showFloatText(targetEl, text, color) {
+            let rect = targetEl.getBoundingClientRect();
+            let containerRect = document.getElementById('game-container').getBoundingClientRect();
+            
+            let floatEl = document.createElement('div');
+            floatEl.className = 'float-text';
+            floatEl.style.color = color;
+            floatEl.style.left = (rect.left - containerRect.left + rect.width / 2 - 20) + 'px';
+            floatEl.style.top = (rect.top - containerRect.top) + 'px';
+            floatEl.textContent = text;
+            
+            document.getElementById('game-container').appendChild(floatEl);
+            setTimeout(() => {
+                floatEl.remove();
+            }, 800);
+        }
+
+        function endGame(isPainDown, message) {
+            gameActive = false;
+            clearInterval(timerInterval);
+            clearInterval(spawnInterval);
+            clearInterval(stageInterval);
+            clearInterval(rivalInterval);
+
+            resultTitle.textContent = isPainDown ? '腹痛ゲームオーバー！' : 'タイムアップ！';
+            resultDesc.innerHTML = `${message}<br><br><b>食べたお肉の枚数: ${score}枚</b>`;
+            gameoverScreen.style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
