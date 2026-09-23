@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>三色団子串刺しゲーム</title>
+    <style>
+        :root {
+            --pink: #ff77a9;
+            --white: #ffffff;
+            --green: #4caf50;
+            --bg-color: #fdf6ec;
+            --card-bg: #fffaf0;
+            --text-color: #5d4037;
+        }
+
+        body {
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        h1 {
+            margin: 5px 0;
+            font-size: 1.8rem;
+            color: #d81b60;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+        }
+
+        .game-container {
+            background-color: var(--card-bg);
+            border: 4px dashed #ffb74d;
+            border-radius: 20px;
+            padding: 15px 25px;
+            box-shadow: 0 8px 16px rgba(0,0,0,0.08);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 400px;
+            width: 100%;
+        }
+
+        .stats-bar {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            font-weight: bold;
+        }
+
+        .stat-item span {
+            color: #e65100;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(3, 80px);
+            grid-template-rows: repeat(3, 80px);
+            gap: 12px;
+            margin: 10px 0;
+            position: relative;
+        }
+
+        .cell {
+            background-color: #fff;
+            border: 3px solid #ffe0b2;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            position: relative;
+        }
+
+        .cell:hover {
+            border-color: #ffb74d;
+            transform: scale(1.03);
+        }
+
+        .ball {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            box-shadow: inset -4px -4px 8px rgba(0,0,0,0.2), 0 4px 6px rgba(0,0,0,0.1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+
+        .ball.pink { background: radial-gradient(circle at 30% 30%, #ff9ebb, var(--pink)); }
+        .ball.white { background: radial-gradient(circle at 30% 30%, #ffffff, #e0e0e0); }
+        .ball.green { background: radial-gradient(circle at 30% 30%, #81c784, var(--green)); }
+
+        .controls {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            width: 100%;
+        }
+
+        button {
+            flex: 1;
+            background-color: #ff9800;
+            color: white;
+            border: none;
+            padding: 10px 15px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 10px;
+            cursor: pointer;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            transition: background 0.2s, transform 0.1s;
+        }
+
+        button:hover {
+            background-color: #f57c00;
+        }
+
+        button:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 3px rgba(0,0,0,0.1);
+        }
+
+        button.secondary {
+            background-color: #78909c;
+        }
+        button.secondary:hover {
+            background-color: #607d8b;
+        }
+
+        .instruction {
+            font-size: 0.85rem;
+            text-align: center;
+            margin-top: 10px;
+            color: #795548;
+            line-height: 1.4;
+        }
+
+        /* 串刺しアニメーション用ライン */
+        .skewer-line {
+            position: absolute;
+            background: #8d6e63;
+            border-radius: 4px;
+            pointer-events: none;
+            z-index: 10;
+            box-shadow: 0 0 4px rgba(0,0,0,0.3);
+            animation: skewer-flash 0.4s ease-out forwards;
+        }
+
+        @keyframes skewer-flash {
+            0% { opacity: 0; transform: scale(0.5); }
+            50% { opacity: 1; transform: scale(1.05); }
+            100% { opacity: 0; }
+        }
+
+        /* モーダル画面 */
+        .modal {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 100;
+            display: none;
+        }
+
+        .modal-content {
+            background: white;
+            padding: 30px;
+            border-radius: 20px;
+            text-align: center;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+            max-width: 320px;
+            width: 90%;
+        }
+
+        .modal-content h2 {
+            margin-top: 0;
+            color: #d81b60;
+        }
+
+        .modal-content p {
+            font-size: 1.2rem;
+            margin: 15px 0;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="game-container">
+        <h1>🍡 三色団子串刺し 🍡</h1>
+        <div class="stats-bar">
+            <div class="stat-item">残り時間: <span id="time">30</span>秒</div>
+            <div class="stat-item">スコア: <span id="score">0</span></div>
+        </div>
+
+        <div class="grid" id="grid">
+            <!-- 3x3 cells generated by JS -->
+        </div>
+
+        <div class="controls">
+            <button id="reload-btn" class="secondary">盤面リロード</button>
+            <button id="start-btn">ゲームスタート</button>
+        </div>
+
+        <div class="instruction">
+            縦・横・斜めのいずれかの方向から3つを選んで<br>
+            <b>[ピンク → 白 → 緑]</b> の順になるように連続でクリック！
+        </div>
+    </div>
+
+    <!-- リザルトモーダル -->
+    <div class="modal" id="result-modal">
+        <div class="modal-content">
+            <h2>タイムアップ！</h2>
+            <p>作った三色団子: <span id="final-score">0</span> 本</p>
+            <button id="retry-btn">もう一度遊ぶ</button>
+        </div>
+    </div>
+
+    <script>
+        const COLORS = ['pink', 'white', 'green'];
+        const TARGET_ORDER = ['pink', 'white', 'green'];
+        
+        let board = []; // 3x3 array of colors
+        let score = 0;
+        let timeLeft = 30;
+        let timer = null;
+        let isPlaying = false;
+        let selectedCells = []; // [{r, c}, ...]
+
+        // 有効な串のライン定義（縦、横、斜め：順不同で受け付け、最終的にピンク->白->緑かチェック）
+        const LINES = [
+            // 横
+            [{r:0,c:0}, {r:0,c:1}, {r:0,c:2}],
+            [{r:1,c:0}, {r:1,c:1}, {r:1,c:2}],
+            [{r:2,c:0}, {r:2,c:1}, {r:2,c:2}],
+            // 縦
+            [{r:0,c:0}, {r:1,c:0}, {r:2,c:0}],
+            [{r:0,c:1}, {r:1,c:1}, {r:2,c:1}],
+            [{r:0,c:2}, {r:1,c:2}, {r:2,c:2}],
+            // 斜め
+            [{r:0,c:0}, {r:1,c:1}, {r:2,c:2}],
+            [{r:0,c:2}, {r:1,c:1}, {r:2,c:0}]
+        ];
+
+        const gridEl = document.getElementById('grid');
+        const timeEl = document.getElementById('time');
+        const scoreEl = document.getElementById('score');
+        const startBtn = document.getElementById('start-btn');
+        const reloadBtn = document.getElementById('reload-btn');
+        const resultModal = document.getElementById('result-modal');
+        const finalScoreEl = document.getElementById('final-score');
+        const retryBtn = document.getElementById('retry-btn');
+
+        function initBoard() {
+            board = [];
+            for (let r = 0; r < 3; r++) {
+                let row = [];
+                for (let c = 0; c < 3; c++) {
+                    const randomColor = COLORS[Math.floor(Math.random() * COLORS.length)];
+                    row.push(randomColor);
+                }
+                board.push(row);
+            }
+            renderBoard();
+        }
+
+        function renderBoard() {
+            gridEl.innerHTML = '';
+            for (let r = 0; r < 3; r++) {
+                for (let c = 0; c < 3; c++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'cell';
+                    cell.dataset.r = r;
+                    cell.dataset.c = c;
+
+                    const color = board[r][c];
+                    const ball = document.createElement('div');
+                    ball.className = `ball ${color}`;
+                    cell.appendChild(ball);
+
+                    // 選択中のスタイル
+                    if (selectedCells.some(cellPos => cellPos.r === r && cellPos.c === c)) {
+                        cell.style.borderColor = '#e91e63';
+                        cell.style.backgroundColor = '#fce4ec';
+                    }
+
+                    cell.addEventListener('click', () => handleCellClick(r, c));
+                    gridEl.appendChild(cell);
+                }
+            }
+        }
+
+        function handleCellClick(r, c) {
+            if (!isPlaying) return;
+
+            // 既に選択済みのセルをクリックした場合は選択解除または最初からやり直し
+            const index = selectedCells.findIndex(pos => pos.r === r && pos.c === c);
+            if (index !== -1) {
+                selectedCells.splice(index, 1);
+                renderBoard();
+                return;
+            }
+
+            selectedCells.push({r, c});
+
+            if (selectedCells.length === 3) {
+                checkSkewer();
+            } else {
+                renderBoard();
+            }
+        }
+
+        function checkSkewer() {
+            // 選択された3つのセルが有効なライン（縦・横・斜め）を形成しているか確認
+            let matchedLine = null;
+            for (let line of LINES) {
+                const isMatch = line.every(pos => 
+                    selectedCells.some(sel => sel.r === pos.r && sel.c === pos.c)
+                );
+                if (isMatch) {
+                    matchedLine = line;
+                    break;
+                }
+            }
+
+            if (matchedLine) {
+                // 選択された順序、あるいはライン自体の順序で「ピンク、白、緑」の順になっているか判定
+                // プレイヤーが選んだ順番が正しく [ピンク, 白, 緑] になっているか？
+                // あるいは、ラインの両端どちらから刺しても良いルールにするか？
+                // 通常の直感では「選んだ順番」が「上から順」になる。またはラインの並び順がピンク->白->緑の方向。
+                // ここでは「プレイヤーがクリックした順番」が [ピンク, 白, 緑] であるか、あるいはラインの向き通りかをチェック。
+                // プレイヤーが選んだ順序配列
+                const orderedColors = selectedCells.map(pos => board[pos.r][pos.c]);
+                
+                // 順方向または逆方向で [pink, white, green] かチェック
+                const isCorrectOrderForward = 
+                    orderedColors[0] === 'pink' && 
+                    orderedColors[1] === 'white' && 
+                    orderedColors[2] === 'green';
+
+                const isCorrectOrderBackward = 
+                    orderedColors[0] === 'green' && 
+                    orderedColors[1] === 'white' && 
+                    orderedColors[2] === 'pink';
+
+                if (isCorrectOrderForward || isCorrectOrderBackward) {
+                    // 正解！スコア加算
+                    score++;
+                    scoreEl.textContent = score;
+
+                    // 成功した部分のボールを新しくランダムに入れ替える
+                    selectedCells.forEach(pos => {
+                        board[pos.r][pos.c] = COLORS[Math.floor(Math.random() * COLORS.length)];
+                    });
+                }
+            }
+
+            // リセットして再描画
+            selectedCells = [];
+            renderBoard();
+        }
+
+        function startGame() {
+            score = 0;
+            timeLeft = 30;
+            scoreEl.textContent = score;
+            timeEl.textContent = timeLeft;
+            isPlaying = true;
+            selectedCells = [];
+            startBtn.textContent = "プレイ中...";
+            startBtn.disabled = true;
+            resultModal.style.display = 'none';
+
+            initBoard();
+
+            if (timer) clearInterval(timer);
+            timer = setInterval(() => {
+                timeLeft--;
+                timeEl.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        function endGame() {
+            isPlaying = false;
+            clearInterval(timer);
+            startBtn.textContent = "ゲームスタート";
+            startBtn.disabled = false;
+            finalScoreEl.textContent = score;
+            resultModal.style.display = 'flex';
+        }
+
+        // イベントリスナー
+        startBtn.addEventListener('click', startGame);
+        retryBtn.addEventListener('click', startGame);
+        reloadBtn.addEventListener('click', () => {
+            initBoard();
+            selectedCells = [];
+        });
+
+        // 初期表示
+        initBoard();
+    </script>
+</body>
+</html>
