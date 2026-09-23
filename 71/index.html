@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ディープダンジョン - 1分間一筆書き迷路アタック</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            background: #0d0d15;
+            color: #e0e0f0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            touch-action: none;
+        }
+        #game-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            max-width: 480px;
+            width: 100%;
+            padding: 10px;
+        }
+        header {
+            display: flex;
+            justify-content: space-between;
+            width: 100%;
+            margin-bottom: 10px;
+            background: #1a1a2e;
+            padding: 10px 15px;
+            border-radius: 8px;
+            border: 1px solid #303050;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        .stat-box {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .stat-label {
+            font-size: 11px;
+            color: #8888aa;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #00ffcc;
+        }
+        #timer-value {
+            color: #ff5555;
+        }
+        #canvas-wrapper {
+            position: relative;
+            width: 100%;
+            aspect-ratio: 1 / 1;
+            background: #131324;
+            border-radius: 12px;
+            border: 2px solid #404070;
+            box-shadow: 0 8px 20px rgba(0,0,0,0.5);
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        canvas {
+            display: block;
+            touch-action: none;
+            cursor: crosshair;
+        }
+        .overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(13, 13, 21, 0.85);
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            padding: 20px;
+            text-align: center;
+            transition: opacity 0.3s ease;
+        }
+        .overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        h1 {
+            font-size: 28px;
+            margin: 0 0 10px 0;
+            background: linear-gradient(45deg, #00ffcc, #3366ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            text-shadow: 0 2px 10px rgba(0,255,204,0.3);
+        }
+        p {
+            font-size: 14px;
+            color: #aaaacc;
+            margin: 0 0 20px 0;
+            line-height: 1.5;
+        }
+        .btn {
+            background: linear-gradient(45deg, #00ffcc, #0099ff);
+            color: #0d0d15;
+            border: none;
+            padding: 12px 30px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 25px;
+            cursor: pointer;
+            box-shadow: 0 4px 15px rgba(0,255,204,0.4);
+            transition: transform 0.1s, box-shadow 0.1s;
+        }
+        .btn:active {
+            transform: scale(0.95);
+            box-shadow: 0 2px 8px rgba(0,255,204,0.4);
+        }
+        #instructions {
+            margin-top: 15px;
+            font-size: 12px;
+            color: #777799;
+            background: #1a1a2e;
+            padding: 10px;
+            border-radius: 6px;
+            width: 100%;
+            text-align: left;
+            border: 1px solid #252540;
+        }
+        #instructions ul {
+            margin: 5px 0 0 15px;
+            padding: 0;
+        }
+        #instructions li {
+            margin-bottom: 3px;
+        }
+        .combo-badge {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: rgba(255, 170, 0, 0.2);
+            border: 1px solid #ffaa00;
+            color: #ffaa00;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        .combo-badge.show {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div id="game-container">
+        <header>
+            <div class="stat-box">
+                <span class="stat-label">深度 (DEPTH)</span>
+                <span class="stat-value" id="depth-val">B1F</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">残り時間 (TIME)</span>
+                <span class="stat-value" id="timer-value">60.0s</span>
+            </div>
+            <div class="stat-box">
+                <span class="stat-label">スコア (SCORE)</span>
+                <span class="stat-value" id="score-val">0</span>
+            </div>
+        </header>
+
+        <div id="canvas-wrapper">
+            <canvas id="gameCanvas" width="400" height="400"></canvas>
+            <div class="combo-badge" id="comboBadge">SPEED x2</div>
+            
+            <!-- スタート画面 -->
+            <div id="start-screen" class="overlay">
+                <h1>ディープダンジョン</h1>
+                <p>20x20マスの迷路を突き進め！<br>指先（ドラッグ）で一筆書きの軌跡を描き、<br>スタート(▲上がり階段)からゴール(▼下り階段)へ進め！</p>
+                <button class="btn" id="start-btn">潜行開始</button>
+            </div>
+
+            <!-- ゲームオーバー画面 -->
+            <div id="gameover-screen" class="overlay hidden">
+                <h1>タイムアップ！</h1>
+                <p id="result-text">地下XX階まで到達しました！</p>
+                <button class="btn" id="restart-btn">もう一度潜る</button>
+            </div>
+        </div>
+
+        <div id="instructions">
+            <strong>操作方法:</strong>
+            <ul>
+                <li>画面を<strong>ドラッグ / スワイプ</strong>して一筆書きのルートを描きます。</li>
+                <li>ゴール（▼下り階段）にたどり着くと次のフロアへ自動で進みます。</li>
+                <li>壁を通り抜けたり逆走することはできません。</li>
+                <li>制限時間1分間でどこまで深く潜れるか挑戦しよう！</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        const COLS = 20;
+        const ROWS = 20;
+        let CELL_SIZE = canvas.width / COLS;
+
+        // ゲーム状態
+        let gameState = 'START'; // START, PLAYING, GAMEOVER
+        let timeLeft = 60.0;
+        let depth = 1;
+        let score = 0;
+        let timerId = null;
+
+        // 迷路データ
+        let grid = []; // 2D array: 0 = wall, 1 = path
+        let startPos = {r: 1, c: 1};
+        let goalPos = {r: ROWS - 2, c: COLS - 2};
+
+        // プレイヤーの軌跡（一筆書き）
+        let path = []; // array of {r, c}
+        let isDrawing = false;
+
+        // エフェクト用パーティクル
+        let particles = [];
+
+        // 音声合成（簡単なWeb Audio API効果音）
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        function playSound(type) {
+            if (!audioCtx) return;
+            if (audioCtx.state === 'suspended') {
+                audioCtx.resume();
+            }
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            const now = audioCtx.currentTime;
+            if (type === 'step') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400 + depth * 20, now);
+                osc.frequency.exponentialRampToValueAtTime(200, now + 0.05);
+                gain.gain.setValueAtTime(0.05, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.05);
+                osc.start(now);
+                osc.stop(now + 0.05);
+            } else if (type === 'goal') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(300, now);
+                osc.frequency.exponentialRampToValueAtTime(800, now + 0.3);
+                gain.gain.setValueAtTime(0.15, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'gameover') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, now);
+                osc.frequency.linearRampToValueAtTime(50, now + 0.8);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0.01, now + 0.8);
+                osc.start(now);
+                osc.stop(now + 0.8);
+            }
+        }
+
+        // 迷路生成 (DFS / 棒倒し法などの組み合わせで確実に解ける迷路を作る)
+        function generateMaze() {
+            // 初期化：全て壁(0)
+            grid = Array(ROWS).fill(0).map(() => Array(COLS).fill(0));
+
+            // 奇数座標を通路にするダンジョン生成アルゴリズム (Prim法 or 穴掘り)
+            // 確実に行き来できる通路を作るため穴掘り法を使用
+            let map = Array(ROWS).fill(0).map(() => Array(COLS).fill(1)); // 1が壁、0が通路にする？逆が分かりやすいので修正
+            // 0 = 壁, 1 = 通路
+            for (let r = 0; r < ROWS; r++) {
+                for (let c = 0; c < COLS; c++) {
+                    map[r][c] = 1; // 最初は全部壁
+                }
+            }
+
+            // 穴掘り法
+            let stack = [];
+            let startR = 1, startC = 1;
+            map[startR][startC] = 0;
+            stack.push({r: startR, c: startC});
+
+            const dirs = [
+                {r: -2, c: 0},
+                {r: 2, c: 0},
+                {r: 0, c: -2},
+                {r: 0, c: 2}
+            ];
+
+            while (stack.length > 0) {
+                let current = stack[stack.length - 1];
+                let neighbors = [];
+
+                for (let d of dirs) {
+                    let nr = current.r + d.r;
+                    let nc = current.c + d.c;
+                    if (nr > 0 && nr < ROWS - 1 && nc > 0 && nc < COLS - 1) {
+                        if (map[nr][nc] === 1) {
+                            neighbors.push({r: nr, c: nc, dr: d.r/2, dc: d.c/2});
+                        }
+                    }
+                }
+
+                if (neighbors.length > 0) {
+                    // ランダムに選択
+                    let next = neighbors[Math.floor(Math.random() * neighbors.length)];
+                    map[current.r + next.dr][current.c + next.dc] = 0;
+                    map[next.r][next.c] = 0;
+                    stack.push({r: next.r, c: next.c});
+                } else {
+                    stack.pop();
+                }
+            }
+
+            // スタートとゴールを設定
+            startPos = {r: 1, c: 1};
+            map[startPos.r][startPos.c] = 0;
+
+            // ゴールはスタートから最も遠い奇数マス周辺
+            let maxDist = -1;
+            let bestR = ROWS - 2, bestC = COLS - 2;
+            for (let r = 1; r < ROWS - 1; r += 2) {
+                for (let c = 1; c < COLS - 1; c += 2) {
+                    if (map[r][c] === 0) {
+                        let dist = Math.abs(r - startPos.r) + Math.abs(c - startPos.c);
+                        if (dist > maxDist) {
+                            maxDist = dist;
+                            bestR = r;
+                            bestC = c;
+                        }
+                    }
+                }
+            }
+            goalPos = {r: bestR, c: bestC};
+
+            // 行き止まりを少し減らして快適にする（ループを作る）
+            for (let i = 0; i < depth + 2; i++) {
+                let rx = Math.floor(Math.random() * (ROWS - 2)) + 1;
+                let rc = Math.floor(Math.random() * (COLS - 2)) + 1;
+                map[rx][rc] = 0;
+            }
+
+            // 確実にスタートとゴールが通路であること
+            map[startPos.r][startPos.c] = 0;
+            map[goalPos.r][goalPos.c] = 0;
+
+            grid = map; // 0 = 通路, 1 = 壁
+        }
+
+        function initLevel() {
+            generateMaze();
+            path = [{r: startPos.r, c: startPos.c}];
+            isDrawing = false;
+        }
+
+        // ゲーム開始
+        function startGame() {
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('gameover-screen').classList.add('hidden');
+            depth = 1;
+            score = 0;
+            timeLeft = 60.0;
+            gameState = 'PLAYING';
+            
+            initLevel();
+            updateUI();
+
+            if (timerId) clearInterval(timerId);
+            let lastTime = performance.now();
+            timerId = setInterval(() => {
+                if (gameState !== 'PLAYING') return;
+                let now = performance.now();
+                let delta = (now - lastTime) / 1000;
+                lastTime = now;
+
+                timeLeft -= delta;
+                if (timeLeft <= 0) {
+                    timeLeft = 0;
+                    gameOver();
+                }
+                updateUI();
+            }, 50);
+        }
+
+        function gameOver() {
+            gameState = 'GAMEOVER';
+            clearInterval(timerId);
+            playSound('gameover');
+            document.getElementById('result-text').innerText = `地下 ${depth} 階まで潜りました！\nスコア: ${score} pt`;
+            document.getElementById('gameover-screen').classList.remove('hidden');
+        }
+
+        function updateUI() {
+            document.getElementById('depth-val').innerText = `B${depth}F`;
+            document.getElementById('timer-value').innerText = timeLeft.toFixed(1) + 's';
+            document.getElementById('score-val').innerText = score;
+        }
+
+        // 座標からセルの位置を取得
+        function getCellFromCoord(clientX, clientY) {
+            const rect = canvas.getBoundingClientRect();
+            const x = clientX - rect.left;
+            const y = clientY - rect.top;
+            const c = Math.floor(x / CELL_SIZE);
+            const r = Math.floor(y / CELL_SIZE);
+            if (r >= 0 && r < ROWS && c >= 0 && c < COLS) {
+                return {r, c};
+            }
+            return null;
+        }
+
+        // タッチ / マウスイベント処理
+        function handleStart(e) {
+            if (gameState !== 'PLAYING') return;
+            const pos = getCellFromCoord(e.clientX || e.touches[0].clientX, e.clientY || e.touches[0].clientY);
+            if (!pos) return;
+
+            // 現在のパスの末尾、もしくはスタート位置から開始できる
+            let head = path[path.length - 1];
+            if (pos.r === head.r && pos.c === head.c) {
+                isDrawing = true;
+            } else if (pos.r === startPos.r && pos.c === startPos.c && path.length === 1) {
+                isDrawing = true;
+            }
+        }
+
+        function handleMove(e) {
+            if (!isDrawing || gameState !== 'PLAYING') return;
+            const pos = getCellFromCoord(e.clientX || e.touches[0].clientX, e.clientY || e.touches[0].clientY);
+            if (!pos) return;
+
+            let head = path[path.length - 1];
+
+            // 同じ場所なら無視
+            if (pos.r === head.r && pos.c === head.c) return;
+
+            // 1つ戻る（引き戻し操作）
+            if (path.length > 1) {
+                let prev = path[path.length - 2];
+                if (pos.r === prev.r && pos.c === prev.c) {
+                    path.pop();
+                    return;
+                }
+            }
+
+            // 隣接しているかチェック (上下左右の移動)
+            let dr = Math.abs(pos.r - head.r);
+            let dc = Math.abs(pos.c - head.c);
+            if ((dr === 1 && dc === 0) || (dr === 0 && dc === 1)) {
+                // 壁でないかチェック (grid[r][c] === 0 が通路)
+                if (grid[pos.r][pos.c] === 0) {
+                    // すでにパスに含まれていないかチェック（一筆書き：ループ禁止または交差禁止）
+                    let existingIndex = path.findIndex(p => p.r === pos.r && p.c === pos.c);
+                    if (existingIndex === -1) {
+                        path.push(pos);
+                        playSound('step');
+                        
+                        // ゴール判定
+                        if (pos.r === goalPos.r && pos.c === goalPos.c) {
+                            reachGoal();
+                        }
+                    }
+                }
+            }
+        }
+
+        function handleEnd() {
+            isDrawing = false;
+        }
+
+        function reachGoal() {
+            playSound('goal');
+            score += depth * 100 + Math.floor(timeLeft * 10);
+            depth++;
+            timeLeft += 5.0; // ボーナス時間
+            if (timeLeft > 60) timeLeft = 60; // マックス60秒制限
+
+            // 演出パーティクル
+            for(let i=0; i<30; i++) {
+                particles.push({
+                    x: (goalPos.c + 0.5) * CELL_SIZE,
+                    y: (goalPos.r + 0.5) * CELL_SIZE,
+                    vx: (Math.random() - 0.5) * 6,
+                    vy: (Math.random() - 0.5) * 6,
+                    color: '#00ffcc',
+                    life: 30
+                });
+            }
+
+            initLevel();
+        }
+
+        // イベントリスナー登録
+        canvas.addEventListener('mousedown', handleStart);
+        window.addEventListener('mousemove', handleMove);
+        window.addEventListener('mouseup', handleEnd);
+
+        canvas.addEventListener('touchstart', (e) => { handleStart(e); e.preventDefault(); }, {passive: false});
+        window.addEventListener('touchmove', (e) => { handleMove(e); e.preventDefault(); }, {passive: false});
+        window.addEventListener('touchend', handleEnd);
+
+        document.getElementById('start-btn').addEventListener('click', startGame);
+        document.getElementById('restart-btn').addEventListener('click', startGame);
+
+        // 描画ループ
+        function draw() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            CELL_SIZE = canvas.width / COLS;
+
+            if (gameState === 'PLAYING' || gameState === 'GAMEOVER') {
+                // 迷路の描画
+                for (let r = 0; r < ROWS; r++) {
+                    for (let c = 0; c < COLS; c++) {
+                        if (grid[r][c] === 1) {
+                            // 壁
+                            ctx.fillStyle = '#1c1c33';
+                            ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                            // 立体感
+                            ctx.fillStyle = '#121222';
+                            ctx.fillRect(c * CELL_SIZE + 2, r * CELL_SIZE + 2, CELL_SIZE - 4, CELL_SIZE - 4);
+                        } else {
+                            // 通路
+                            ctx.fillStyle = '#16162a';
+                            ctx.fillRect(c * CELL_SIZE, r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                        }
+                    }
+                }
+
+                // スタート・ゴール床の描画
+                // スタート (上がり階段)
+                ctx.fillStyle = '#334466';
+                ctx.fillRect(startPos.c * CELL_SIZE, startPos.r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                ctx.fillStyle = '#5588ff';
+                ctx.font = `${CELL_SIZE * 0.6}px sans-serif`;
+                ctx.textAlign = 'center';
+                ctx.textBaseline = 'middle';
+                ctx.fillText('▲', (startPos.c + 0.5) * CELL_SIZE, (startPos.r + 0.5) * CELL_SIZE);
+
+                // ゴール (下り階段)
+                ctx.fillStyle = '#663344';
+                ctx.fillRect(goalPos.c * CELL_SIZE, goalPos.r * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+                ctx.fillStyle = '#ff5577';
+                ctx.fillText('▼', (goalPos.c + 0.5) * CELL_SIZE, (goalPos.r + 0.5) * CELL_SIZE);
+
+                // 軌跡 (プレイヤーの進んだ道) の描画
+                if (path.length > 1) {
+                    ctx.beginPath();
+                    ctx.strokeStyle = '#00ffcc';
+                    ctx.lineWidth = CELL_SIZE * 0.4;
+                    ctx.lineCap = 'round';
+                    ctx.lineJoin = 'round';
+                    ctx.shadowColor = '#00ffcc';
+                    ctx.shadowBlur = 10;
+
+                    for (let i = 0; i < path.length; i++) {
+                        let px = (path[i].c + 0.5) * CELL_SIZE;
+                        let py = (path[i].r + 0.5) * CELL_SIZE;
+                        if (i === 0) ctx.moveTo(px, py);
+                        else ctx.lineTo(px, py);
+                    }
+                    ctx.stroke();
+                    ctx.shadowBlur = 0; // シャドウリセット
+                }
+
+                // 現在地（ヘッド）の輝くオーブ
+                if (path.length > 0) {
+                    let head = path[path.length - 1];
+                    let hx = (head.c + 0.5) * CELL_SIZE;
+                    let hy = (head.r + 0.5) * CELL_SIZE;
+
+                    ctx.beginPath();
+                    ctx.arc(hx, hy, CELL_SIZE * 0.3, 0, Math.PI * 2);
+                    ctx.fillStyle = '#ffffff';
+                    ctx.shadowColor = '#00ffcc';
+                    ctx.shadowBlur = 15;
+                    ctx.fill();
+                    ctx.shadowBlur = 0;
+                }
+            }
+
+            // パーティクル描画
+            for (let i = particles.length - 1; i >= 0; i--) {
+                let p = particles[i];
+                p.x += p.vx;
+                p.y += p.vy;
+                p.life--;
+
+                ctx.fillStyle = p.color;
+                ctx.globalAlpha = p.life / 30;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+
+                if (p.life <= 0) {
+                    particles.splice(i, 1);
+                }
+            }
+
+            requestAnimationFrame(draw);
+        }
+
+        // リサイズ調整
+        function resizeCanvas() {
+            const wrapper = document.getElementById('canvas-wrapper');
+            const size = wrapper.clientWidth;
+            canvas.width = size;
+            canvas.height = size;
+            CELL_SIZE = canvas.width / COLS;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+
+        // 初期描画開始
+        requestAnimationFrame(draw);
+    </script>
+</body>
+</html>
