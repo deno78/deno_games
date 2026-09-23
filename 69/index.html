@@ -30,7 +30,7 @@
 
         h1 {
             margin: 5px 0;
-            font-size: 1.6rem;
+            font-size: 1.5rem;
             color: #d81b60;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
         }
@@ -39,7 +39,7 @@
             background-color: var(--card-bg);
             border: 4px dashed #ffb74d;
             border-radius: 20px;
-            padding: 15px 20px;
+            padding: 10px 15px;
             box-shadow: 0 8px 16px rgba(0,0,0,0.08);
             display: flex;
             flex-direction: column;
@@ -51,8 +51,8 @@
             display: flex;
             justify-content: space-between;
             width: 100%;
-            margin-bottom: 10px;
-            font-size: 1.1rem;
+            margin-bottom: 8px;
+            font-size: 1.05rem;
             font-weight: bold;
         }
 
@@ -60,10 +60,10 @@
             color: #e65100;
         }
 
-        /* 盤面と周囲のボタンのレイアウト用コンテナ */
+        /* 盤面と周囲のボタンのレイアウト用コンテナ（斜めボタン用に少し余白を広げる） */
         .board-wrapper {
             position: relative;
-            padding: 40px; /* 周囲のボタン用スペース */
+            padding: 55px;
         }
 
         .grid {
@@ -103,14 +103,14 @@
         .ball.white { background: radial-gradient(circle at 30% 30%, #ffffff, #e0e0e0); }
         .ball.green { background: radial-gradient(circle at 30% 30%, #81c784, var(--green)); }
 
-        /* 周囲のボタン (外側12方向) */
+        /* 周囲のボタン */
         .skewer-btn {
             position: absolute;
             background-color: #8d6e63;
             color: white;
             border: 2px solid #d7ccc8;
             border-radius: 6px;
-            font-size: 0.75rem;
+            font-size: 0.7rem;
             font-weight: bold;
             cursor: pointer;
             display: flex;
@@ -119,8 +119,8 @@
             box-shadow: 0 2px 4px rgba(0,0,0,0.2);
             transition: background 0.2s, transform 0.1s;
             z-index: 5;
-            width: 32px;
-            height: 32px;
+            width: 30px;
+            height: 30px;
         }
 
         .skewer-btn:hover {
@@ -132,32 +132,34 @@
             transform: scale(0.95);
         }
 
-        /* 配置位置調整 */
-        /* 上段 (Row 0: col 0, 1, 2) 上から下へ刺す */
-        #btn-top-0 { top: 4px; left: 59px; }
-        #btn-top-1 { top: 4px; left: 144px; }
-        #btn-top-2 { top: 4px; left: 229px; }
+        /* 縦・横のボタン配置 */
+        #btn-top-0 { top: 12px; left: 74px; }
+        #btn-top-1 { top: 12px; left: 159px; }
+        #btn-top-2 { top: 12px; left: 244px; }
 
-        /* 下段 (Row 2: col 0, 1, 2) 下から上へ刺す */
-        #btn-bottom-0 { bottom: 4px; left: 59px; }
-        #btn-bottom-1 { bottom: 4px; left: 144px; }
-        #btn-bottom-2 { bottom: 4px; left: 229px; }
+        #btn-bottom-0 { bottom: 12px; left: 74px; }
+        #btn-bottom-1 { bottom: 12px; left: 159px; }
+        #btn-bottom-2 { bottom: 12px; left: 244px; }
 
-        /* 左側 (Col 0: row 0, 1, 2) 左から右へ刺す */
-        #btn-left-0 { top: 59px; left: 4px; }
-        #btn-left-1 { top: 144px; left: 4px; }
-        #btn-left-2 { top: 229px; left: 4px; }
+        #btn-left-0 { top: 74px; left: 12px; }
+        #btn-left-1 { top: 159px; left: 12px; }
+        #btn-left-2 { top: 244px; left: 12px; }
 
-        /* 右側 (Col 2: row 0, 1, 2) 右から左へ刺す */
-        #btn-right-0 { top: 59px; right: 4px; }
-        #btn-right-1 { top: 144px; right: 4px; }
-        #btn-right-2 { top: 229px; right: 4px; }
+        #btn-right-0 { top: 74px; right: 12px; }
+        #btn-right-1 { top: 159px; right: 12px; }
+        #btn-right-2 { top: 244px; right: 12px; }
+
+        /* 斜めボタン配置（四隅の外側） */
+        #btn-diag-tl { top: 14px; left: 14px; background-color: #5c6bc0; } /* 左上から右下 (↘) */
+        #btn-diag-tr { top: 14px; right: 14px; background-color: #5c6bc0; } /* 右上から左下 (↙) */
+        #btn-diag-bl { bottom: 14px; left: 14px; background-color: #5c6bc0; } /* 左下から右上 (↗) */
+        #btn-diag-br { bottom: 14px; right: 14px; background-color: #5c6bc0; } /* 右下から左上 (↖) */
 
 
         .controls {
             display: flex;
             gap: 10px;
-            margin-top: 10px;
+            margin-top: 8px;
             width: 100%;
         }
 
@@ -166,8 +168,8 @@
             background-color: #ff9800;
             color: white;
             border: none;
-            padding: 10px 15px;
-            font-size: 1rem;
+            padding: 8px 12px;
+            font-size: 0.95rem;
             font-weight: bold;
             border-radius: 10px;
             cursor: pointer;
@@ -181,9 +183,9 @@
         button.secondary:hover { background-color: #607d8b; }
 
         .instruction {
-            font-size: 0.8rem;
+            font-size: 0.75rem;
             text-align: center;
-            margin-top: 8px;
+            margin-top: 6px;
             color: #795548;
             line-height: 1.3;
         }
@@ -248,29 +250,31 @@
         </div>
 
         <div class="board-wrapper">
-            <!-- 周囲12個の串刺しボタン -->
-            <!-- 上から縦へ (col 0, 1, 2) -->
+            <!-- 上から縦へ -->
             <button class="skewer-btn" id="btn-top-0" onclick="triggerSkewer('col', 0, 'forward')">⬇</button>
             <button class="skewer-btn" id="btn-top-1" onclick="triggerSkewer('col', 1, 'forward')">⬇</button>
             <button class="skewer-btn" id="btn-top-2" onclick="triggerSkewer('col', 2, 'forward')">⬇</button>
 
-            <!-- 下から縦へ (col 0, 1, 2) -->
+            <!-- 下から縦へ -->
             <button class="skewer-btn" id="btn-bottom-0" onclick="triggerSkewer('col', 0, 'backward')">⬆</button>
             <button class="skewer-btn" id="btn-bottom-1" onclick="triggerSkewer('col', 1, 'backward')">⬆</button>
             <button class="skewer-btn" id="btn-bottom-2" onclick="triggerSkewer('col', 2, 'backward')">⬆</button>
 
-            <!-- 左から横へ (row 0, 1, 2) -->
+            <!-- 左から横へ -->
             <button class="skewer-btn" id="btn-left-0" onclick="triggerSkewer('row', 0, 'forward')">➡</button>
             <button class="skewer-btn" id="btn-left-1" onclick="triggerSkewer('row', 1, 'forward')">➡</button>
             <button class="skewer-btn" id="btn-left-2" onclick="triggerSkewer('row', 2, 'forward')">➡</button>
 
-            <!-- 右から横へ (row 0, 1, 2) -->
+            <!-- 右から横へ -->
             <button class="skewer-btn" id="btn-right-0" onclick="triggerSkewer('row', 0, 'backward')">⬅</button>
             <button class="skewer-btn" id="btn-right-1" onclick="triggerSkewer('row', 1, 'backward')">⬅</button>
             <button class="skewer-btn" id="btn-right-2" onclick="triggerSkewer('row', 2, 'backward')">⬅</button>
 
-            <!-- 斜めボタン用の追加（四隅の外側に4つ配置：合計16個になるが、ユーザー指定は12個なので縦4×3 or 横4×3等、今回は縦3×2 + 横3×2 = 12個のボタン：上下左右の各ラインを両方向から） -->
-            <!-- ※斜めを含めたい場合は対角ボタンなどを配置することも可能ですが、縦横4方向×3列/行 = 12個のボタンで綺麗に12個配置できます！ -->
+            <!-- 斜めボタン（四隅） -->
+            <button class="skewer-btn" id="btn-diag-tl" onclick="triggerSkewer('diag', 'tl', 'forward')" title="左上から右下">↘</button>
+            <button class="skewer-btn" id="btn-diag-tr" onclick="triggerSkewer('diag', 'tr', 'forward')" title="右上から左下">↙</button>
+            <button class="skewer-btn" id="btn-diag-bl" onclick="triggerSkewer('diag', 'tr', 'backward')" title="左下から右上">↗</button>
+            <button class="skewer-btn" id="btn-diag-br" onclick="triggerSkewer('diag', 'tl', 'backward')" title="右下から左上">↖</button>
 
             <div class="grid" id="grid">
                 <!-- 3x3 cells -->
@@ -283,7 +287,7 @@
         </div>
 
         <div class="instruction">
-            周囲の12個のボタンから串を刺せ！<br>
+            周囲のボタン（縦・横・斜め）から串を刺せ！<br>
             <b>[ピンク → 白 → 緑]</b> の順に並んでいれば成功！<br>
             <span style="color:#d81b60; font-weight:bold;">※盤面は3秒ごとに自動リロードされます</span>
         </div>
@@ -365,7 +369,6 @@
             }, 200);
         }
 
-        // 串刺しアクションの実行
         function triggerSkewer(type, index, direction) {
             if (!isPlaying) return;
 
@@ -384,27 +387,40 @@
                 } else {
                     lineCells = [{r:2, c}, {r:1, c}, {r:0, c}];
                 }
+            } else if (type === 'diag') {
+                if (index === 'tl') {
+                    // 左上 -> 右下 (0,0 -> 1,1 -> 2,2)
+                    if (direction === 'forward') {
+                        lineCells = [{r:0, c:0}, {r:1, c:1}, {r:2, c:2}];
+                    } else {
+                        // 右下 -> 左上
+                        lineCells = [{r:2, c:2}, {r:1, c:1}, {r:0, c:0}];
+                    }
+                } else if (index === 'tr') {
+                    // 右上 -> 左下 (0,2 -> 1,1 -> 2,0)
+                    if (direction === 'forward') {
+                        lineCells = [{r:0, c:2}, {r:1, c:1}, {r:2, c:0}];
+                    } else {
+                        // 左下 -> 右上
+                        lineCells = [{r:2, c:0}, {r:1, c:1}, {r:0, c:2}];
+                    }
+                }
             }
 
-            // 串アニメーション演出
             playSkewerAnimation(type, index, direction);
 
-            // 色の順序チェック
             const colors = lineCells.map(pos => board[pos.r][pos.c]);
             
-            // [pink, white, green] の順か判定
             if (colors[0] === 'pink' && colors[1] === 'white' && colors[2] === 'green') {
                 score++;
                 scoreEl.textContent = score;
 
-                // 成功したラインのボールを新しくランダムに入れ替える
                 lineCells.forEach(pos => {
                     board[pos.r][pos.c] = COLORS[Math.floor(Math.random() * COLORS.length)];
                 });
                 renderBoard();
             }
 
-            // 操作したら自動リロードタイマーをリセットして3秒カウントを仕切り直し
             resetAutoReload();
         }
 
@@ -417,11 +433,23 @@
                 anim.style.width = '260px';
                 anim.style.top = `${55 + index * 85}px`;
                 anim.style.left = `25px`;
-            } else {
+            } else if (type === 'col') {
                 anim.style.width = '6px';
                 anim.style.height = '260px';
                 anim.style.left = `${55 + index * 85}px`;
                 anim.style.top = `25px`;
+            } else if (type === 'diag') {
+                anim.style.width = '6px';
+                anim.style.height = '350px';
+                anim.style.top = `15px`;
+                anim.style.left = `145px`;
+                if (index === 'tl') {
+                    anim.style.transformOrigin = 'top center';
+                    anim.style.transform = direction === 'forward' ? 'rotate(45deg)' : 'rotate(225deg)';
+                } else {
+                    anim.style.transformOrigin = 'top center';
+                    anim.style.transform = direction === 'forward' ? 'rotate(-45deg)' : 'rotate(135deg)';
+                }
             }
 
             boardWrapper.appendChild(anim);
@@ -461,7 +489,6 @@
             resultModal.style.display = 'flex';
         }
 
-        // イベントリスナー
         startBtn.addEventListener('click', startGame);
         retryBtn.addEventListener('click', startGame);
         reloadBtn.addEventListener('click', () => {
@@ -469,7 +496,6 @@
             if (isPlaying) resetAutoReload();
         });
 
-        // 初期表示
         initBoard();
     </script>
 </body>
