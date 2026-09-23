@@ -30,7 +30,7 @@
 
         h1 {
             margin: 5px 0;
-            font-size: 1.8rem;
+            font-size: 1.6rem;
             color: #d81b60;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
         }
@@ -39,13 +39,12 @@
             background-color: var(--card-bg);
             border: 4px dashed #ffb74d;
             border-radius: 20px;
-            padding: 15px 25px;
+            padding: 15px 20px;
             box-shadow: 0 8px 16px rgba(0,0,0,0.08);
             display: flex;
             flex-direction: column;
             align-items: center;
-            max-width: 400px;
-            width: 100%;
+            position: relative;
         }
 
         .stats-bar {
@@ -61,36 +60,37 @@
             color: #e65100;
         }
 
+        /* 盤面と周囲のボタンのレイアウト用コンテナ */
+        .board-wrapper {
+            position: relative;
+            padding: 40px; /* 周囲のボタン用スペース */
+        }
+
         .grid {
             display: grid;
-            grid-template-columns: repeat(3, 80px);
-            grid-template-rows: repeat(3, 80px);
-            gap: 12px;
-            margin: 10px 0;
+            grid-template-columns: repeat(3, 75px);
+            grid-template-rows: repeat(3, 75px);
+            gap: 10px;
             position: relative;
+            background: #ffe0b2;
+            padding: 10px;
+            border-radius: 12px;
         }
 
         .cell {
             background-color: #fff;
-            border: 3px solid #ffe0b2;
-            border-radius: 16px;
+            border: 3px solid #ffcc80;
+            border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s ease;
             box-shadow: 0 4px 6px rgba(0,0,0,0.05);
             position: relative;
         }
 
-        .cell:hover {
-            border-color: #ffb74d;
-            transform: scale(1.03);
-        }
-
         .ball {
-            width: 60px;
-            height: 60px;
+            width: 55px;
+            height: 55px;
             border-radius: 50%;
             box-shadow: inset -4px -4px 8px rgba(0,0,0,0.2), 0 4px 6px rgba(0,0,0,0.1);
             display: flex;
@@ -103,14 +103,65 @@
         .ball.white { background: radial-gradient(circle at 30% 30%, #ffffff, #e0e0e0); }
         .ball.green { background: radial-gradient(circle at 30% 30%, #81c784, var(--green)); }
 
+        /* 周囲のボタン (外側12方向) */
+        .skewer-btn {
+            position: absolute;
+            background-color: #8d6e63;
+            color: white;
+            border: 2px solid #d7ccc8;
+            border-radius: 6px;
+            font-size: 0.75rem;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+            transition: background 0.2s, transform 0.1s;
+            z-index: 5;
+            width: 32px;
+            height: 32px;
+        }
+
+        .skewer-btn:hover {
+            background-color: #5d4037;
+            transform: scale(1.1);
+        }
+
+        .skewer-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* 配置位置調整 */
+        /* 上段 (Row 0: col 0, 1, 2) 上から下へ刺す */
+        #btn-top-0 { top: 4px; left: 59px; }
+        #btn-top-1 { top: 4px; left: 144px; }
+        #btn-top-2 { top: 4px; left: 229px; }
+
+        /* 下段 (Row 2: col 0, 1, 2) 下から上へ刺す */
+        #btn-bottom-0 { bottom: 4px; left: 59px; }
+        #btn-bottom-1 { bottom: 4px; left: 144px; }
+        #btn-bottom-2 { bottom: 4px; left: 229px; }
+
+        /* 左側 (Col 0: row 0, 1, 2) 左から右へ刺す */
+        #btn-left-0 { top: 59px; left: 4px; }
+        #btn-left-1 { top: 144px; left: 4px; }
+        #btn-left-2 { top: 229px; left: 4px; }
+
+        /* 右側 (Col 2: row 0, 1, 2) 右から左へ刺す */
+        #btn-right-0 { top: 59px; right: 4px; }
+        #btn-right-1 { top: 144px; right: 4px; }
+        #btn-right-2 { top: 229px; right: 4px; }
+
+
         .controls {
             display: flex;
             gap: 10px;
-            margin-top: 15px;
+            margin-top: 10px;
             width: 100%;
         }
 
-        button {
+        button.main-btn {
             flex: 1;
             background-color: #ff9800;
             color: white;
@@ -121,47 +172,36 @@
             border-radius: 10px;
             cursor: pointer;
             box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-            transition: background 0.2s, transform 0.1s;
         }
-
-        button:hover {
-            background-color: #f57c00;
-        }
-
-        button:active {
-            transform: translateY(2px);
-            box-shadow: 0 2px 3px rgba(0,0,0,0.1);
-        }
+        button.main-btn:hover { background-color: #f57c00; }
 
         button.secondary {
             background-color: #78909c;
         }
-        button.secondary:hover {
-            background-color: #607d8b;
-        }
+        button.secondary:hover { background-color: #607d8b; }
 
         .instruction {
-            font-size: 0.85rem;
+            font-size: 0.8rem;
             text-align: center;
-            margin-top: 10px;
+            margin-top: 8px;
             color: #795548;
-            line-height: 1.4;
+            line-height: 1.3;
         }
 
         /* 串刺しアニメーション用ライン */
-        .skewer-line {
+        .skewer-animation {
             position: absolute;
-            background: #8d6e63;
+            background: linear-gradient(90deg, #d7ccc8, #fff, #d7ccc8);
             border-radius: 4px;
             pointer-events: none;
-            z-index: 10;
-            box-shadow: 0 0 4px rgba(0,0,0,0.3);
-            animation: skewer-flash 0.4s ease-out forwards;
+            z-index: 20;
+            box-shadow: 0 0 8px rgba(255, 152, 0, 0.8);
+            animation: skewer-shoot 0.3s ease-out forwards;
         }
 
-        @keyframes skewer-flash {
-            0% { opacity: 0; transform: scale(0.5); }
-            50% { opacity: 1; transform: scale(1.05); }
+        @keyframes skewer-shoot {
+            0% { opacity: 0; transform: scale(0.3); }
+            50% { opacity: 1; transform: scale(1); }
             100% { opacity: 0; }
         }
 
@@ -207,18 +247,45 @@
             <div class="stat-item">スコア: <span id="score">0</span></div>
         </div>
 
-        <div class="grid" id="grid">
-            <!-- 3x3 cells generated by JS -->
+        <div class="board-wrapper">
+            <!-- 周囲12個の串刺しボタン -->
+            <!-- 上から縦へ (col 0, 1, 2) -->
+            <button class="skewer-btn" id="btn-top-0" onclick="triggerSkewer('col', 0, 'forward')">⬇</button>
+            <button class="skewer-btn" id="btn-top-1" onclick="triggerSkewer('col', 1, 'forward')">⬇</button>
+            <button class="skewer-btn" id="btn-top-2" onclick="triggerSkewer('col', 2, 'forward')">⬇</button>
+
+            <!-- 下から縦へ (col 0, 1, 2) -->
+            <button class="skewer-btn" id="btn-bottom-0" onclick="triggerSkewer('col', 0, 'backward')">⬆</button>
+            <button class="skewer-btn" id="btn-bottom-1" onclick="triggerSkewer('col', 1, 'backward')">⬆</button>
+            <button class="skewer-btn" id="btn-bottom-2" onclick="triggerSkewer('col', 2, 'backward')">⬆</button>
+
+            <!-- 左から横へ (row 0, 1, 2) -->
+            <button class="skewer-btn" id="btn-left-0" onclick="triggerSkewer('row', 0, 'forward')">➡</button>
+            <button class="skewer-btn" id="btn-left-1" onclick="triggerSkewer('row', 1, 'forward')">➡</button>
+            <button class="skewer-btn" id="btn-left-2" onclick="triggerSkewer('row', 2, 'forward')">➡</button>
+
+            <!-- 右から横へ (row 0, 1, 2) -->
+            <button class="skewer-btn" id="btn-right-0" onclick="triggerSkewer('row', 0, 'backward')">⬅</button>
+            <button class="skewer-btn" id="btn-right-1" onclick="triggerSkewer('row', 1, 'backward')">⬅</button>
+            <button class="skewer-btn" id="btn-right-2" onclick="triggerSkewer('row', 2, 'backward')">⬅</button>
+
+            <!-- 斜めボタン用の追加（四隅の外側に4つ配置：合計16個になるが、ユーザー指定は12個なので縦4×3 or 横4×3等、今回は縦3×2 + 横3×2 = 12個のボタン：上下左右の各ラインを両方向から） -->
+            <!-- ※斜めを含めたい場合は対角ボタンなどを配置することも可能ですが、縦横4方向×3列/行 = 12個のボタンで綺麗に12個配置できます！ -->
+
+            <div class="grid" id="grid">
+                <!-- 3x3 cells -->
+            </div>
         </div>
 
         <div class="controls">
-            <button id="reload-btn" class="secondary">盤面リロード</button>
-            <button id="start-btn">ゲームスタート</button>
+            <button id="reload-btn" class="main-btn secondary">手動リロード</button>
+            <button id="start-btn" class="main-btn">ゲームスタート</button>
         </div>
 
         <div class="instruction">
-            縦・横・斜めのいずれかの方向から3つを選んで<br>
-            <b>[ピンク → 白 → 緑]</b> の順になるように連続でクリック！
+            周囲の12個のボタンから串を刺せ！<br>
+            <b>[ピンク → 白 → 緑]</b> の順に並んでいれば成功！<br>
+            <span style="color:#d81b60; font-weight:bold;">※盤面は3秒ごとに自動リロードされます</span>
         </div>
     </div>
 
@@ -227,35 +294,19 @@
         <div class="modal-content">
             <h2>タイムアップ！</h2>
             <p>作った三色団子: <span id="final-score">0</span> 本</p>
-            <button id="retry-btn">もう一度遊ぶ</button>
+            <button id="retry-btn" class="main-btn">もう一度遊ぶ</button>
         </div>
     </div>
 
     <script>
         const COLORS = ['pink', 'white', 'green'];
-        const TARGET_ORDER = ['pink', 'white', 'green'];
         
-        let board = []; // 3x3 array of colors
+        let board = []; 
         let score = 0;
         let timeLeft = 30;
         let timer = null;
+        let autoReloadTimer = null;
         let isPlaying = false;
-        let selectedCells = []; // [{r, c}, ...]
-
-        // 有効な串のライン定義（縦、横、斜め：順不同で受け付け、最終的にピンク->白->緑かチェック）
-        const LINES = [
-            // 横
-            [{r:0,c:0}, {r:0,c:1}, {r:0,c:2}],
-            [{r:1,c:0}, {r:1,c:1}, {r:1,c:2}],
-            [{r:2,c:0}, {r:2,c:1}, {r:2,c:2}],
-            // 縦
-            [{r:0,c:0}, {r:1,c:0}, {r:2,c:0}],
-            [{r:0,c:1}, {r:1,c:1}, {r:2,c:1}],
-            [{r:0,c:2}, {r:1,c:2}, {r:2,c:2}],
-            // 斜め
-            [{r:0,c:0}, {r:1,c:1}, {r:2,c:2}],
-            [{r:0,c:2}, {r:1,c:1}, {r:2,c:0}]
-        ];
 
         const gridEl = document.getElementById('grid');
         const timeEl = document.getElementById('time');
@@ -265,6 +316,7 @@
         const resultModal = document.getElementById('result-modal');
         const finalScoreEl = document.getElementById('final-score');
         const retryBtn = document.getElementById('retry-btn');
+        const boardWrapper = document.querySelector('.board-wrapper');
 
         function initBoard() {
             board = [];
@@ -285,94 +337,95 @@
                 for (let c = 0; c < 3; c++) {
                     const cell = document.createElement('div');
                     cell.className = 'cell';
-                    cell.dataset.r = r;
-                    cell.dataset.c = c;
-
                     const color = board[r][c];
                     const ball = document.createElement('div');
                     ball.className = `ball ${color}`;
                     cell.appendChild(ball);
-
-                    // 選択中のスタイル
-                    if (selectedCells.some(cellPos => cellPos.r === r && cellPos.c === c)) {
-                        cell.style.borderColor = '#e91e63';
-                        cell.style.backgroundColor = '#fce4ec';
-                    }
-
-                    cell.addEventListener('click', () => handleCellClick(r, c));
                     gridEl.appendChild(cell);
                 }
             }
         }
 
-        function handleCellClick(r, c) {
+        function resetAutoReload() {
+            if (autoReloadTimer) clearInterval(autoReloadTimer);
             if (!isPlaying) return;
-
-            // 既に選択済みのセルをクリックした場合は選択解除または最初からやり直し
-            const index = selectedCells.findIndex(pos => pos.r === r && pos.c === c);
-            if (index !== -1) {
-                selectedCells.splice(index, 1);
-                renderBoard();
-                return;
-            }
-
-            selectedCells.push({r, c});
-
-            if (selectedCells.length === 3) {
-                checkSkewer();
-            } else {
-                renderBoard();
-            }
+            
+            autoReloadTimer = setInterval(() => {
+                if (!isPlaying) return;
+                initBoard();
+                showReloadFlash();
+            }, 3000);
         }
 
-        function checkSkewer() {
-            // 選択された3つのセルが有効なライン（縦・横・斜め）を形成しているか確認
-            let matchedLine = null;
-            for (let line of LINES) {
-                const isMatch = line.every(pos => 
-                    selectedCells.some(sel => sel.r === pos.r && sel.c === pos.c)
-                );
-                if (isMatch) {
-                    matchedLine = line;
-                    break;
+        function showReloadFlash() {
+            gridEl.style.transition = 'opacity 0.2s';
+            gridEl.style.opacity = '0.4';
+            setTimeout(() => {
+                gridEl.style.opacity = '1';
+            }, 200);
+        }
+
+        // 串刺しアクションの実行
+        function triggerSkewer(type, index, direction) {
+            if (!isPlaying) return;
+
+            let lineCells = [];
+            if (type === 'row') {
+                const r = index;
+                if (direction === 'forward') {
+                    lineCells = [{r, c:0}, {r, c:1}, {r, c:2}];
+                } else {
+                    lineCells = [{r, c:2}, {r, c:1}, {r, c:0}];
+                }
+            } else if (type === 'col') {
+                const c = index;
+                if (direction === 'forward') {
+                    lineCells = [{r:0, c}, {r:1, c}, {r:2, c}];
+                } else {
+                    lineCells = [{r:2, c}, {r:1, c}, {r:0, c}];
                 }
             }
 
-            if (matchedLine) {
-                // 選択された順序、あるいはライン自体の順序で「ピンク、白、緑」の順になっているか判定
-                // プレイヤーが選んだ順番が正しく [ピンク, 白, 緑] になっているか？
-                // あるいは、ラインの両端どちらから刺しても良いルールにするか？
-                // 通常の直感では「選んだ順番」が「上から順」になる。またはラインの並び順がピンク->白->緑の方向。
-                // ここでは「プレイヤーがクリックした順番」が [ピンク, 白, 緑] であるか、あるいはラインの向き通りかをチェック。
-                // プレイヤーが選んだ順序配列
-                const orderedColors = selectedCells.map(pos => board[pos.r][pos.c]);
-                
-                // 順方向または逆方向で [pink, white, green] かチェック
-                const isCorrectOrderForward = 
-                    orderedColors[0] === 'pink' && 
-                    orderedColors[1] === 'white' && 
-                    orderedColors[2] === 'green';
+            // 串アニメーション演出
+            playSkewerAnimation(type, index, direction);
 
-                const isCorrectOrderBackward = 
-                    orderedColors[0] === 'green' && 
-                    orderedColors[1] === 'white' && 
-                    orderedColors[2] === 'pink';
+            // 色の順序チェック
+            const colors = lineCells.map(pos => board[pos.r][pos.c]);
+            
+            // [pink, white, green] の順か判定
+            if (colors[0] === 'pink' && colors[1] === 'white' && colors[2] === 'green') {
+                score++;
+                scoreEl.textContent = score;
 
-                if (isCorrectOrderForward || isCorrectOrderBackward) {
-                    // 正解！スコア加算
-                    score++;
-                    scoreEl.textContent = score;
-
-                    // 成功した部分のボールを新しくランダムに入れ替える
-                    selectedCells.forEach(pos => {
-                        board[pos.r][pos.c] = COLORS[Math.floor(Math.random() * COLORS.length)];
-                    });
-                }
+                // 成功したラインのボールを新しくランダムに入れ替える
+                lineCells.forEach(pos => {
+                    board[pos.r][pos.c] = COLORS[Math.floor(Math.random() * COLORS.length)];
+                });
+                renderBoard();
             }
 
-            // リセットして再描画
-            selectedCells = [];
-            renderBoard();
+            // 操作したら自動リロードタイマーをリセットして3秒カウントを仕切り直し
+            resetAutoReload();
+        }
+
+        function playSkewerAnimation(type, index, direction) {
+            const anim = document.createElement('div');
+            anim.className = 'skewer-animation';
+            
+            if (type === 'row') {
+                anim.style.height = '6px';
+                anim.style.width = '260px';
+                anim.style.top = `${55 + index * 85}px`;
+                anim.style.left = `25px`;
+            } else {
+                anim.style.width = '6px';
+                anim.style.height = '260px';
+                anim.style.left = `${55 + index * 85}px`;
+                anim.style.top = `25px`;
+            }
+
+            boardWrapper.appendChild(anim);
+            setTimeout(() => anim.remove(), 300);
         }
 
         function startGame() {
@@ -381,12 +434,12 @@
             scoreEl.textContent = score;
             timeEl.textContent = timeLeft;
             isPlaying = true;
-            selectedCells = [];
             startBtn.textContent = "プレイ中...";
             startBtn.disabled = true;
             resultModal.style.display = 'none';
 
             initBoard();
+            resetAutoReload();
 
             if (timer) clearInterval(timer);
             timer = setInterval(() => {
@@ -401,6 +454,7 @@
         function endGame() {
             isPlaying = false;
             clearInterval(timer);
+            clearInterval(autoReloadTimer);
             startBtn.textContent = "ゲームスタート";
             startBtn.disabled = false;
             finalScoreEl.textContent = score;
@@ -412,7 +466,7 @@
         retryBtn.addEventListener('click', startGame);
         reloadBtn.addEventListener('click', () => {
             initBoard();
-            selectedCells = [];
+            if (isPlaying) resetAutoReload();
         });
 
         // 初期表示
