@@ -26,8 +26,8 @@
         }
 
         #game-container {
-            width: 800px;
-            height: 600px;
+            width: 400px;
+            height: 700px;
             background-color: #1a1532;
             border: 6px solid #4a3b76;
             box-shadow: 0 0 30px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.8);
@@ -38,14 +38,16 @@
 
         /* ヘッダー情報 */
         #header-bar {
-            height: 60px;
+            height: 70px;
             background-color: #2b224d;
             border-bottom: 4px solid #4a3b76;
             display: flex;
+            flex-wrap: wrap;
             justify-content: space-around;
             align-items: center;
-            font-size: 12px;
+            font-size: 10px;
             color: #ff9944;
+            padding: 4px;
         }
 
         .stat-item span {
@@ -65,12 +67,12 @@
 
         /* 覗き窓エフェクト */
         #peephole-frame {
-            width: 400px;
-            height: 400px;
+            width: 280px;
+            height: 280px;
             border-radius: 50%;
             background: #000;
-            border: 16px solid #14101e;
-            box-shadow: inset 0 0 40px rgba(0,0,0,0.9), 0 0 20px rgba(0,0,0,0.8);
+            border: 12px solid #14101e;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.9), 0 0 15px rgba(0,0,0,0.8);
             position: relative;
             overflow: hidden;
             display: flex;
@@ -81,16 +83,18 @@
         /* キャンバスによる16bit風グラフィック描画 */
         canvas {
             image-rendering: pixelated;
+            width: 280px;
+            height: 280px;
         }
 
         /* メッセージ・会話エリア */
         #message-area {
-            height: 80px;
+            height: 90px;
             background-color: #14101e;
             border-top: 4px solid #332759;
-            padding: 15px;
-            font-size: 11px;
-            line-height: 1.6;
+            padding: 12px;
+            font-size: 9px;
+            line-height: 1.5;
             color: #ffcc66;
             display: flex;
             align-items: center;
@@ -100,26 +104,27 @@
 
         /* コントロール（選択肢）エリア */
         #control-area {
-            height: 100px;
+            height: 110px;
             background-color: #241c3d;
             border-top: 4px solid #4a3b76;
             display: flex;
+            flex-direction: column;
             justify-content: space-around;
             align-items: center;
-            padding: 0 20px;
+            padding: 10px;
         }
 
         .action-btn {
             background-color: #44336c;
             color: #fff;
-            border: 4px solid #7c64b5;
-            padding: 12px 18px;
+            border: 3px solid #7c64b5;
+            padding: 8px 10px;
             font-family: 'Press Start 2P', monospace;
-            font-size: 10px;
+            font-size: 9px;
             cursor: pointer;
             transition: all 0.1s;
-            box-shadow: 0 4px 0 #23193c;
-            width: 30%;
+            box-shadow: 0 3px 0 #23193c;
+            width: 100%;
             text-align: center;
         }
 
@@ -129,14 +134,14 @@
         }
 
         .action-btn:active {
-            transform: translateY(4px);
+            transform: translateY(3px);
             box-shadow: 0 0 0 #23193c;
         }
 
         .action-btn.danger {
             background-color: #6c3333;
             border-color: #b56464;
-            box-shadow: 0 4px 0 #3c1919;
+            box-shadow: 0 3px 0 #3c1919;
         }
         .action-btn.danger:hover {
             background-color: #934444;
@@ -226,8 +231,10 @@
 
         <!-- アクションボタン -->
         <div id="control-area">
-            <button class="action-btn" id="btn-ignore" onclick="playerAction('ignore')" disabled>出ない / 無視</button>
-            <button class="action-btn" id="btn-treat" onclick="playerAction('treat')" disabled>お菓子をあげる</button>
+            <div style="display: flex; width: 100%; justify-content: space-between; gap: 5px;">
+                <button class="action-btn" id="btn-ignore" onclick="playerAction('ignore')" disabled>無視する</button>
+                <button class="action-btn" id="btn-treat" onclick="playerAction('treat')" disabled>お菓子をあげる</button>
+            </div>
             <button class="action-btn danger" id="btn-shoot" onclick="playerAction('shoot')" disabled>ショットガン発砲</button>
         </div>
 
