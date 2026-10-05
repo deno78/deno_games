@@ -82,3 +82,4 @@ Deno/Web games collection.
 - [69. 三色団子串刺しゲーム (Three-Color Dango Skewer Game)](./69/index.html)
 - [70. 焼肉早食いバトル (Yakiniku Speed Eating Battle)](./70/index.html)
 - [71. ディープダンジョン ～1分間一筆書き迷路アタック～ (Deep Dungeon 1-Minute Maze Attack)](./71/index.html)
+- [72. ハロウィーン・ドアベル・パニック (Halloween Doorbell Panic)](./72/index.html)

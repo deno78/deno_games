@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>ハロウィーン・ドアベル・パニック (16-bit Style)</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+
+        * {
+            box-sizing: border-box;
+            image-rendering: pixelated;
+            image-rendering: crisp-edges;
+        }
+
+        body {
+            background-color: #0d0b1e;
+            color: #f3f3f3;
+            font-family: 'Press Start 2P', monospace;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        #game-container {
+            width: 800px;
+            height: 600px;
+            background-color: #1a1532;
+            border: 6px solid #4a3b76;
+            box-shadow: 0 0 30px rgba(0,0,0,0.8), inset 0 0 20px rgba(0,0,0,0.8);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* ヘッダー情報 */
+        #header-bar {
+            height: 60px;
+            background-color: #2b224d;
+            border-bottom: 4px solid #4a3b76;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            font-size: 12px;
+            color: #ff9944;
+        }
+
+        .stat-item span {
+            color: #fff;
+        }
+
+        /* メインビューポート（覗き窓・玄関） */
+        #viewport {
+            flex: 1;
+            position: relative;
+            background-color: #090712;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* 覗き窓エフェクト */
+        #peephole-frame {
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            background: #000;
+            border: 16px solid #14101e;
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.9), 0 0 20px rgba(0,0,0,0.8);
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* キャンバスによる16bit風グラフィック描画 */
+        canvas {
+            image-rendering: pixelated;
+        }
+
+        /* メッセージ・会話エリア */
+        #message-area {
+            height: 80px;
+            background-color: #14101e;
+            border-top: 4px solid #332759;
+            padding: 15px;
+            font-size: 11px;
+            line-height: 1.6;
+            color: #ffcc66;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        /* コントロール（選択肢）エリア */
+        #control-area {
+            height: 100px;
+            background-color: #241c3d;
+            border-top: 4px solid #4a3b76;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            padding: 0 20px;
+        }
+
+        .action-btn {
+            background-color: #44336c;
+            color: #fff;
+            border: 4px solid #7c64b5;
+            padding: 12px 18px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 10px;
+            cursor: pointer;
+            transition: all 0.1s;
+            box-shadow: 0 4px 0 #23193c;
+            width: 30%;
+            text-align: center;
+        }
+
+        .action-btn:hover {
+            background-color: #5c4493;
+            border-color: #9c82df;
+        }
+
+        .action-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 0 0 #23193c;
+        }
+
+        .action-btn.danger {
+            background-color: #6c3333;
+            border-color: #b56464;
+            box-shadow: 0 4px 0 #3c1919;
+        }
+        .action-btn.danger:hover {
+            background-color: #934444;
+            border-color: #df8282;
+        }
+
+        /* 画面共通のオーバーレイや演出用 */
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.85);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            text-align: center;
+            padding: 40px;
+        }
+
+        #overlay h1 {
+            font-size: 20px;
+            color: #ff6600;
+            margin-bottom: 20px;
+            line-height: 1.5;
+            text-shadow: 2px 2px #330000;
+        }
+
+        #overlay p {
+            font-size: 10px;
+            line-height: 2;
+            color: #cccccc;
+            margin-bottom: 30px;
+        }
+
+        .primary-btn {
+            background-color: #ff6600;
+            color: #fff;
+            border: 4px solid #ffaa44;
+            padding: 15px 30px;
+            font-family: 'Press Start 2P', monospace;
+            font-size: 12px;
+            cursor: pointer;
+            box-shadow: 0 6px 0 #993300;
+        }
+        .primary-btn:active {
+            transform: translateY(6px);
+            box-shadow: 0 0 0 #993300;
+        }
+
+        /* 弾痕エフェクトなど */
+        .flash {
+            animation: flashAnim 0.3s ease;
+        }
+        @keyframes flashAnim {
+            0% { background-color: white; }
+            100% { background-color: #1a1532; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- ヘッダー -->
+        <div id="header-bar">
+            <div class="stat-item">時間: <span id="time-display">18:00</span></div>
+            <div class="stat-item">残りお菓子: <span id="candy-display">10</span>個</div>
+            <div class="stat-item">近所の評判: <span id="reputation-display">⭐⭐⭐⭐⭐</span></div>
+            <div class="stat-item">対応数: <span id="score-display">0</span>/10</div>
+        </div>
+
+        <!-- 覗き窓ビューポート -->
+        <div id="viewport" id="flash-target">
+            <div id="peephole-frame">
+                <!-- 16bitグラフィック描画用キャンバス -->
+                <canvas id="view-canvas" width="400" height="400"></canvas>
+            </div>
+        </div>
+
+        <!-- メッセージ -->
+        <div id="message-area" id="msg-text">
+            夜が更けてきた…チャイムが鳴るのを待とう。
+        </div>
+
+        <!-- アクションボタン -->
+        <div id="control-area">
+            <button class="action-btn" id="btn-ignore" onclick="playerAction('ignore')" disabled>出ない / 無視</button>
+            <button class="action-btn" id="btn-treat" onclick="playerAction('treat')" disabled>お菓子をあげる</button>
+            <button class="action-btn danger" id="btn-shoot" onclick="playerAction('shoot')" disabled>ショットガン発砲</button>
+        </div>
+
+        <!-- スタート／ゲームオーバー画面オーバーレイ -->
+        <div id="overlay">
+            <h1 id="overlay-title">TRICK OR TREAT?</h1>
+            <p id="overlay-desc">
+                ハロウィンの夜、あなたの家に次々と子供や「何か」がやってきます。<br>
+                インターホンが鳴ったら覗き窓で様子を確認し、<br>
+                「出ない」「お菓子をあげる」「撃ち殺す」のいずれかを選択してください。<br>
+                間違った対応をすると、評判が下がるか、逆に襲われます！
+            </p>
+            <button class="primary-btn" onclick="startGame()">ゲームスタート</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('view-canvas');
+        const ctx = canvas.getContext('2d');
+
+        let gameState = {
+            time: 18,
+            minute: 0,
+            candies: 10,
+            reputation: 5, // 1〜5
+            score: 0,
+            maxScore: 10,
+            isPlaying: false,
+            currentVisitor: null,
+            waitingForVisitor: false,
+            timer: null
+        };
+
+        // 訪問者データの定義
+        const visitors = [
+            {
+                name: "可愛い魔女の子供",
+                type: "child",
+                trickOrTreat: "トリック・オア・トリート！お菓子くれなきゃイタズラしちゃうぞ☆",
+                goodChoice: "treat",
+                feedbackGood: "「やったー！ありがとう！」子供は嬉しそうにお菓子を受け取り去っていった。",
+                feedbackIgnore: "子供はしばらくドアを叩いた後、泣きながら帰っていった… (評判ダウン)",
+                feedbackShoot: "子供を撃ってしまった！警察に通報され、近所から村八分にされた！(ゲームオーバー)",
+                isMonster: false
+            },
+            {
+                name: "包丁を持った殺人鬼",
+                type: "killer",
+                trickOrTreat: "…………（無言で不気味に笑っている）",
+                goodChoice: "shoot",
+                feedbackGood: "ショットガンで撃ち抜いた！殺人鬼は断末魔と共に倒れ、家を守り抜いた！",
+                feedbackIgnore: "殺人鬼がピッキングで鍵を開けて侵入してきた！あなたは襲われてしまった… (ゲームオーバー)",
+                feedbackShoot: "正当防衛成立！殺人鬼を撃退した！近所の人々から感謝された。",
+                isMonster: true
+            },
+            {
+                name: "ゾンビのコスプレをした小学生",
+                type: "child",
+                trickOrTreat: "う……お菓子をくれ……めしくえ……",
+                goodChoice: "treat",
+                feedbackGood: "「うま……いや、美味しい！」ゾンビの仮装をした子は満足して帰った。",
+                feedbackIgnore: "ゾンビの子は郵便受けを荒らして去っていった。少し嫌な気分だ。",
+                feedbackShoot: "ただのコスプレの子供だった！大惨事だ！あなたは逮捕された！(ゲームオーバー)",
+                isMonster: false
+            },
+            {
+                name: "不気味なカボチャ頭の怪人",
+                type: "monster",
+                trickOrTreat: "ハハハ…ハラペコだ…お前の魂かお菓子をよこせ……",
+                goodChoice: "shoot",
+                feedbackGood: "怪人をショットガンで吹き飛ばした！悪臭を残して消えていった。",
+                feedbackIgnore: "怪人は玄関のドアを破壊して侵入してきた！魂を吸い取られた… (ゲームオーバー)",
+                feedbackShoot: "怪人を撃退した！住民たちは恐怖から解放された。",
+                isMonster: true
+            },
+            {
+                name: "ヴァンパイアの紳士",
+                type: "vampire",
+                trickOrTreat: "こんばんはご近所さん。甘い血…いや、お菓子を分けてもらえないか？",
+                goodChoice: "treat",
+                feedbackGood: "「フッ、美味なキャンディだ。礼を言おう。」優雅に去っていった。",
+                feedbackIgnore: "ヴァンパイアはコウモリの群れに姿を変え、窓から侵入して血を吸った！(ゲームオーバー)",
+                feedbackShoot: "ただの人間（あるいはコスプレ）を撃ってしまった！大問題に発展した！(ゲームオーバー)",
+                isMonster: false
+            },
+            {
+                name: "巨大な狂犬・ヘルハウンド",
+                type: "beast",
+                trickOrTreat: "グルルル……カプッ！",
+                goodChoice: "shoot",
+                feedbackGood: "飛びかかってきた猛獣をショットガンで撃ち落とした！あぶなかった…",
+                feedbackIgnore: "ドアを突き破って猛獣に噛み殺されてしまった！(ゲームオーバー)",
+                feedbackShoot: "怪物を退治した！近所の人から勇敢なヒーローと称えられた。",
+                isMonster: true
+            }
+        ];
+
+        function startGame() {
+            gameState.time = 18;
+            gameState.minute = 0;
+            gameState.candies = 10;
+            gameState.reputation = 5;
+            gameState.score = 0;
+            gameState.isPlaying = true;
+
+            document.getElementById('overlay').style.display = 'none';
+            updateUI();
+            nextVisitorSoon();
+        }
+
+        function updateUI() {
+            document.getElementById('time-display').innerText = `${String(gameState.time).padStart(2,'0')}:${String(gameState.minute).padStart(2,'0')}`;
+            document.getElementById('candy-display').innerText = gameState.candies;
+            let stars = "⭐".repeat(Math.max(0, gameState.reputation));
+            if(gameState.reputation <= 0) stars = "💀破滅";
+            document.getElementById('reputation-display').innerText = stars;
+            document.getElementById('score-display').innerText = gameState.score;
+        }
+
+        function nextVisitorSoon() {
+            if (!gameState.isPlaying) return;
+
+            setButtonsEnabled(false);
+            setMessage("静けさが戻っている……次の来訪者を待つ。");
+            clearView();
+
+            let waitTime = Math.floor(Math.random() * 3000) + 3000; // 3〜6秒待機
+
+            setTimeout(() => {
+                if (!gameState.isPlaying) return;
+                triggerDoorbell();
+            }, waitTime);
+        }
+
+        function triggerDoorbell() {
+            // 時間経過
+            gameState.minute += 30;
+            if (gameState.minute >= 60) {
+                gameState.minute = 0;
+                gameState.time += 1;
+            }
+            if (gameState.time >= 24) {
+                winGame();
+                return;
+            }
+            updateUI();
+
+            // ピンポーン効果音代わりの画面フラッシュ＆メッセージ
+            playDingDongSound();
+            setMessage("ピンポーン！ 「トリック・オア・トリート！」の声が響く。覗き窓を覗こう。");
+
+            // 訪問者をランダム選出
+            let visitorIndex = Math.floor(Math.random() * visitors.length);
+            gameState.currentVisitor = visitors[visitorIndex];
+            gameState.waitingForVisitor = true;
+
+            // 覗き窓の光景を描画
+            drawVisitor(gameState.currentVisitor);
+
+            // ボタン有効化
+            setButtonsEnabled(true);
+        }
+
+        function playDingDongSound() {
+            // Web Audio API によるチャイム音生成
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+                osc.frequency.setValueAtTime(440, audioCtx.currentTime + 0.3); // A4
+                gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 1.2);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 1.2);
+            } catch(e) {}
+        }
+
+        function playGunshotSound() {
+            try {
+                const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                // ホワイトノイズによる銃声
+                const bufferSize = audioCtx.sampleRate * 0.5;
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) {
+                    data[i] = Math.random() * 2 - 1;
+                }
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+                const filter = audioCtx.createBiquadFilter();
+                filter.type = 'lowpass';
+                filter.frequency.setValueAtTime(800, audioCtx.currentTime);
+                
+                const gain = audioCtx.createGain();
+                gain.gain.setValueAtTime(0.8, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.5);
+
+                noise.connect(filter);
+                filter.connect(gain);
+                gain.connect(audioCtx.destination);
+                noise.start();
+            } catch(e) {}
+        }
+
+        function playerAction(action) {
+            if (!gameState.waitingForVisitor) return;
+            gameState.waitingForVisitor = false;
+            setButtonsEnabled(false);
+
+            let visitor = gameState.currentVisitor;
+            let resultText = "";
+
+            if (action === 'shoot') {
+                playGunshotSound();
+                document.getElementById('game-container').classList.add('flash');
+                setTimeout(() => document.getElementById('game-container').classList.remove('flash'), 300);
+            }
+
+            if (action === visitor.goodChoice) {
+                // 正解の対応
+                if (action === 'treat') {
+                    gameState.candies--;
+                    resultText = "【正解】 " + visitor.feedbackGood;
+                } else if (action === 'shoot') {
+                    resultText = "【正解】 " + visitor.feedbackGood;
+                    gameState.reputation = Math.min(5, gameState.reputation + 1);
+                } else if (action === 'ignore') {
+                    resultText = "【正解】 " + visitor.feedbackIgnore;
+                }
+                gameState.score++;
+            } else {
+                // 不正解の対応
+                if (action === 'treat' && visitor.isMonster) {
+                    // モンスターにお菓子をあげちゃった
+                    resultText = "【ミス】 モンスターにお菓子をあげたが、結局襲われてしまった！ (ゲームオーバー)";
+                    gameOver(resultText);
+                    return;
+                } else if (action === 'ignore') {
+                    // 無視してはいけない相手を無視
+                    resultText = "【ミス】 " + visitor.feedbackIgnore;
+                    gameState.reputation--;
+                } else if (action === 'shoot') {
+                    // 撃ってはいけない人を撃った
+                    resultText = "【大罪】 " + visitor.feedbackShoot;
+                    gameOver(resultText);
+                    return;
+                } else if (action === 'treat' && !visitor.isMonster && gameState.candies < 0) {
+                    // お菓子切れ
+                } else {
+                    resultText = "【ミス】 適切な対応ではなかった…評判が下がった。";
+                    gameState.reputation--;
+                }
+            }
+
+            updateUI();
+            setMessage(resultText);
+
+            if (gameState.reputation <= 0) {
+                setTimeout(() => gameOver("近所中から「冷酷で危険な住人」という噂が広まり、村から追い出された… (ゲームオーバー)"), 3000);
+                return;
+            }
+
+            if (gameState.score >= gameState.maxScore || gameState.time >= 24) {
+                setTimeout(winGame, 3000);
+                return;
+            }
+
+            setTimeout(() => {
+                nextVisitorSoon();
+            }, 3500);
+        }
+
+        function setButtonsEnabled(enabled) {
+            document.getElementById('btn-ignore').disabled = !enabled;
+            document.getElementById('btn-treat').disabled = !enabled || gameState.candies <= 0;
+            document.getElementById('btn-shoot').disabled = !enabled;
+        }
+
+        function setMessage(text) {
+            document.getElementById('message-area').innerText = text;
+        }
+
+        // 16bit風グラフィック描画関数
+        function clearView() {
+            ctx.fillStyle = '#05030a';
+            ctx.fillRect(0, 0, 400, 400);
+            
+            // 暗い玄関の背景（木目調ドットと微かな光）
+            ctx.fillStyle = '#110c1f';
+            ctx.fillRect(0, 300, 400, 100);
+            
+            // 覗き窓の歪み・暗部グラデーション
+            let grad = ctx.createRadialGradient(200, 200, 50, 200, 200, 200);
+            grad.addColorStop(0, 'rgba(255, 120, 50, 0.15)');
+            grad.addColorStop(1, 'rgba(0, 0, 0, 0.85)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(0, 0, 400, 400);
+        }
+
+        function drawVisitor(visitor) {
+            clearView();
+
+            ctx.save();
+            // 覗き窓独特のレンズ歪み表現として少しドット調に描画
+            
+            if (visitor.type === 'child') {
+                // 子供（魔女 / ゾンビ風コスプレ）
+                // 体
+                ctx.fillStyle = visitor.name.includes('ゾンビ') ? '#557755' : '#8833aa';
+                ctx.fillRect(160, 220, 80, 110);
+                // 顔
+                ctx.fillStyle = '#ffccaa';
+                ctx.fillRect(165, 140, 70, 80);
+                // 帽子 or 髪
+                ctx.fillStyle = '#221133';
+                ctx.fillRect(150, 120, 100, 30);
+                if (visitor.name.includes('魔女')) {
+                    ctx.fillStyle = '#331155';
+                    ctx.beginPath();
+                    ctx.moveTo(200, 60);
+                    ctx.lineTo(140, 120);
+                    ctx.lineTo(260, 120);
+                    ctx.fill();
+                }
+                // 目
+                ctx.fillStyle = '#000';
+                ctx.fillRect(180, 165, 10, 10);
+                ctx.fillRect(210, 165, 10, 10);
+                // 口（笑顔）
+                ctx.fillStyle = '#cc4444';
+                ctx.fillRect(190, 195, 20, 8);
+
+            } else if (visitor.type === 'killer') {
+                // 殺人鬼（不気味な仮面・包丁）
+                // 体
+                ctx.fillStyle = '#222222';
+                ctx.fillRect(150, 210, 100, 120);
+                // マスク（白）
+                ctx.fillStyle = '#dddddd';
+                ctx.fillRect(160, 130, 80, 90);
+                // 目の穴（黒）
+                ctx.fillStyle = '#111111';
+                ctx.fillRect(175, 160, 12, 8);
+                ctx.fillRect(213, 160, 12, 8);
+                // 凶器（包丁シルバー）
+                ctx.fillStyle = '#cccccc';
+                ctx.fillRect(120, 240, 30, 12);
+                ctx.fillStyle = '#884422';
+                ctx.fillRect(110, 246, 12, 6);
+
+            } else if (visitor.type === 'monster') {
+                // カボチャ頭の怪人
+                // 体
+                ctx.fillStyle = '#442200';
+                ctx.fillRect(140, 200, 120, 130);
+                // カボチャ頭（オレンジ）
+                ctx.fillStyle = '#ff8800';
+                ctx.beginPath();
+                ctx.arc(200, 160, 55, 0, Math.PI * 2);
+                ctx.fill();
+                // 目・口（三角の光）
+                ctx.fillStyle = '#ffff00';
+                // 左目
+                ctx.beginPath();
+                ctx.moveTo(175, 145); ctx.lineTo(160, 165); ctx.lineTo(190, 165);
+                ctx.fill();
+                // 右目
+                ctx.beginPath();
+                ctx.moveTo(225, 145); ctx.lineTo(210, 165); ctx.lineTo(240, 165);
+                ctx.fill();
+                // ギザギザ口
+                ctx.fillStyle = '#110000';
+                ctx.fillRect(175, 185, 50, 15);
+
+            } else if (visitor.type === 'vampire') {
+                // ヴァンパイア紳士
+                // スーツ
+                ctx.fillStyle = '#111122';
+                ctx.fillRect(150, 210, 100, 120);
+                // 赤いインナー
+                ctx.fillStyle = '#881111';
+                ctx.fillRect(185, 210, 30, 80);
+                // 顔
+                ctx.fillStyle = '#eedddd';
+                ctx.fillRect(165, 135, 70, 80);
+                // 髪
+                ctx.fillStyle = '#222222';
+                ctx.fillRect(160, 125, 80, 20);
+                // 牙と目
+                ctx.fillStyle = '#aa0000';
+                ctx.fillRect(180, 165, 8, 8);
+                ctx.fillRect(212, 165, 8, 8);
+                // 牙
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(192, 195, 6, 10);
+                ctx.fillRect(202, 195, 6, 10);
+
+            } else if (visitor.type === 'beast') {
+                // 巨大な狂犬
+                // 体・毛並み
+                ctx.fillStyle = '#553311';
+                ctx.fillRect(130, 200, 140, 110);
+                // 頭
+                ctx.fillStyle = '#442200';
+                ctx.fillRect(150, 140, 100, 80);
+                // 赤い目
+                ctx.fillStyle = '#ff0000';
+                ctx.fillRect(170, 160, 12, 10);
+                ctx.fillRect(218, 160, 12, 10);
+                // 牙と口
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(180, 195, 40, 12);
+            }
+
+            ctx.restore();
+        }
+
+        function gameOver(reason) {
+            gameState.isPlaying = false;
+            let overlay = document.getElementById('overlay');
+            document.getElementById('overlay-title').innerText = "GAME OVER";
+            document.getElementById('overlay-desc').innerText = reason + `\n\n最終スコア: 対応数 ${gameState.score}人 / 評判 ${gameState.reputation}`;
+            overlay.style.display = 'flex';
+        }
+
+        function winGame() {
+            gameState.isPlaying = false;
+            let overlay = document.getElementById('overlay');
+            document.getElementById('overlay-title').innerText = "HAPPY HALLOWEEN!";
+            document.getElementById('overlay-desc').innerText = `朝がやってきました！無事にハロウィンの夜を生き延びました。\n\n【結果】\n対応数: ${gameState.score}人\n最終評判: ⭐`.repeat(gameState.reputation) + `\nお見事でした！`;
+            overlay.style.display = 'flex';
+        }
+    </script>
+</body>
+</html>
