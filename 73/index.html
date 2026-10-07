@@ -477,7 +477,12 @@
 
         <!-- 条件選択画面 -->
         <div class="screen hidden" id="select-screen">
-            <h2>運行ルートを選択</h2>
+            <h2>ミッション確認 ＆ ルート選択</h2>
+            <p id="select-mission-info" style="background: #282a3a; padding: 15px; border-radius: 8px; border: 1px solid #6272a4; margin-bottom: 20px; font-size: 1rem; line-height: 1.6; text-align: left;">
+                乗車駅: 読み込み中...<br>
+                目的地: 読み込み中...<br>
+                目標時刻: 読み込み中...
+            </p>
             <p>どちらの方向に乗車しますか？</p>
             <div class="select-group">
                 <button class="select-btn selected" id="dir-outer" onclick="setDirection('outer')">外回り (時計回り)</button>
@@ -561,9 +566,28 @@
             trainMarker.style.top = `${y}px`;
         }
 
+        let tempStartIdx = 0;
+        let tempTargetIdx = 0;
+        let tempTargetTime = 0;
+
         function showSelectScreen() {
             document.getElementById('start-screen').classList.add('hidden');
             document.getElementById('result-screen').classList.add('hidden');
+
+            // 選択画面に移る前に、ランダムに開始駅・目的地・目標時間を決定しておく
+            tempStartIdx = Math.floor(Math.random() * stations.length);
+            let distance = 5 + Math.floor(Math.random() * 12); // 5〜16駅先
+            tempTargetIdx = (tempStartIdx + distance) % stations.length;
+
+            let estMin = distance * 2.5 + (Math.random() * 6 - 3);
+            tempTargetTime = Math.round((8 * 60 + 30) + estMin);
+
+            document.getElementById('select-mission-info').innerHTML = `
+                📌 <b>乗車駅:</b> ${stations[tempStartIdx]}駅 (08:30 発)<br>
+                🎯 <b>目的地:</b> ${stations[tempTargetIdx]}駅<br>
+                ⏰ <b>目標時刻:</b> ${formatTime(tempTargetTime)} 頃
+            `;
+
             document.getElementById('select-screen').classList.remove('hidden');
         }
 
@@ -585,20 +609,15 @@
             document.getElementById('scenery-container').classList.add('stopped');
             document.getElementById('train-element').classList.remove('shake');
 
-            // ランダムに現在地と目的地を決定 (最低5駅以上離す)
-            currentStationIndex = Math.floor(Math.random() * stations.length);
-            let distance = 5 + Math.floor(Math.random() * 12); // 5〜16駅先
-            if (currentDirection === 'outer') {
-                targetStationIndex = (currentStationIndex + distance) % stations.length;
-            } else {
-                targetStationIndex = (currentStationIndex - distance + stations.length) % stations.length;
-            }
+            // 事前決定した値を代入
+            currentStationIndex = tempStartIdx;
+            targetStationIndex = tempTargetIdx;
+            targetTimeMinutes = tempTargetTime;
+
+            // 内回り選んでいて距離を逆算したい場合の調整
+            // distance は固定なので、外回り基準で決定した distance をもとに内回りの場合の補正は不要（単に目的地は固定）
 
             currentTimeMinutes = 8 * 60 + 30; // 8:30固定
-
-            // 目標時刻の設定（1駅あたり約2.5分として計算＋ランダム誤差）
-            let estimatedMinutes = distance * 2.5 + (Math.random() * 6 - 3);
-            targetTimeMinutes = Math.round(currentTimeMinutes + estimatedMinutes);
 
             // 表示更新
             document.getElementById('mission-start').innerText = `乗車駅: ${stations[currentStationIndex]}駅 (08:30 発)`;
