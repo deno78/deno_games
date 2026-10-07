@@ -450,6 +450,7 @@
 
                 <div class="info-card">
                     <h3>ミッション指示</h3>
+                    <p id="mission-start">乗車駅: ??駅 (08:30 発)</p>
                     <p id="mission-target">目的地: ??駅</p>
                     <p id="mission-time">目標到着時刻: --:--</p>
                 </div>
@@ -494,22 +495,40 @@
     </div>
 
     <script>
-        // 山手線全30駅（外回り順序固定）
-        const stations = [
-            "東京", "神田", "秋葉原", "御徒町", "上野", "鶯谷", "日暮里", "西日暮里", 
-            "田端", "駒込", "巣鴨", "大塚", "池袋", "目白", "高田馬場", "新大久保", 
-            "新宿", "代々木", "原宿", "渋谷", "恵比寿", "目黒", "五反田", "大崎", 
-            "品川", "高輪ゲートウェイ", "田町", "浜松町", "新橋", "有楽町"
+        // 山手線全30駅の概略地理角（北を0度＝-PI/2として、実際の地理的配置に合わせる：東京=東/南東、新宿=西、池袋=北西、上野=北東など）
+        // 山手線のおおよその角度（北基準、時計回り 0〜360度）
+        const stationAngles = [
+            50,   // 東京 (東南東)
+            55,   // 神田
+            60,   // 秋葉原
+            45,   // 御徒町
+            25,   // 上野 (北北東)
+            5,    // 鶯谷
+            350,  // 日暮里
+            340,  // 西日暮里
+            325,  // 田端 (北)
+            310,  // 駒込
+            295,  // 巣鴨
+            280,  // 大塚
+            260,  // 池袋 (西)
+            245,  // 目白
+            230,  // 高田馬場
+            215,  // 新大久保
+            200,  // 新宿 (西)
+            190,  // 代々木
+            180,  // 原宿 (南)
+            170,  // 渋谷
+            155,  // 恵比寿
+            140,  // 目黒
+            125,  // 五反田
+            110,  // 大崎
+            95,   // 品川 (南東)
+            85,   // 高輪ゲートウェイ
+            75,   // 田町
+            70,   // 浜松町
+            65,   // 新橋
+            58    // 有楽町
         ];
-
-        // 各駅間の標準所要時間（分）※ランダム性を持たせるため平均2〜3分
-        let currentDirection = 'outer'; // 'outer' または 'inner'
-        let currentStationIndex = 0; // 現在止まっている駅のインデックス
-        let targetStationIndex = 0; // 目的地のインデックス
-        let currentTimeMinutes = 8 * 60 + 30; // 8:30スタート (分換算)
-        let targetTimeMinutes = 0; // 目標時刻 (分換算)
-        let gameRunning = false;
-        let isMoving = false;
 
         // マップ上に駅ドットを配置
         const circleMap = document.getElementById('circle-map');
@@ -519,9 +538,10 @@
         const mapCenterY = 80;
 
         stations.forEach((st, idx) => {
-            const angle = (idx / stations.length) * 2 * Math.PI - Math.PI / 2;
-            const x = mapCenterX + mapRadius * Math.cos(angle) - 4;
-            const y = mapCenterY + mapRadius * Math.sin(angle) - 4;
+            const deg = stationAngles[idx];
+            const rad = (deg - 90) * (Math.PI / 180);
+            const x = mapCenterX + mapRadius * Math.cos(rad) - 4;
+            const y = mapCenterY + mapRadius * Math.sin(rad) - 4;
             const dot = document.createElement('div');
             dot.className = 'map-station-dot';
             dot.style.left = `${x}px`;
@@ -533,9 +553,10 @@
         const trainMarker = document.getElementById('map-train-marker');
 
         function updateMapMarker() {
-            const angle = (currentStationIndex / stations.length) * 2 * Math.PI - Math.PI / 2;
-            const x = mapCenterX + mapRadius * Math.cos(angle) - 7;
-            const y = mapCenterY + mapRadius * Math.sin(angle) - 7;
+            const deg = stationAngles[currentStationIndex];
+            const rad = (deg - 90) * (Math.PI / 180);
+            const x = mapCenterX + mapRadius * Math.cos(rad) - 7;
+            const y = mapCenterY + mapRadius * Math.sin(rad) - 7;
             trainMarker.style.left = `${x}px`;
             trainMarker.style.top = `${y}px`;
         }
@@ -580,6 +601,7 @@
             targetTimeMinutes = Math.round(currentTimeMinutes + estimatedMinutes);
 
             // 表示更新
+            document.getElementById('mission-start').innerText = `乗車駅: ${stations[currentStationIndex]}駅 (08:30 発)`;
             document.getElementById('mission-target').innerText = `目的地: ${stations[targetStationIndex]}駅`;
             document.getElementById('mission-time').innerText = `目標到着時刻: ${formatTime(targetTimeMinutes)}`;
             document.getElementById('hud-direction').innerText = `方向: ${currentDirection === 'outer' ? '外回り' : '内回り'}`;
