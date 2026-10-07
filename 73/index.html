@@ -619,11 +619,18 @@
 
             // 事前決定した値を代入
             currentStationIndex = tempStartIdx;
-            targetStationIndex = tempTargetIdx;
-            targetTimeMinutes = tempTargetTime;
-
-            // 内回り選んでいて距離を逆算したい場合の調整
-            // distance は固定なので、外回り基準で決定した distance をもとに内回りの場合の補正は不要（単に目的地は固定）
+            
+            // 内回りの場合はゴールを逆向きに再設定するか、あるいは同じ目的地にするか？
+            // ユーザーは「内回り/外回りを選んでゲームスタート」なので、内回りの場合は目的地までの逆回り or 目的地そのものを内回りのルート上の位置にする必要があったりする
+            if (currentDirection === 'inner') {
+                // 内回り選択時は、tempTargetIdxを内回りの方向での適切な距離感に調整するか、
+                // あるいは単に現在の駅からの距離を内回り基準（逆順）に置き換える。
+                // 今回シンプルに：内回りの場合はゴール駅を「スタートから内回り方向に進んだ駅」にする
+                let distance = 5 + Math.floor(Math.random() * 12);
+                targetStationIndex = (currentStationIndex - distance + stations.length) % stations.length;
+            } else {
+                targetStationIndex = tempTargetIdx;
+            }
 
             currentTimeMinutes = 8 * 60 + 30; // 8:30固定
 
