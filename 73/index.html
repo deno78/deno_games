@@ -1,0 +1,715 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>山手線タイムトラベラー・ミッション</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+        }
+        body {
+            background: #111;
+            color: #fff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        #game-container {
+            width: 900px;
+            height: 650px;
+            background: #1e1e2f;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.7);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            position: relative;
+            border: 2px solid #333;
+        }
+        /* ヘッダー */
+        header {
+            background: #282a3a;
+            padding: 15px 25px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #3f4259;
+        }
+        h1 {
+            font-size: 1.4rem;
+            color: #50fa7b;
+            letter-spacing: 1px;
+        }
+        .status-info {
+            display: flex;
+            gap: 20px;
+            font-size: 0.95rem;
+        }
+        .status-badge {
+            background: #383a59;
+            padding: 5px 12px;
+            border-radius: 20px;
+            border: 1px solid #6272a4;
+        }
+        /* メインステージ */
+        .main-stage {
+            flex: 1;
+            display: flex;
+            position: relative;
+            overflow: hidden;
+        }
+        /* 左側：景色・太陽・電車アニメーション */
+        .view-panel {
+            flex: 1.2;
+            background: linear-gradient(to bottom, #3b82f6, #93c5fd);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            overflow: hidden;
+            border-right: 2px solid #3f4259;
+        }
+        .sky {
+            position: absolute;
+            top: 0; left: 0; right: 0; height: 60%;
+            transition: background 1s ease;
+        }
+        .sun {
+            width: 60px;
+            height: 60px;
+            background: #facc15;
+            border-radius: 50%;
+            position: absolute;
+            top: 40px;
+            left: 100px;
+            box-shadow: 0 0 30px #fde047;
+            transition: all 0.5s linear;
+        }
+        .clouds {
+            position: absolute;
+            top: 20px;
+            left: 0; right: 0;
+            height: 100px;
+            opacity: 0.8;
+            pointer-events: none;
+        }
+        .cloud {
+            background: #fff;
+            border-radius: 50px;
+            position: absolute;
+            animation: floatCloud 20s linear infinite;
+        }
+        @keyframes floatCloud {
+            from { transform: translateX(-150px); }
+            to { transform: translateX(600px); }
+        }
+        /* 車窓の景色（流れるビルや木） */
+        .scenery {
+            position: absolute;
+            bottom: 120px;
+            left: 0; right: 0;
+            height: 150px;
+            overflow: hidden;
+        }
+        .building {
+            position: absolute;
+            bottom: 0;
+            background: #475569;
+            animation: moveScenery 4s linear infinite;
+        }
+        .scenery.stopped .building {
+            animation-play-state: paused;
+        }
+        @keyframes moveScenery {
+            from { transform: translateX(600px); }
+            to { transform: translateX(-100px); }
+        }
+        /* 電車・線路部 */
+        .track-section {
+            position: absolute;
+            bottom: 0;
+            left: 0; right: 0;
+            height: 120px;
+            background: #1e293b;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            border-top: 4px solid #64748b;
+        }
+        .train-container {
+            position: relative;
+            width: 260px;
+            height: 60px;
+            display: flex;
+            align-items: center;
+            transition: transform 0.5s ease-in-out;
+        }
+        .train-body {
+            width: 100%;
+            height: 50px;
+            background: #22c55e; /* 山手線グリーン */
+            border-radius: 12px;
+            position: relative;
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.5);
+            border-top: 3px solid #86efac;
+        }
+        .train-window {
+            width: 35px;
+            height: 25px;
+            background: #e2e8f0;
+            border-radius: 4px;
+            border: 2px solid #0f172a;
+        }
+        .train-light {
+            width: 10px;
+            height: 10px;
+            background: #fef08a;
+            border-radius: 50%;
+            position: absolute;
+            right: 5px;
+            box-shadow: 0 0 8px #facc15;
+        }
+        .wheel {
+            width: 16px;
+            height: 16px;
+            background: #475569;
+            border-radius: 50%;
+            position: absolute;
+            bottom: -8px;
+            border: 2px solid #cbd5e1;
+            animation: spinWheel 0.3s linear infinite;
+        }
+        .wheel.left { left: 30px; }
+        .wheel.right { right: 30px; }
+        .scenery.stopped .wheel {
+            animation-play-state: paused;
+        }
+        @keyframes spinWheel {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        /* 揺れアニメーション */
+        .shake {
+            animation: shakeTrain 0.2s ease-in-out infinite;
+        }
+        .scenery.stopped .shake {
+            animation: none;
+        }
+        /* 右側：レーダーマップとコントロール */
+        .control-panel {
+            flex: 1;
+            background: #181926;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+        }
+        .radar-box {
+            background: #11121d;
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+            border: 1px solid #3f4259;
+            position: relative;
+        }
+        .radar-title {
+            font-size: 0.85rem;
+            color: #8be9fd;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        /* 概略マップ (円形) */
+        .circle-map {
+            width: 160px;
+            height: 160px;
+            margin: 0 auto;
+            position: relative;
+            border: 3px dashed #6272a4;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .map-station-dot {
+            width: 8px;
+            height: 8px;
+            background: #6272a4;
+            border-radius: 50%;
+            position: absolute;
+        }
+        .map-train-marker {
+            width: 14px;
+            height: 14px;
+            background: #ff5555;
+            border-radius: 50%;
+            position: absolute;
+            box-shadow: 0 0 10px #ff5555;
+            transition: all 0.3s ease;
+        }
+        /* ミッション＆情報ボックス */
+        .info-card {
+            background: #282a3a;
+            border-radius: 10px;
+            padding: 15px;
+            border: 1px solid #44475a;
+        }
+        .info-card h3 {
+            font-size: 0.9rem;
+            color: #ff79c6;
+            margin-bottom: 8px;
+        }
+        .info-card p {
+            font-size: 0.9rem;
+            margin-bottom: 5px;
+            color: #f8f8f2;
+        }
+        /* ボタン群 */
+        .action-buttons {
+            display: flex;
+            gap: 12px;
+        }
+        button {
+            flex: 1;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.2s;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
+        }
+        button:active {
+            transform: translateY(2px);
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+        .btn-continue {
+            background: #bd93f9;
+            color: #1e1e2f;
+        }
+        .btn-continue:hover { background: #caa9fa; }
+        .btn-getoff {
+            background: #ff5555;
+            color: #fff;
+        }
+        .btn-getoff:hover { background: #ff6e6e; }
+
+        /* モーダル・画面切り替え用 */
+        .screen {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(30, 30, 47, 0.95);
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 40px;
+            text-align: center;
+        }
+        .screen.hidden {
+            display: none;
+        }
+        .screen h2 {
+            font-size: 2rem;
+            color: #50fa7b;
+            margin-bottom: 20px;
+        }
+        .screen p {
+            font-size: 1.1rem;
+            margin-bottom: 30px;
+            color: #f8f8f2;
+            line-height: 1.6;
+        }
+        .btn-primary {
+            background: #50fa7b;
+            color: #1e1e2f;
+            padding: 15px 40px;
+            font-size: 1.2rem;
+            border-radius: 30px;
+            cursor: pointer;
+            border: none;
+            font-weight: bold;
+            box-shadow: 0 5px 15px rgba(80, 250, 123, 0.4);
+            transition: all 0.2s;
+        }
+        .btn-primary:hover {
+            background: #69ff94;
+            transform: scale(1.05);
+        }
+        .select-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 25px;
+        }
+        .select-btn {
+            background: #383a59;
+            color: #fff;
+            border: 2px solid #6272a4;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        .select-btn.selected {
+            background: #50fa7b;
+            color: #1e1e2f;
+            border-color: #50fa7b;
+            font-weight: bold;
+        }
+        .transit-overlay {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85);
+            z-index: 5;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s;
+        }
+        .transit-overlay.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+        .transit-station-name {
+            font-size: 2.5rem;
+            color: #f1fa8c;
+            margin-bottom: 10px;
+            letter-spacing: 2px;
+        }
+        .transit-message {
+            font-size: 1.2rem;
+            color: #8be9fd;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="game-container">
+        <!-- ヘッダー -->
+        <header>
+            <h1>山手線タイムトラベラー</h1>
+            <div class="status-info">
+                <div class="status-badge" id="hud-time">時刻: 08:30</div>
+                <div class="status-badge" id="hud-direction">方向: 外回り</div>
+            </div>
+        </header>
+
+        <!-- メインステージ -->
+        <div class="main-stage">
+            <!-- 左：車窓・アニメーション -->
+            <div class="view-panel" id="view-panel">
+                <div class="sky" id="sky-bg"></div>
+                <div class="sun" id="sun-element"></div>
+                <div class="clouds">
+                    <div class="cloud" style="top: 20px; width: 80px; height: 30px; animation-duration: 25s;"></div>
+                    <div class="cloud" style="top: 60px; width: 120px; height: 40px; animation-duration: 35s; animation-delay: -10s;"></div>
+                </div>
+                <!-- 流れる景色 -->
+                <div class="scenery stopped" id="scenery-container">
+                    <div class="building" style="left: 10%; width: 50px; height: 90px;"></div>
+                    <div class="building" style="left: 35%; width: 70px; height: 120px;"></div>
+                    <div class="building" style="left: 70%; width: 60px; height: 80px;"></div>
+                    <div class="building" style="left: 90%; width: 40px; height: 100px;"></div>
+                </div>
+                <!-- 電車 -->
+                <div class="track-section">
+                    <div class="train-container shake" id="train-element">
+                        <div class="train-body">
+                            <div class="train-window"></div>
+                            <div class="train-window"></div>
+                            <div class="train-window"></div>
+                            <div class="train-light"></div>
+                        </div>
+                        <div class="wheel left"></div>
+                        <div class="wheel right"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 右：レーダー＆操作パネル -->
+            <div class="control-panel">
+                <div class="radar-box">
+                    <div class="radar-title">駅名非表示・概略ルートマップ</div>
+                    <div class="circle-map" id="circle-map">
+                        <div class="map-train-marker" id="map-train-marker"></div>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <h3>ミッション指示</h3>
+                    <p id="mission-target">目的地: ??駅</p>
+                    <p id="mission-time">目標到着時刻: --:--</p>
+                </div>
+
+                <div class="action-buttons" id="action-buttons">
+                    <button class="btn-continue" id="btn-continue" onclick="doContinue()">乗り続ける</button>
+                    <button class="btn-getoff" id="btn-getoff" onclick="doGetOff()">ここで降りる！</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 停車中のトランジション画面 -->
+        <div class="transit-overlay hidden" id="transit-overlay">
+            <div class="transit-station-name" id="transit-station-name">まもなく到着...</div>
+            <div class="transit-message" id="transit-message">ドアが閉まります。次へ進みます。</div>
+        </div>
+
+        <!-- スタート画面 -->
+        <div class="screen" id="start-screen">
+            <h2>山手線タイムトラベラー</h2>
+            <p>指示された駅と時間にぴったり合わせて下車せよ！<br>現在の時刻と自分の位置は非公開。太陽の傾きと概略マップ、時間の経過を頼りに判断しよう。</p>
+            <button class="btn-primary" onclick="showSelectScreen()">ゲームスタート</button>
+        </div>
+
+        <!-- 条件選択画面 -->
+        <div class="screen hidden" id="select-screen">
+            <h2>運行ルートを選択</h2>
+            <p>どちらの方向に乗車しますか？</p>
+            <div class="select-group">
+                <button class="select-btn selected" id="dir-outer" onclick="setDirection('outer')">外回り (時計回り)</button>
+                <button class="select-btn" id="dir-inner" onclick="setDirection('inner')">内回り (反時計回り)</button>
+            </div>
+            <button class="btn-primary" onclick="startGameSession()">乗車する</button>
+        </div>
+
+        <!-- 結果画面 -->
+        <div class="screen hidden" id="result-screen">
+            <h2>ミッション結果</h2>
+            <p id="result-detail">ここに詳細結果が表示されます</p>
+            <button class="btn-primary" onclick="showSelectScreen()">もう一度挑戦する</button>
+        </div>
+    </div>
+
+    <script>
+        // 山手線全30駅（外回り順序固定）
+        const stations = [
+            "東京", "神田", "秋葉原", "御徒町", "上野", "鶯谷", "日暮里", "西日暮里", 
+            "田端", "駒込", "巣鴨", "大塚", "池袋", "目白", "高田馬場", "新大久保", 
+            "新宿", "代々木", "原宿", "渋谷", "恵比寿", "目黒", "五反田", "大崎", 
+            "品川", "高輪ゲートウェイ", "田町", "浜松町", "新橋", "有楽町"
+        ];
+
+        // 各駅間の標準所要時間（分）※ランダム性を持たせるため平均2〜3分
+        let currentDirection = 'outer'; // 'outer' または 'inner'
+        let currentStationIndex = 0; // 現在止まっている駅のインデックス
+        let targetStationIndex = 0; // 目的地のインデックス
+        let currentTimeMinutes = 8 * 60 + 30; // 8:30スタート (分換算)
+        let targetTimeMinutes = 0; // 目標時刻 (分換算)
+        let gameRunning = false;
+        let isMoving = false;
+
+        // マップ上に駅ドットを配置
+        const circleMap = document.getElementById('circle-map');
+        const stationDots = [];
+        const mapRadius = 65; // マップ半径
+        const mapCenterX = 80;
+        const mapCenterY = 80;
+
+        stations.forEach((st, idx) => {
+            const angle = (idx / stations.length) * 2 * Math.PI - Math.PI / 2;
+            const x = mapCenterX + mapRadius * Math.cos(angle) - 4;
+            const y = mapCenterY + mapRadius * Math.sin(angle) - 4;
+            const dot = document.createElement('div');
+            dot.className = 'map-station-dot';
+            dot.style.left = `${x}px`;
+            dot.style.top = `${y}px`;
+            circleMap.appendChild(dot);
+            stationDots.push(dot);
+        });
+
+        const trainMarker = document.getElementById('map-train-marker');
+
+        function updateMapMarker() {
+            const angle = (currentStationIndex / stations.length) * 2 * Math.PI - Math.PI / 2;
+            const x = mapCenterX + mapRadius * Math.cos(angle) - 7;
+            const y = mapCenterY + mapRadius * Math.sin(angle) - 7;
+            trainMarker.style.left = `${x}px`;
+            trainMarker.style.top = `${y}px`;
+        }
+
+        function showSelectScreen() {
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('select-screen').classList.remove('hidden');
+        }
+
+        function setDirection(dir) {
+            currentDirection = dir;
+            if (dir === 'outer') {
+                document.getElementById('dir-outer').classList.add('selected');
+                document.getElementById('dir-inner').classList.remove('selected');
+            } else {
+                document.getElementById('dir-inner').classList.add('selected');
+                document.getElementById('dir-outer').classList.remove('selected');
+            }
+        }
+
+        function startGameSession() {
+            document.getElementById('select-screen').classList.add('hidden');
+            
+            // 初期状態は停止中にしておく
+            document.getElementById('scenery-container').classList.add('stopped');
+            document.getElementById('train-element').classList.remove('shake');
+
+            // ランダムに現在地と目的地を決定 (最低5駅以上離す)
+            currentStationIndex = Math.floor(Math.random() * stations.length);
+            let distance = 5 + Math.floor(Math.random() * 12); // 5〜16駅先
+            if (currentDirection === 'outer') {
+                targetStationIndex = (currentStationIndex + distance) % stations.length;
+            } else {
+                targetStationIndex = (currentStationIndex - distance + stations.length) % stations.length;
+            }
+
+            currentTimeMinutes = 8 * 60 + 30; // 8:30固定
+
+            // 目標時刻の設定（1駅あたり約2.5分として計算＋ランダム誤差）
+            let estimatedMinutes = distance * 2.5 + (Math.random() * 6 - 3);
+            targetTimeMinutes = Math.round(currentTimeMinutes + estimatedMinutes);
+
+            // 表示更新
+            document.getElementById('mission-target').innerText = `目的地: ${stations[targetStationIndex]}駅`;
+            document.getElementById('mission-time').innerText = `目標到着時刻: ${formatTime(targetTimeMinutes)}`;
+            document.getElementById('hud-direction').innerText = `方向: ${currentDirection === 'outer' ? '外回り' : '内回り'}`;
+
+            updateMapMarker();
+            updateSunPosition();
+            updateHUDTime();
+
+            gameRunning = true;
+            enableButtons(true);
+        }
+
+        function formatTime(minutes) {
+            let h = Math.floor(minutes / 60) % 24;
+            let m = Math.floor(minutes % 60);
+            return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}`;
+        }
+
+        function updateHUDTime() {
+            // ゲーム中、プレイヤーは正確な時間は分からないが、大体の経過時間を表示するか、「8:30以降進行中」にする。
+            // ここでは雰囲気として8:30固定表示または経過の気配を見せる
+            document.getElementById('hud-time').innerText = `時刻: 08:30～ (推定)`;
+        }
+
+        function updateSunPosition() {
+            // 太陽の位置を時間帯に応じて移動（8:30は東の空、時間が経つにつれて上へ）
+            const sun = document.getElementById('sun-element');
+            const sky = document.getElementById('sky-bg');
+            
+            // 8:30を基準に経過した駅数から太陽の位置を計算
+            // 朝から昼にかけて動くイメージ
+            let progress = (currentStationIndex / stations.length);
+            let sunLeft = 40 + progress * 200;
+            let sunTop = 80 - Math.sin(progress * Math.PI) * 50;
+            
+            sun.style.left = `${sunLeft}px`;
+            sun.style.top = `${sunTop}px`;
+        }
+
+        function enableButtons(enable) {
+            document.getElementById('btn-continue').disabled = !enable;
+            document.getElementById('btn-getoff').disabled = !enable;
+            document.getElementById('btn-continue').style.opacity = enable ? '1' : '0.5';
+            document.getElementById('btn-getoff').style.opacity = enable ? '1' : '0.5';
+        }
+
+        function doContinue() {
+            if (!gameRunning || isMoving) return;
+            isMoving = true;
+            enableButtons(false);
+
+            // 電車アニメーション開始（走り出す）
+            const train = document.getElementById('train-element');
+            const scenery = document.getElementById('scenery-container');
+            scenery.classList.remove('stopped');
+            train.classList.add('shake');
+
+            // トランジション表示
+            const overlay = document.getElementById('transit-overlay');
+            const stNameElem = document.getElementById('transit-station-name');
+            const msgElem = document.getElementById('transit-message');
+            
+            overlay.classList.remove('hidden');
+            stNameElem.innerText = "発車・走行中...";
+            msgElem.innerText = "次の駅に向かって加速中...";
+
+            // 2.5秒後に次の駅に到着・停車
+            setTimeout(() => {
+                if (currentDirection === 'outer') {
+                    currentStationIndex = (currentStationIndex + 1) % stations.length;
+                } else {
+                    currentStationIndex = (currentStationIndex - 1 + stations.length) % stations.length;
+                }
+
+                // 時間経過 (2〜3分ランダム)
+                let elapsed = 2 + Math.floor(Math.random() * 2) + Math.random();
+                currentTimeMinutes += elapsed;
+
+                updateMapMarker();
+                updateSunPosition();
+
+                // 停止アニメーション（景色と揺れを止める）
+                scenery.classList.add('stopped');
+                train.classList.remove('shake');
+
+                stNameElem.innerText = `駅に到着`;
+                msgElem.innerText = `停車しました。ドアが開いています。`;
+
+                setTimeout(() => {
+                    overlay.classList.add('hidden');
+                    isMoving = false;
+                    enableButtons(true);
+                }, 1000);
+
+            }, 2500);
+        }
+
+        function doGetOff() {
+            if (!gameRunning || isMoving) return;
+            gameRunning = false;
+
+            // スコア・結果計算
+            let stationDiff = Math.abs(currentStationIndex - targetStationIndex);
+            // 環状線なので逆回りでの距離も考慮
+            if (stationDiff > stations.length / 2) {
+                stationDiff = stations.length - stationDiff;
+            }
+
+            let actualArrivalMinutes = currentTimeMinutes;
+            let timeDiff = Math.abs(actualArrivalMinutes - targetTimeMinutes);
+
+            // スコア算出 (駅一致で最大100pt、時間ピッタリで最大100pt = 計200pt満点)
+            let stationScore = Math.max(0, 100 - stationDiff * 25);
+            let timeScore = Math.max(0, 100 - Math.round(timeDiff * 10));
+            let totalScore = stationScore + timeScore;
+
+            let resultMessage = ``;
+            if (stationDiff === 0 && timeDiff <= 2) {
+                resultMessage = `✨ パーフェクト・シンクロ！ ✨<br>目的地の駅に完璧なタイミングで到着しました！`;
+            } else if (stationDiff === 0) {
+                resultMessage = `🎯 駅は大正解！<br>ただし、時間が少しズレてしまいました。<br>(目標: ${formatTime(targetTimeMinutes)} / 実際: ${formatTime(actualArrivalMinutes)})`;
+            } else {
+                resultMessage = `💥 残念！<br>目的地は 「${stations[targetStationIndex]}」 でした。<br>(あなたは ${stations[currentStationIndex]} で降車しました)`;
+            }
+
+            resultMessage += `<br><br>【詳細スコア】<br>駅一致度: ${stationScore}pt / 時間一致度: ${timeScore}pt<br><b>総合得点: ${totalScore}点</b>`;
+
+            document.getElementById('result-detail').innerHTML = resultMessage;
+            document.getElementById('result-screen').classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>

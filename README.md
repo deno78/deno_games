@@ -83,3 +83,4 @@ Deno/Web games collection.
 - [70. 焼肉早食いバトル (Yakiniku Speed Eating Battle)](./70/index.html)
 - [71. ディープダンジョン ～1分間一筆書き迷路アタック～ (Deep Dungeon 1-Minute Maze Attack)](./71/index.html)
 - [72. ハロウィーン・ドアベル・パニック (Halloween Doorbell Panic)](./72/index.html)
+- [73. 山手線タイムトラベラー・ミッション (Yamanote Line Time Traveler Mission)](./73/index.html)
